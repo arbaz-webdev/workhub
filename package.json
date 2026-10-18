@@ -1,0 +1,31 @@
+{
+  "name": "workhub",
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "test": "turbo run test",
+    "db:start": "node scripts/dev-db.mjs",
+    "db:migrate": "npm run migrate --workspace @workhub/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "24.19.2",
+    "embedded-postgres": "17.10.0-beta.17",
+    "eslint": "9.39.5",
+    "globals": "17.13.0",
+    "turbo": "2.11.9",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2"
+  }
+}

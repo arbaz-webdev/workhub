@@ -33,7 +33,7 @@ describe('sign-up', () => {
     expect(res.body.workspace.slug).toMatch(/^pixel-studio-[0-9a-f]{6}$/);
 
     const me = await agent.get('/auth/me').expect(200);
-    expect(me.body.user).toMatchObject({ name: 'Ayesha', email });
+    expect(me.body.user).toMatchObject({ name: 'Ayesha', email, emailVerified: false });
     expect(me.body.workspaces).toEqual([expect.objectContaining({ name: 'Pixel Studio', role: 'owner' })]);
   });
 

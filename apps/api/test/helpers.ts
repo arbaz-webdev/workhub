@@ -6,6 +6,7 @@ import { Client } from 'pg';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { devOutbox } from '../src/email/email.service';
 import { TEST_ADMIN_URL } from './db-urls';
 
 export async function createApp(): Promise<INestApplication> {
@@ -33,6 +34,18 @@ export async function signUp(app: INestApplication, prefix = 'user', workspaceNa
     .send({ name: prefix, email, password: PASSWORD, workspaceName })
     .expect(201);
   return { agent, email, user: res.body.user as { id: string }, workspace: res.body.workspace as WorkspaceDto };
+}
+
+/** Most recent email sent to `to` through the console transport. */
+export function lastEmailTo(to: string) {
+  return [...devOutbox].reverse().find((m) => m.to === to);
+}
+
+/** Pulls the ?token=… value out of an email's text. */
+export function tokenFrom(message: { text: string } | undefined): string {
+  const match = message?.text.match(/token=([A-Za-z0-9_-]+)/);
+  if (!match?.[1]) throw new Error('No token link in email');
+  return match[1];
 }
 
 /** Superuser connection for test setup; it bypasses Row-Level Security. */

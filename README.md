@@ -4,6 +4,8 @@ An all-in-one workspace for SMBs with remote/hybrid teams: CRM, project boards, 
 
 ## Planning documents
 
+- [ROADMAP.md](ROADMAP.md): phases, sprint dates and links to each sprint's GitHub milestone and issues
+
 - [PRD & Business Plan](https://claude.ai/code/artifact/da5b6a43-dec7-4ac0-b28d-990ddd03ef96): market, competitors, personas, requirements, architecture, pricing, go-to-market, roadmap, risks
 - [Market Research & Execution Plan](https://claude.ai/code/artifact/687ffd0d-0968-4c4b-9e0a-2b3280cba090): competitor matrix, review pain points, Pakistan specifics, revised MVP, validation without interviews, sprint-by-sprint build plan (current plan of record)
 - [Customer Interview Script & Design-Partner Pitch](https://claude.ai/code/artifact/e08e2570-d57a-4362-85b0-29bf75f5e812): optional, if interviews become possible later

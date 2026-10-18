@@ -56,16 +56,31 @@ Auth: Argon2id password hashes, opaque session tokens (only a SHA-256 hash is st
 
 Local demo account (dev database only): `demo.owner@example.test` / `local-dev-test-1234`.
 
+## Email and Google sign-in
+
+Both work locally with no accounts:
+
+- **Email** defaults to `EMAIL_TRANSPORT=console`: emails (verification, password reset, waitlist welcome) are printed to the API log, so you can click the links there. Production refuses to start with the console transport.
+- **Google sign-in** stays hidden until it's configured.
+
+To switch them on (see `apps/api/.env.example`):
+
+1. **Resend** (recommended email provider): create an account at resend.com, verify your sending domain (SPF and DKIM DNS records), create an API key, then set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM` (an address on the verified domain).
+2. **Google**: in Google Cloud Console → APIs & Services → Credentials, create an OAuth client ID of type *Web application* with the authorised redirect URI `http://localhost:3000/api/auth/google/callback` (plus your production URL later). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+Security notes: verification and reset links are single-use, stored only as SHA-256 hashes, and expire (24 hours / 30 minutes). A password reset signs the user out everywhere. Google sign-in uses PKCE and a state cookie. If a Google user's email matches an existing account that never verified its email, that account's password and sessions are removed before linking, to block account pre-hijacking.
+
 ## Sprint 1 status
 
 - [x] Monorepo (npm workspaces + Turborepo), web + API + shared package
 - [x] PostgreSQL schema with Row-Level Security and a restricted app role
 - [x] Sign-up (creates user, workspace, owner membership), sign-in, sign-out, sessions
 - [x] Workspace scoping, roles, audit log, first tenant feature (teams)
-- [x] 27 integration tests incl. tenant isolation; CI workflow
-- [ ] Email verification and password reset (needs an email provider)
-- [ ] Google sign-in
-- [ ] Landing page + waitlist
+- [x] CI workflow; 55 integration tests incl. tenant isolation
+- [x] Email verification and password reset
+- [x] Google sign-in (needs your Google OAuth client to switch on)
+- [x] Landing page with beta waitlist
+- [ ] Resend account and verified sending domain (needs you; see above)
 
 ## Key decisions so far
 

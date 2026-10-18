@@ -25,6 +25,41 @@ export const signInSchema = z.object({
 });
 export type SignInInput = z.infer<typeof signInSchema>;
 
+const password = z.string().min(10, 'Use at least 10 characters').max(128);
+const token = z.string().min(20).max(200);
+
+export const verifyEmailSchema = z.object({ token });
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const forgotPasswordSchema = z.object({ email });
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({ token, password });
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const createWorkspaceSchema = z.object({
+  name: z.string().trim().min(2, 'Enter your company name').max(80),
+});
+export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
+
+export const TEAM_SIZES = ['1-9', '10-49', '50-199', '200+'] as const;
+
+export const waitlistSchema = z.object({
+  name: z.string().trim().min(1, 'Enter your name').max(100),
+  email,
+  company: z.string().trim().min(1, 'Enter your company name').max(120),
+  teamSize: z.enum(TEAM_SIZES, { message: 'Choose your team size' }),
+  currentTools: z.string().trim().max(500).optional(),
+  biggestProblem: z.string().trim().max(1000).optional(),
+  monthlySpend: z.string().trim().max(100).optional(),
+  source: z.string().trim().max(100).optional(),
+});
+export type WaitlistInput = z.infer<typeof waitlistSchema>;
+
+export interface AuthProvidersResponse {
+  google: boolean;
+}
+
 export const createTeamSchema = z.object({
   name: z.string().trim().min(1, 'Enter a team name').max(80),
 });
@@ -34,6 +69,7 @@ export interface UserDto {
   id: string;
   name: string;
   email: string;
+  emailVerified: boolean;
 }
 
 export interface WorkspaceDto {

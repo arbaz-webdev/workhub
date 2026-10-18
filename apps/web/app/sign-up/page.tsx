@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AuthCard, Field, FormError, issuesToFields, SubmitButton } from '@/components/form';
+import { GoogleButton } from '@/components/google-button';
 import { api, ApiError } from '@/lib/api';
 
 export default function SignUpPage() {
@@ -51,6 +52,7 @@ export default function SignUpPage() {
         </>
       }
     >
+      <GoogleButton />
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <FormError message={error} />
         <Field label="Your name" name="name" autoComplete="name" error={fields.name} />

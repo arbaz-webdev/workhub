@@ -1,20 +1,44 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
-import { signInSchema, signUpSchema, type SignInInput, type SignUpInput } from '@workhub/shared';
+import {
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  signInSchema,
+  signUpSchema,
+  verifyEmailSchema,
+  type AuthProvidersResponse,
+  type ForgotPasswordInput,
+  type ResetPasswordInput,
+  type SignInInput,
+  type SignUpInput,
+  type VerifyEmailInput,
+} from '@workhub/shared';
 import type { Response } from 'express';
+import { config } from '../config';
 import { RateLimiter } from '../common/rate-limiter';
 import { AppRequest, AuthContext, CurrentAuth, Public } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { AuthService } from './auth.service';
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './session';
 
-const FIFTEEN_MINUTES = 15 * 60 * 1000;
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
 
 @Controller('auth')
 export class AuthController {
-  private readonly signInLimiter = new RateLimiter(10, FIFTEEN_MINUTES);
-  private readonly signUpLimiter = new RateLimiter(20, 60 * 60 * 1000);
+  private readonly signInLimiter = new RateLimiter(10, 15 * MINUTE);
+  private readonly signUpLimiter = new RateLimiter(20, HOUR);
+  private readonly forgotLimiter = new RateLimiter(5, HOUR);
+  private readonly forgotIpLimiter = new RateLimiter(20, HOUR);
+  private readonly resendLimiter = new RateLimiter(3, HOUR);
+  private readonly tokenLimiter = new RateLimiter(30, 15 * MINUTE);
 
   constructor(private readonly auth: AuthService) {}
+
+  @Public()
+  @Get('providers')
+  providers(): AuthProvidersResponse {
+    return { google: config.google !== null };
+  }
 
   @Public()
   @Post('sign-up')
@@ -57,6 +81,44 @@ export class AuthController {
   @Get('me')
   me(@CurrentAuth() auth: AuthContext) {
     return this.auth.me(auth.userId);
+  }
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(204)
+  async verifyEmail(@Body(new ZodPipe(verifyEmailSchema)) body: VerifyEmailInput, @Req() req: AppRequest) {
+    this.tokenLimiter.consume(req.ip ?? 'unknown');
+    await this.auth.verifyEmail(body.token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(204)
+  async resendVerification(@CurrentAuth() auth: AuthContext) {
+    this.resendLimiter.consume(auth.userId);
+    await this.auth.resendVerification(auth.userId);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(204)
+  async forgotPassword(@Body(new ZodPipe(forgotPasswordSchema)) body: ForgotPasswordInput, @Req() req: AppRequest) {
+    const ip = req.ip ?? 'unknown';
+    this.forgotIpLimiter.consume(ip);
+    this.forgotLimiter.consume(`${ip}:${body.email}`);
+    await this.auth.forgotPassword(body.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(204)
+  async resetPassword(
+    @Body(new ZodPipe(resetPasswordSchema)) body: ResetPasswordInput,
+    @Req() req: AppRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.tokenLimiter.consume(req.ip ?? 'unknown');
+    await this.auth.resetPassword(body.token, body.password);
+    clearSessionCookie(res);
   }
 
   private meta(req: AppRequest) {

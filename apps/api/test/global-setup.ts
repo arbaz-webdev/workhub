@@ -13,7 +13,7 @@ export default async function globalSetup() {
   const client = new Client({ connectionString: TEST_ADMIN_URL });
   await client.connect();
   try {
-    await client.query('truncate users, workspaces cascade');
+    await client.query('truncate users, workspaces, waitlist cascade');
   } finally {
     await client.end();
   }

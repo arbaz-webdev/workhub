@@ -8,7 +8,7 @@ export function AuthCard({
 }: {
   title: string;
   subtitle: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   footer: React.ReactNode;
 }) {
   return (
@@ -21,7 +21,7 @@ export function AuthCard({
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
-          <div className="mt-6">{children}</div>
+          {children && <div className="mt-6">{children}</div>}
         </div>
         <p className="mt-6 text-center text-sm text-gray-500">{footer}</p>
       </div>
@@ -36,6 +36,7 @@ export function Field({
   autoComplete,
   error,
   hint,
+  defaultValue,
 }: {
   label: string;
   name: string;
@@ -43,6 +44,7 @@ export function Field({
   autoComplete?: string;
   error?: string;
   hint?: string;
+  defaultValue?: string;
 }) {
   const describedBy = error ? `${name}-error` : hint ? `${name}-hint` : undefined;
   return (
@@ -52,6 +54,7 @@ export function Field({
         name={name}
         type={type}
         autoComplete={autoComplete}
+        defaultValue={defaultValue}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={`mt-1 block w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 ${

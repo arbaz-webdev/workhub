@@ -1,6 +1,6 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
-import { jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { jsonb, pgEnum, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { ROLES } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
@@ -65,6 +65,10 @@ export const workspaces = pgTable('workspaces', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   slug: text('slug').notNull(),
+  timezone: text('timezone').notNull().default('Asia/Karachi'),
+  currency: text('currency').notNull().default('PKR'),
+  /** ISO weekday numbers, 1 = Monday … 7 = Sunday. */
+  workingDays: smallint('working_days').array().notNull().default([1, 2, 3, 4, 5]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -96,5 +100,34 @@ export const auditLogs = pgTable('audit_logs', {
   entityId: uuid('entity_id'),
   metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
   ip: text('ip'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const invitationKind = pgEnum('invitation_kind', ['email', 'link']);
+
+export const invitations = pgTable('invitations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  kind: invitationKind('kind').notNull(),
+  email: text('email'),
+  role: memberRole('role').notNull(),
+  tokenHash: text('token_hash').notNull(),
+  invitedBy: uuid('invited_by'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  acceptedBy: uuid('accepted_by'),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  body: text('body'),
+  link: text('link'),
+  readAt: timestamp('read_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -48,6 +48,21 @@ export function tokenFrom(message: { text: string } | undefined): string {
   return match[1];
 }
 
+/** Pulls the token out of an invitation link (…/invite/<token>). */
+export function inviteTokenFrom(text: string | undefined): string {
+  const match = text?.match(/\/invite\/([A-Za-z0-9_-]+)/);
+  if (!match?.[1]) throw new Error('No invitation link found');
+  return match[1];
+}
+
+/** Signs up a user who has no workspace yet (as someone accepting an invitation would). */
+export async function signUpWithoutWorkspace(app: INestApplication, prefix = 'invitee', email = uniqueEmail(prefix)) {
+  const agent = request.agent(app.getHttpServer());
+  const res = await agent.post('/auth/sign-up').send({ name: prefix, email, password: PASSWORD }).expect(201);
+  expect(res.body.workspace).toBeNull();
+  return { agent, email, user: res.body.user as { id: string } };
+}
+
 /** Superuser connection for test setup; it bypasses Row-Level Security. */
 export async function withAdmin<T>(fn: (client: Client) => Promise<T>): Promise<T> {
   const client = new Client({ connectionString: TEST_ADMIN_URL });

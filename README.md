@@ -82,6 +82,19 @@ Security notes: verification and reset links are single-use, stored only as SHA-
 - [x] Landing page with beta waitlist
 - [ ] Resend account and verified sending domain (needs you; see above)
 
+## Sprint 2 status
+
+- [x] Invite by email (one or many, CSV upload) or shareable join link; preview, accept, cancel
+- [x] Members list, role changes and removal (owner and admins protected)
+- [x] Workspace settings: name, time zone, currency, working days
+- [x] App shell: sidebar, top bar, workspace switcher, mobile menu
+- [x] In-app notifications (bell, unread count, mark read); refreshed every minute until WebSockets arrive
+- [x] Command search (Ctrl K / ⌘K) over pages, people, teams, workspaces and actions
+- [x] Audit log viewer with filters, paging and CSV export (formula-safe)
+- [x] 93 integration tests, incl. database-level isolation for invitations and notifications
+- [ ] Notification preferences (per-user on/off by type)
+- [ ] Staging environment with automatic deploys (needs a hosting account)
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

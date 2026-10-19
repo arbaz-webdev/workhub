@@ -261,6 +261,8 @@ export const createProjectSchema = z.object({
   description: z.string().trim().max(5000).optional(),
   clientId: uuid.nullable().optional(),
   budgetHours: hours.optional(),
+  /** "builtin:<key>" or a saved template's id. */
+  templateId: z.string().max(80).optional(),
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
@@ -284,6 +286,8 @@ export interface ProjectSummaryDto {
   client: CompanyDto | null;
   budgetHours: number | null;
   estimateHours: number;
+  /** Logged time on the project, in hours. */
+  actualHours: number;
   openTasks: number;
   doneTasks: number;
   updatedAt: string;
@@ -316,6 +320,8 @@ export interface TaskCardDto {
   priority: Priority;
   dueDate: string | null;
   estimateHours: number | null;
+  /** Logged time on the task and its subtasks, in hours. */
+  actualHours: number;
   position: number;
   assigneeIds: string[];
   labelIds: string[];
@@ -421,6 +427,8 @@ export interface TaskDetailDto extends TaskCardDto {
   subtasks: SubtaskDto[];
   comments: CommentDto[];
   activity: ActivityDto[];
+  attachments: AttachmentDto[];
+  timeEntries: TimeEntryDto[];
 }
 
 /** Server-sent board events; clients apply them by id, so repeats are harmless. */
@@ -431,3 +439,93 @@ export type BoardEvent =
   | { type: 'columns.changed'; columns: ColumnDto[] }
   | { type: 'labels.changed'; labels: LabelDto[] }
   | { type: 'project.changed' };
+
+// ---- Sprint 4: time, attachments, My Work, bulk edit, templates ------------------
+
+/** A real calendar date as YYYY-MM-DD (rejects 2026-02-31). */
+const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+  .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), 'Not a real date');
+
+export const logTimeSchema = z.object({
+  minutes: z.number().int().min(1, 'Log at least a minute').max(24 * 60, 'At most 24 hours in one entry'),
+  workDate: calendarDate.optional(),
+  note: z.string().trim().max(500).optional(),
+  billable: z.boolean().optional(),
+});
+export type LogTimeInput = z.infer<typeof logTimeSchema>;
+
+export interface TimeEntryDto {
+  id: string;
+  user: PersonDto | null;
+  workDate: string;
+  minutes: number;
+  note: string | null;
+  billable: boolean;
+}
+
+export interface AttachmentDto {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedById: string | null;
+  uploadedByName: string | null;
+  createdAt: string;
+  /** Relative API path; images can be shown inline. */
+  url: string;
+  isImage: boolean;
+}
+
+export const MAX_UPLOAD_MB = 25;
+
+export interface MyTaskDto {
+  id: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  /** For subtasks: the card that opens in the board. */
+  parentTaskId: string | null;
+  columnName: string;
+  priority: Priority;
+  dueDate: string | null;
+  estimateHours: number | null;
+}
+
+export interface MyWorkDto {
+  /** "Today" in the workspace's time zone, YYYY-MM-DD. */
+  today: string;
+  tasks: MyTaskDto[];
+}
+
+export const bulkActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('move'), columnId: uuid }),
+  z.object({ type: z.literal('assign'), userId: uuid }),
+  z.object({ type: z.literal('unassign'), userId: uuid }),
+  z.object({ type: z.literal('priority'), priority: z.enum(PRIORITIES) }),
+  z.object({ type: z.literal('due'), dueDate: calendarDate.nullable() }),
+  z.object({ type: z.literal('label'), labelId: uuid }),
+  z.object({ type: z.literal('complete'), completed: z.boolean() }),
+  z.object({ type: z.literal('delete') }),
+]);
+export const bulkTasksSchema = z.object({
+  taskIds: z.array(uuid).min(1, 'Select at least one task').max(200),
+  action: bulkActionSchema,
+});
+export type BulkTasksInput = z.infer<typeof bulkTasksSchema>;
+
+export interface TemplateDto {
+  id: string;
+  name: string;
+  description: string | null;
+  builtin: boolean;
+  columns: string[];
+  taskCount: number;
+}
+
+export const saveTemplateSchema = z.object({
+  name: name('a template name', 80),
+  description: z.string().trim().max(300).optional(),
+});
+export type SaveTemplateInput = z.infer<typeof saveTemplateSchema>;

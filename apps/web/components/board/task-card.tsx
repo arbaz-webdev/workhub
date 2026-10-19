@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { LabelDto, PersonDto, TaskCardDto } from '@workhub/shared';
-import { dueLabel, initials, LABEL_STYLES, PRIORITY_LABEL, PRIORITY_STYLE } from './style';
+import { dueLabel, hoursText, initials, LABEL_STYLES, PRIORITY_LABEL, PRIORITY_STYLE } from './style';
 
 interface Props {
   task: TaskCardDto;
@@ -44,7 +44,15 @@ export function CardBody({ task, labels, people }: Omit<Props, 'onOpen' | 'dragg
           </span>
         )}
         {task.commentCount > 0 && <span aria-label={`${task.commentCount} comments`}>💬 {task.commentCount}</span>}
-        {task.estimateHours !== null && <span>{task.estimateHours}h</span>}
+        {(task.actualHours > 0 || task.estimateHours !== null) && (
+          <span
+            className={task.estimateHours !== null && task.actualHours > task.estimateHours ? 'font-medium text-red-600' : ''}
+            aria-label={`${hoursText(task.actualHours)} logged${task.estimateHours !== null ? ` of ${hoursText(task.estimateHours)} estimated` : ''}`}
+          >
+            ⏱ {task.actualHours > 0 ? hoursText(task.actualHours) : '0h'}
+            {task.estimateHours !== null && `/${hoursText(task.estimateHours)}`}
+          </span>
+        )}
         {task.assigneeIds.length > 0 && (
           <span className="ml-auto flex -space-x-1.5">
             {task.assigneeIds.slice(0, 3).map((id) => {

@@ -16,6 +16,7 @@ import { btn, input, timeAgo } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 import { initials, LABEL_STYLES, PRIORITY_LABEL } from './style';
+import { Attachments, TimeLog } from './task-extras';
 
 interface Props {
   taskId: string;
@@ -48,6 +49,15 @@ function describeActivity(type: string, data: Record<string, unknown>): string {
       if ('assigned' in data) parts.push('changed assignees');
       return parts.join(', ') || 'updated it';
     }
+    case 'time.logged': {
+      const m = Number(data.minutes);
+      const t = m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`;
+      return data.subtask ? `logged ${t} on subtask "${data.subtask}"` : `logged ${t}`;
+    }
+    case 'attachment.added':
+      return `attached ${data.fileName}`;
+    case 'attachment.removed':
+      return `removed ${data.fileName}`;
     default:
       return type;
   }
@@ -76,7 +86,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  async function call(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown) {
+  async function call(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<TaskDetailDto | undefined> {
     setError(undefined);
     try {
       const res = await api<TaskDetailDto>(path, { method, body });
@@ -322,6 +332,10 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                 />
               )}
             </section>
+
+            <TimeLog task={task} canEdit={canEdit} canRemoveAny={board.canManage} meId={me.user.id} call={call} />
+
+            <Attachments task={task} canEdit={canEdit} canRemoveAny={board.canManage} meId={me.user.id} call={call} onError={setError} />
 
             <Comments task={task} people={board.people} meId={me.user.id} onPost={(body, mentions) => call(`/tasks/${taskId}/comments`, 'POST', { body, mentions })} onDelete={(id) => call(`/tasks/${taskId}/comments/${id}`, 'DELETE')} />
 

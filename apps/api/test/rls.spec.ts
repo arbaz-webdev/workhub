@@ -230,3 +230,20 @@ describe('Row-Level Security: projects and tasks', () => {
     ).rejects.toThrow(/row-level security/);
   });
 });
+
+describe('every tenant table', () => {
+  it('has Row-Level Security enabled and forced', async () => {
+    const rows = await withAdmin(async (admin) =>
+      (
+        await admin.query(`
+          select c.relname, c.relrowsecurity, c.relforcerowsecurity
+          from pg_class c join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'public' and c.relkind = 'r'
+            and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'workspace_id' and not a.attisdropped)
+          order by c.relname`)
+      ).rows,
+    );
+    expect(rows.map((r) => r.relname)).toEqual(expect.arrayContaining(['time_entries', 'attachments', 'project_templates']));
+    expect(rows.filter((r) => !r.relrowsecurity || !r.relforcerowsecurity).map((r) => r.relname)).toEqual([]);
+  });
+});

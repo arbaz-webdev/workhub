@@ -153,6 +153,7 @@ export const projects = pgTable('projects', {
   description: text('description'),
   clientId: uuid('client_id'),
   status: projectStatus('status').notNull().default('active'),
+  budgetAlertLevel: smallint('budget_alert_level').notNull().default(0),
   budgetHours: numeric('budget_hours', { precision: 10, scale: 2, mode: 'number' }),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -248,3 +249,46 @@ export const taskActivity = pgTable('task_activity', {
   data: jsonb('data').$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- Sprint 4: time, attachments, templates -----------------------------------
+
+export const timeEntries = pgTable('time_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  taskId: uuid('task_id'),
+  userId: uuid('user_id').notNull(),
+  workDate: date('work_date', { mode: 'string' }).notNull(),
+  minutes: integer('minutes').notNull(),
+  note: text('note'),
+  billable: boolean('billable').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const attachments = pgTable('attachments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  uploadedBy: uuid('uploaded_by'),
+  fileName: text('file_name').notNull(),
+  contentType: text('content_type').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  storageKey: text('storage_key').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const projectTemplates = pgTable('project_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  structure: jsonb('structure').$type<TemplateStructure>().notNull(),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export interface TemplateStructure {
+  columns: string[];
+  labels: { name: string; color: string }[];
+  tasks: { title: string; column: number; checklist?: string[]; estimateHours?: number | null }[];
+}

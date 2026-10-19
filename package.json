@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "test": "turbo run test",
     "db:start": "node scripts/dev-db.mjs",
-    "db:migrate": "npm run migrate --workspace @workhub/api"
+    "db:migrate": "npm run migrate --workspace @workhub/api",
+    "db:fix-encoding": "node scripts/fix-db-encoding.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

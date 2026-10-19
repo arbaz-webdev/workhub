@@ -32,6 +32,13 @@ const client = new pg.Client({ connectionString: adminUrl });
 await client.connect();
 
 try {
+  // Names, task titles and file names come in every script (Urdu, Arabic, emoji), so the
+  // database must store UTF-8. Windows installs default to WIN1252, which can't.
+  const { rows: enc } = await client.query('select pg_encoding_to_char(encoding) as enc from pg_database where datname = current_database()');
+  if (enc[0].enc !== 'UTF8') {
+    throw new Error(`database encoding is ${enc[0].enc}; WorkHub needs UTF8. For the local dev database run: npm run db:fix-encoding`);
+  }
+
   await client.query(`create table if not exists schema_migrations (
     name text primary key,
     applied_at timestamptz not null default now()

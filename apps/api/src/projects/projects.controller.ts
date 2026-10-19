@@ -31,7 +31,10 @@ import {
   type CreateLabelInput,
   type CreateProjectInput,
   type LabelDto,
+  saveTemplateSchema,
   type ProjectSummaryDto,
+  type SaveTemplateInput,
+  type TemplateDto,
   type UpdateColumnInput,
   type UpdateProjectInput,
 } from '@workhub/shared';
@@ -43,20 +46,22 @@ import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import {
   boardColumns,
+  checklistItems,
   companies,
   labels,
   memberships,
   projectMembers,
   projects,
+  projectTemplates,
   tasks,
   users,
+  type TemplateStructure,
 } from '../db/schema';
 import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
-import { asLabelColor, canEdit, canManage, cardsFor, columnPosition, GAP, loadColumn, loadProject, requireEdit, requireManage } from './board';
-
-const DEFAULT_COLUMNS = ['To do', 'In progress', 'Review', 'Done'];
+import { asLabelColor, canEdit, canManage, cardsFor, checkBudget, columnPosition, GAP, loadColumn, loadProject, requireEdit, requireManage } from './board';
+import { BLANK, builtinDtos, findBuiltin } from './templates';
 
 @Controller()
 @UseGuards(WorkspaceGuard)
@@ -127,9 +132,8 @@ export class ProjectsController {
           createdBy: auth.userId,
         })
         .returning();
-      await tx.insert(boardColumns).values(
-        DEFAULT_COLUMNS.map((name, i) => ({ workspaceId: ws.id, projectId: project!.id, name, position: (i + 1) * GAP })),
-      );
+      const structure = await this.resolveTemplate(tx, ws.id, body.templateId);
+      await this.applyTemplate(tx, ws.id, project!.id, auth.userId, structure);
       await tx.insert(projectMembers).values({ workspaceId: ws.id, projectId: project!.id, userId: auth.userId });
       await audit(tx, {
         workspaceId: ws.id,
@@ -137,7 +141,7 @@ export class ProjectsController {
         action: 'project.created',
         entityType: 'project',
         entityId: project!.id,
-        metadata: { name: body.name },
+        metadata: { name: body.name, template: body.templateId ?? null },
         ip,
       });
       return (await this.summaries(tx, ws, auth.userId, project!.id))[0]!;
@@ -176,7 +180,13 @@ export class ProjectsController {
     const result = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
       await loadProject(tx, ws, auth.userId, id);
       if (body.clientId) await this.assertCompany(tx, ws.id, body.clientId);
-      if (Object.keys(body).length > 0) await tx.update(projects).set(body).where(eq(projects.id, id));
+      if (Object.keys(body).length > 0) {
+        await tx
+          .update(projects)
+          .set({ ...body, ...(body.budgetHours !== undefined ? { budgetAlertLevel: 0 } : {}) })
+          .where(eq(projects.id, id));
+        if (body.budgetHours !== undefined) await checkBudget(tx, ws.id, id);
+      }
       return (await this.summaries(tx, ws, auth.userId, id))[0]!;
     });
     this.realtime.publish(ws.id, id, { type: 'project.changed' });
@@ -357,7 +367,140 @@ export class ProjectsController {
     return result;
   }
 
+  // ---- Templates -------------------------------------------------------------------
+
+  @Get('project-templates')
+  @MinRole('member')
+  async templates(@CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<TemplateDto[]> {
+    const saved = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, (tx) =>
+      tx.select().from(projectTemplates).where(eq(projectTemplates.workspaceId, ws.id)).orderBy(asc(projectTemplates.name)),
+    );
+    return [
+      ...builtinDtos(),
+      ...saved.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        builtin: false,
+        columns: t.structure.columns,
+        taskCount: t.structure.tasks.length,
+      })),
+    ];
+  }
+
+  /** Captures a project's columns, labels and open top-level tasks (with checklists) as a template. */
+  @Post('projects/:id/save-as-template')
+  @MinRole('manager')
+  async saveAsTemplate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodPipe(saveTemplateSchema)) body: SaveTemplateInput,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<TemplateDto> {
+    return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      await loadProject(tx, ws, auth.userId, id);
+      const cols = await this.columns(tx, id);
+      const projectLabels = await this.labels(tx, id);
+      const cards = await cardsFor(tx, id);
+      const checklists = await tx.execute<{ task_id: string; text: string }>(sql`
+        select c.task_id, c.text from checklist_items c join tasks t on t.id = c.task_id
+        where t.project_id = ${id} and t.deleted_at is null order by c.position`);
+      const structure: TemplateStructure = {
+        columns: cols.map((c) => c.name),
+        labels: projectLabels.map((l) => ({ name: l.name, color: l.color })),
+        tasks: cards
+          .filter((t) => !t.completed)
+          .slice(0, 200)
+          .map((t) => ({
+            title: t.title,
+            column: Math.max(0, cols.findIndex((c) => c.id === t.columnId)),
+            estimateHours: t.estimateHours,
+            checklist: checklists.rows.filter((c) => c.task_id === t.id).map((c) => c.text),
+          })),
+      };
+      const [row] = await tx
+        .insert(projectTemplates)
+        .values({ workspaceId: ws.id, name: body.name, description: body.description || null, structure, createdBy: auth.userId })
+        .returning();
+      return {
+        id: row!.id,
+        name: row!.name,
+        description: row!.description,
+        builtin: false,
+        columns: structure.columns,
+        taskCount: structure.tasks.length,
+      };
+    });
+  }
+
+  @Delete('project-templates/:templateId')
+  @MinRole('manager')
+  @HttpCode(204)
+  async deleteTemplate(
+    @Param('templateId', ParseUUIDPipe) templateId: string,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ) {
+    const gone = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, (tx) =>
+      tx
+        .delete(projectTemplates)
+        .where(and(eq(projectTemplates.id, templateId), eq(projectTemplates.workspaceId, ws.id)))
+        .returning({ id: projectTemplates.id }),
+    );
+    if (gone.length === 0) throw new NotFoundException('Template not found');
+  }
+
   // ---- Internals -------------------------------------------------------------------
+
+  private async resolveTemplate(tx: Tx, workspaceId: string, templateId?: string): Promise<TemplateStructure> {
+    if (!templateId) return BLANK;
+    if (templateId.startsWith('builtin:')) {
+      const builtin = findBuiltin(templateId);
+      if (!builtin) throw new BadRequestException('Unknown template');
+      return builtin;
+    }
+    const [row] = /^[0-9a-f-]{36}$/i.test(templateId)
+      ? await tx
+          .select({ structure: projectTemplates.structure })
+          .from(projectTemplates)
+          .where(and(eq(projectTemplates.id, templateId), eq(projectTemplates.workspaceId, workspaceId)))
+      : [];
+    if (!row) throw new BadRequestException('Unknown template');
+    return row.structure;
+  }
+
+  /** Creates a template's columns, labels and starter tasks (with checklists) in a new project. */
+  private async applyTemplate(tx: Tx, workspaceId: string, projectId: string, userId: string, t: TemplateStructure) {
+    const columnNames = t.columns.length > 0 ? t.columns : BLANK.columns;
+    const cols = await tx
+      .insert(boardColumns)
+      .values(columnNames.map((name, i) => ({ workspaceId, projectId, name, position: (i + 1) * GAP })))
+      .returning({ id: boardColumns.id });
+    if (t.labels.length > 0) {
+      await tx.insert(labels).values(t.labels.map((l) => ({ workspaceId, projectId, name: l.name, color: l.color })));
+    }
+    for (const [i, task] of t.tasks.entries()) {
+      const column = cols[Math.min(Math.max(task.column, 0), cols.length - 1)]!;
+      const [row] = await tx
+        .insert(tasks)
+        .values({
+          workspaceId,
+          projectId,
+          columnId: column.id,
+          title: task.title,
+          estimateHours: task.estimateHours ?? null,
+          position: (i + 1) * GAP,
+          createdBy: userId,
+        })
+        .returning({ id: tasks.id });
+      if (task.checklist?.length) {
+        await tx
+          .insert(checklistItems)
+          .values(task.checklist.map((text, j) => ({ workspaceId, taskId: row!.id, text, position: (j + 1) * GAP })));
+      }
+    }
+  }
+
 
   private async columnsChanged(
     ws: WorkspaceContext,
@@ -435,6 +578,7 @@ export class ProjectsController {
       client_name: string | null;
       budget_hours: string | null;
       estimate_hours: string;
+      actual_minutes: number;
       open_tasks: number;
       done_tasks: number;
       updated_at: Date;
@@ -442,6 +586,7 @@ export class ProjectsController {
       select p.id, p.name, p.status, c.id as client_id, c.name as client_name, p.budget_hours, p.updated_at,
              coalesce((select sum(t.estimate_hours) from tasks t
                        where t.project_id = p.id and t.deleted_at is null and t.parent_task_id is null), 0) as estimate_hours,
+             (select coalesce(sum(e.minutes), 0) from time_entries e where e.project_id = p.id)::int as actual_minutes,
              (select count(*) from tasks t where t.project_id = p.id and t.deleted_at is null
                 and t.parent_task_id is null and t.completed_at is null)::int as open_tasks,
              (select count(*) from tasks t where t.project_id = p.id and t.deleted_at is null
@@ -457,6 +602,7 @@ export class ProjectsController {
       client: r.client_id ? { id: r.client_id, name: r.client_name! } : null,
       budgetHours: r.budget_hours === null ? null : Number(r.budget_hours),
       estimateHours: Number(r.estimate_hours),
+      actualHours: Math.round((r.actual_minutes / 60) * 100) / 100,
       openTasks: r.open_tasks,
       doneTasks: r.done_tasks,
       updatedAt: new Date(r.updated_at).toISOString(),

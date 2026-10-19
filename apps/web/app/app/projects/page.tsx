@@ -1,6 +1,6 @@
 'use client';
 
-import { createProjectSchema, hasRole, type CompanyDto, type ProjectSummaryDto } from '@workhub/shared';
+import { createProjectSchema, hasRole, type CompanyDto, type ProjectSummaryDto, type TemplateDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -78,7 +78,10 @@ export default function ProjectsPage() {
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
                   {p.doneTasks} of {total} tasks done
-                  {p.budgetHours ? ` · ${p.estimateHours}h estimated of ${p.budgetHours}h budget` : ''}
+                  {p.actualHours > 0 && ` · ${Math.round(p.actualHours * 10) / 10}h logged`}
+                  {p.budgetHours ? (
+                    <span className={p.actualHours > p.budgetHours ? 'font-medium text-red-600' : ''}> of {p.budgetHours}h budget</span>
+                  ) : null}
                 </p>
               </Link>
             );
@@ -92,6 +95,10 @@ export default function ProjectsPage() {
 function NewProject({ onClose }: { onClose: () => void }) {
   const api = useWorkspaceApi();
   const router = useRouter();
+  const { workspace } = useWorkspace();
+  const [templates, setTemplates] = useState<TemplateDto[]>([]);
+  const [templateId, setTemplateId] = useState('');
+  const template = templates.find((t) => t.id === templateId);
   const [clients, setClients] = useState<CompanyDto[]>([]);
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
   const [pending, setPending] = useState(false);
@@ -104,7 +111,21 @@ function NewProject({ onClose }: { onClose: () => void }) {
         if (c.length === 0) setClientMode('new');
       })
       .catch(() => {});
+    api<TemplateDto[]>('/project-templates')
+      .then(setTemplates)
+      .catch(() => {});
   }, [api]);
+
+  async function deleteTemplate(t: TemplateDto) {
+    if (!window.confirm(`Delete the template "${t.name}"? Projects made from it stay as they are.`)) return;
+    try {
+      await api(`/project-templates/${t.id}`, { method: 'DELETE' });
+      setTemplates((cur) => cur.filter((x) => x.id !== t.id));
+      setTemplateId('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete the template.');
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -122,6 +143,7 @@ function NewProject({ onClose }: { onClose: () => void }) {
         name: form.get('name'),
         clientId,
         budgetHours: budget ? Number(budget) : null,
+        templateId: templateId || undefined,
       });
       if (!parsed.success) {
         setError(parsed.error.issues[0]?.message);
@@ -169,6 +191,43 @@ function NewProject({ onClose }: { onClose: () => void }) {
                   </button>
                 )}
               </div>
+            )}
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Start from</span>
+              <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className={`mt-1 ${input}`}>
+                <option value="">Blank board (To do, In progress, Review, Done)</option>
+                <optgroup label="Templates">
+                  {templates.filter((t) => t.builtin).map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {templates.some((t) => !t.builtin) && (
+                  <optgroup label="Saved by your team">
+                    {templates.filter((t) => !t.builtin).map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </label>
+            {template && (
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                {template.description && <span>{template.description.replace(/\.?$/, '.')}</span>}
+                <span>
+                  Columns: {template.columns.join(' → ')} · {template.taskCount} starter task{template.taskCount === 1 ? '' : 's'}
+                </span>
+                {!template.builtin && hasRole(workspace.role, 'manager') && (
+                  <button type="button" className="text-red-600 hover:underline" onClick={() => deleteTemplate(template)}>
+                    Delete template
+                  </button>
+                )}
+              </p>
             )}
           </div>
           <label className="block">

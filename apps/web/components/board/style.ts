@@ -30,10 +30,22 @@ export function initials(name: string) {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts.at(-1)![0] : '')).toUpperCase();
 }
 
+/** Today in the browser's calendar, as YYYY-MM-DD. */
+export function localToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** 1.5 → "1.5h", 0.25 → "15m", 2 → "2h". */
+export function hoursText(hours: number) {
+  if (hours > 0 && hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${Math.round(hours * 10) / 10}h`;
+}
+
 /** "Today", "Tomorrow", "Overdue · 3 Oct" or "12 Nov". Dates are YYYY-MM-DD in the workspace's calendar. */
 export function dueLabel(due: string, completed: boolean): { text: string; overdue: boolean } {
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = localToday();
   const d = new Date(`${due}T00:00:00`);
   const pretty = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   if (due === todayStr) return { text: 'Today', overdue: false };

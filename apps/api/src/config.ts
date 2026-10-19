@@ -46,5 +46,20 @@ export const config = {
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     return clientId && clientSecret ? { clientId, clientSecret } : null;
   },
+  /** File storage: "local" disk for development, "s3" for AWS S3 or Cloudflare R2. */
+  get storage() {
+    const driver = (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 's3';
+    if (driver !== 'local' && driver !== 's3') throw new Error(`Unknown STORAGE_DRIVER ${driver}`);
+    return {
+      driver,
+      localDir: process.env.LOCAL_STORAGE_DIR ?? join(__dirname, '..', '..', '..', '.data', 'uploads'),
+      bucket: driver === 's3' ? required('S3_BUCKET') : '',
+      region: process.env.S3_REGION ?? 'auto',
+      endpoint: process.env.S3_ENDPOINT ?? '',
+      accessKeyId: driver === 's3' ? required('S3_ACCESS_KEY_ID') : '',
+      secretAccessKey: driver === 's3' ? required('S3_SECRET_ACCESS_KEY') : '',
+    };
+  },
+  maxUploadBytes: 25 * 1024 * 1024,
   sessionTtlDays: 30,
 };

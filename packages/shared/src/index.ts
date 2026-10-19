@@ -232,3 +232,202 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'member.role_changed': "Changed someone's role",
   'member.removed': 'Removed someone',
 };
+
+// ---- Clients, projects and boards (sprint 3) -------------------------------
+
+export const PROJECT_STATUSES = ['active', 'on_hold', 'completed', 'archived'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export const PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'] as const;
+export type Priority = (typeof PRIORITIES)[number];
+
+export const LABEL_COLORS = ['gray', 'red', 'amber', 'green', 'teal', 'blue', 'violet', 'pink'] as const;
+export type LabelColor = (typeof LABEL_COLORS)[number];
+
+const uuid = z.string().uuid();
+const name = (label: string, max = 120) => z.string().trim().min(1, `Enter ${label}`).max(max);
+const hours = z.number().min(0).max(100_000).nullable();
+
+export const createCompanySchema = z.object({ name: name('a client name') });
+export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
+
+export interface CompanyDto {
+  id: string;
+  name: string;
+}
+
+export const createProjectSchema = z.object({
+  name: name('a project name'),
+  description: z.string().trim().max(5000).optional(),
+  clientId: uuid.nullable().optional(),
+  budgetHours: hours.optional(),
+});
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectSchema = z
+  .object({
+    name: name('a project name'),
+    description: z.string().trim().max(5000).nullable(),
+    clientId: uuid.nullable(),
+    status: z.enum(PROJECT_STATUSES),
+    budgetHours: hours,
+  })
+  .partial();
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+
+export const projectMemberSchema = z.object({ userId: uuid });
+
+export interface ProjectSummaryDto {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  client: CompanyDto | null;
+  budgetHours: number | null;
+  estimateHours: number;
+  openTasks: number;
+  doneTasks: number;
+  updatedAt: string;
+}
+
+export interface ColumnDto {
+  id: string;
+  name: string;
+  position: number;
+  wipLimit: number | null;
+}
+
+export interface LabelDto {
+  id: string;
+  name: string;
+  color: LabelColor;
+}
+
+export interface PersonDto {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/** A card on the board (top-level task, light fields only). */
+export interface TaskCardDto {
+  id: string;
+  columnId: string;
+  title: string;
+  priority: Priority;
+  dueDate: string | null;
+  estimateHours: number | null;
+  position: number;
+  assigneeIds: string[];
+  labelIds: string[];
+  checklistDone: number;
+  checklistTotal: number;
+  subtasksDone: number;
+  subtasksTotal: number;
+  commentCount: number;
+  completed: boolean;
+}
+
+export interface BoardDto {
+  project: ProjectSummaryDto & { description: string | null };
+  columns: ColumnDto[];
+  tasks: TaskCardDto[];
+  labels: LabelDto[];
+  /** People who can be assigned: everyone in the workspace except guests not on the project. */
+  people: PersonDto[];
+  /** Whether the caller may change columns and project settings. */
+  canManage: boolean;
+  /** Whether the caller may create and edit tasks (false for guests). */
+  canEdit: boolean;
+}
+
+export const createColumnSchema = z.object({ name: name('a column name', 60) });
+export const updateColumnSchema = z
+  .object({ name: name('a column name', 60), wipLimit: z.number().int().min(1).max(999).nullable() })
+  .partial();
+export type UpdateColumnInput = z.infer<typeof updateColumnSchema>;
+export const moveSchema = z.object({ index: z.number().int().min(0).max(100_000) });
+
+export const createTaskSchema = z.object({
+  title: name('a task title', 300),
+  columnId: uuid.optional(),
+  parentTaskId: uuid.optional(),
+});
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+
+export const updateTaskSchema = z
+  .object({
+    title: name('a task title', 300),
+    description: z.string().max(20_000).nullable(),
+    priority: z.enum(PRIORITIES),
+    dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').nullable(),
+    estimateHours: hours,
+    assigneeIds: z.array(uuid).max(20),
+    labelIds: z.array(uuid).max(20),
+    completed: z.boolean(),
+  })
+  .partial();
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+
+export const moveTaskSchema = z.object({ columnId: uuid, index: z.number().int().min(0).max(100_000) });
+export type MoveTaskInput = z.infer<typeof moveTaskSchema>;
+
+export const createLabelSchema = z.object({ name: name('a label name', 40), color: z.enum(LABEL_COLORS) });
+export type CreateLabelInput = z.infer<typeof createLabelSchema>;
+
+export const checklistItemSchema = z.object({ text: name('an item', 300) });
+export const updateChecklistItemSchema = z.object({ text: name('an item', 300), done: z.boolean() }).partial();
+
+export const commentSchema = z.object({
+  body: z.string().trim().min(1, 'Write a comment').max(10_000),
+  mentions: z.array(uuid).max(20).default([]),
+});
+export type CommentInput = z.infer<typeof commentSchema>;
+
+export interface ChecklistItemDto {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface SubtaskDto {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface CommentDto {
+  id: string;
+  author: PersonDto | null;
+  body: string;
+  mentions: string[];
+  createdAt: string;
+  editedAt: string | null;
+}
+
+export interface ActivityDto {
+  id: string;
+  actorName: string | null;
+  type: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface TaskDetailDto extends TaskCardDto {
+  projectId: string;
+  description: string | null;
+  createdAt: string;
+  createdByName: string | null;
+  checklist: ChecklistItemDto[];
+  subtasks: SubtaskDto[];
+  comments: CommentDto[];
+  activity: ActivityDto[];
+}
+
+/** Server-sent board events; clients apply them by id, so repeats are harmless. */
+export type BoardEvent =
+  | { type: 'task.upserted'; task: TaskCardDto }
+  | { type: 'task.deleted'; taskId: string }
+  | { type: 'task.changed'; taskId: string }
+  | { type: 'columns.changed'; columns: ColumnDto[] }
+  | { type: 'labels.changed'; labels: LabelDto[] }
+  | { type: 'project.changed' };

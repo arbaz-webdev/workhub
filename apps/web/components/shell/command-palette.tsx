@@ -1,6 +1,6 @@
 'use client';
 
-import { hasRole, type MemberDto, type TeamDto } from '@workhub/shared';
+import { hasRole, type MemberDto, type ProjectSummaryDto, type TeamDto } from '@workhub/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -8,7 +8,7 @@ import { NAV } from './nav';
 
 interface Command {
   id: string;
-  group: 'Go to' | 'Actions' | 'Teams' | 'People' | 'Switch workspace';
+  group: 'Go to' | 'Actions' | 'Projects' | 'Teams' | 'People' | 'Switch workspace';
   label: string;
   hint?: string;
   keywords?: string;
@@ -24,6 +24,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const [active, setActive] = useState(0);
   const [teams, setTeams] = useState<TeamDto[]>([]);
   const [people, setPeople] = useState<MemberDto[]>([]);
+  const [projects, setProjects] = useState<ProjectSummaryDto[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
@@ -47,6 +48,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     requestAnimationFrame(() => inputRef.current?.focus());
     api<TeamDto[]>('/teams').then(setTeams).catch(() => {});
     api<MemberDto[]>('/members').then(setPeople).catch(() => {});
+    api<ProjectSummaryDto[]>('/projects').then(setProjects).catch(() => {});
   }, [open, api]);
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
@@ -72,6 +74,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     if (hasRole(workspace.role, 'manager')) {
       list.push({ id: 'act:team', group: 'Actions', label: 'Create a team', keywords: 'new department', run: go('/app/teams') });
     }
+    for (const p of projects) {
+      list.push({ id: `project:${p.id}`, group: 'Projects', label: p.name, hint: p.client?.name, keywords: p.client?.name, run: go(`/app/projects/${p.id}`) });
+    }
     for (const t of teams) list.push({ id: `team:${t.id}`, group: 'Teams', label: t.name, run: go('/app/teams') });
     for (const p of people) {
       list.push({ id: `person:${p.userId}`, group: 'People', label: p.name, hint: p.email, keywords: p.email, run: go('/app/people') });
@@ -90,7 +95,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       });
     }
     return list;
-  }, [workspace, me.workspaces, teams, people, go, close, switchTo, router]);
+  }, [workspace, me.workspaces, projects, teams, people, go, close, switchTo, router]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -1,12 +1,27 @@
 // Runs a real PostgreSQL server for local development without Docker.
 // Data lives in .data/pg (git-ignored). Stop with Ctrl+C.
 import { existsSync } from 'node:fs';
+import { connect } from 'node:net';
 import { join } from 'node:path';
 import EmbeddedPostgres from 'embedded-postgres';
 
 const port = Number(process.env.DEV_DB_PORT ?? 5433);
 const databaseDir = join(process.cwd(), '.data', 'pg');
 const databases = ['workhub', 'workhub_test'];
+
+// A server left running from an earlier session is fine: just say so.
+const inUse = await new Promise((resolve) => {
+  const socket = connect(port, '127.0.0.1');
+  socket.once('connect', () => {
+    socket.end();
+    resolve(true);
+  });
+  socket.once('error', () => resolve(false));
+});
+if (inUse) {
+  console.log(`Something is already listening on localhost:${port}; assuming the dev database is running.`);
+  process.exit(0);
+}
 
 const pg = new EmbeddedPostgres({
   databaseDir,

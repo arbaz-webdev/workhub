@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, NotFoundException, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import type { NotificationsResponse } from '@workhub/shared';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
-import { AuthContext, CurrentAuth, CurrentWorkspace, WorkspaceContext } from '../common/request';
+import { AuthContext, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { DbService } from '../db/db.service';
 import { notifications } from '../db/schema';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
@@ -9,6 +9,7 @@ import { WorkspaceGuard } from '../workspaces/workspace.guard';
 /** The signed-in user's own notifications in the current workspace (RLS enforces "own"). */
 @Controller('notifications')
 @UseGuards(WorkspaceGuard)
+@MinRole('guest') // everyone, guests included, reads their own notifications
 export class NotificationsController {
   constructor(private readonly db: DbService) {}
 

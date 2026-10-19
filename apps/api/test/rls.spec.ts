@@ -184,3 +184,49 @@ describe('Row-Level Security: invitations and notifications', () => {
     expect(rows).toEqual({ valid: [{ workspace_id: workspaceA, email: 'a@example.com' }], bogus: [] });
   });
 });
+
+describe('Row-Level Security: projects and tasks', () => {
+  const projectA = randomUUID();
+  const projectB = randomUUID();
+  const columnA = randomUUID();
+  const columnB = randomUUID();
+
+  beforeAll(async () => {
+    await withAdmin(async (admin) => {
+      await admin.query(`insert into projects (id, workspace_id, name) values ($1, $2, 'PA'), ($3, $4, 'PB')`, [
+        projectA,
+        workspaceA,
+        projectB,
+        workspaceB,
+      ]);
+      await admin.query(
+        `insert into board_columns (id, workspace_id, project_id, name, position) values ($1, $2, $3, 'c', 1), ($4, $5, $6, 'c', 1)`,
+        [columnA, workspaceA, projectA, columnB, workspaceB, projectB],
+      );
+      await admin.query(
+        `insert into tasks (workspace_id, project_id, column_id, title, position) values ($1, $2, $3, 'task A', 1), ($4, $5, $6, 'task B', 1)`,
+        [workspaceA, projectA, columnA, workspaceB, projectB, columnB],
+      );
+    });
+  });
+
+  it('shows only the current workspace’s projects and tasks', async () => {
+    const rows = await inContext({ workspaceId: workspaceA }, async () => ({
+      projects: (await app.query('select name from projects')).rows.map((r) => r.name),
+      tasks: (await app.query('select title from tasks')).rows.map((r) => r.title),
+    }));
+    expect(rows).toEqual({ projects: ['PA'], tasks: ['task A'] });
+  });
+
+  it("refuses to add a task or comment to another workspace's project", async () => {
+    await expect(
+      inContext({ workspaceId: workspaceA }, () =>
+        app.query(`insert into tasks (workspace_id, project_id, column_id, title, position) values ($1, $2, $3, 'x', 2)`, [
+          workspaceB,
+          projectB,
+          columnB,
+        ]),
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+});

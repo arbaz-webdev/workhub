@@ -68,6 +68,7 @@ try {
   await client.query(`grant usage on schema public to ${appUser}`);
   await client.query(`grant select, insert, update, delete on all tables in schema public to ${appUser}`);
   await client.query(`grant usage, select on all sequences in schema public to ${appUser}`);
+  await client.query(`grant execute on all functions in schema public to ${appUser}`);
   await client.query(`revoke all on schema_migrations from ${appUser}`);
 
   console.log(`migrations up to date; app role "${appUser}" ready`);

@@ -70,12 +70,15 @@ export class AuthService {
     const passwordHash = await hash(input.password, ARGON2);
     const userId = randomUUID();
     const workspaceId = randomUUID();
-    let workspace: WorkspaceDto;
+    const workspaceName = input.workspaceName;
+    let workspace: WorkspaceDto | null;
 
     try {
       workspace = await this.db.withContext({ workspaceId, userId }, async (tx) => {
         await tx.insert(users).values({ id: userId, email: input.email, name: input.name, passwordHash });
-        return this.insertWorkspace(tx, { workspaceId, userId, name: input.workspaceName, ip: meta.ip });
+        // People joining by invitation sign up without creating a workspace of their own.
+        if (!workspaceName) return null;
+        return this.insertWorkspace(tx, { workspaceId, userId, name: workspaceName, ip: meta.ip });
       });
     } catch (err) {
       if (isUniqueViolation(err)) throw new ConflictException('An account with this email already exists');

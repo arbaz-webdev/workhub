@@ -55,6 +55,19 @@ export function resetPasswordMessage(to: string, name: string, url: string): Ema
   });
 }
 
+export function inviteMessage(to: string, inviterName: string, workspaceName: string, url: string): EmailMessage {
+  return layout({
+    to,
+    subject: `${inviterName} invited you to ${workspaceName} on WorkHub`,
+    greeting: 'Hi,',
+    lines: [
+      `${inviterName} has invited you to join ${workspaceName} on WorkHub, where the team tracks attendance, projects, clients and chat in one place.`,
+    ],
+    button: { label: `Join ${workspaceName}`, url },
+    footer: "This invitation expires in 7 days. If you weren't expecting it, you can ignore this email.",
+  });
+}
+
 export function waitlistWelcomeMessage(to: string, name: string): EmailMessage {
   return layout({
     to,

@@ -24,7 +24,9 @@ export class WorkspaceGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AppRequest>();
     if (!req.auth) return false;
 
-    const workspaceId = req.headers[WORKSPACE_HEADER];
+    // Browsers' EventSource can't set headers, so read-only GETs may pass ?workspace= instead.
+    const fromQuery = req.method === 'GET' && typeof req.query.workspace === 'string' ? req.query.workspace : undefined;
+    const workspaceId = req.headers[WORKSPACE_HEADER] ?? fromQuery;
     if (typeof workspaceId !== 'string' || !UUID.test(workspaceId)) {
       throw new BadRequestException(`Missing or invalid ${WORKSPACE_HEADER} header`);
     }

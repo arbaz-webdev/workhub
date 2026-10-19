@@ -95,6 +95,19 @@ Security notes: verification and reset links are single-use, stored only as SHA-
 - [ ] Notification preferences (per-user on/off by type)
 - [ ] Staging environment with automatic deploys (needs a hosting account)
 
+## Sprint 3 status
+
+- [x] Clients (minimal; the CRM extends them) and projects linked to a client, with an hours budget
+- [x] Kanban boards: default columns, add/rename/reorder/delete columns, work-in-progress limits
+- [x] Tasks: description, assignees, priority, due date, estimate, labels, checklist, subtasks, activity history
+- [x] Drag and drop with mouse, touch (press and hold) and keyboard (Space, arrows, Space), with readable screen-reader announcements
+- [x] Live board updates via Server-Sent Events, verified at ~150 ms end to end through the web proxy
+- [x] Comments with @mentions; mentioned people and assignees are notified with a link that opens the task
+- [x] Guests see only projects they're added to; they can comment but not edit
+- [x] 113 integration tests, incl. ordering under repeated squeezing, isolation, permissions, and a live-update test
+
+Live updates use **Server-Sent Events** rather than WebSockets: boards only need server→browser pushes, SSE works through ordinary HTTP proxies, and the browser reconnects automatically (the board reloads after a reconnect so nothing is missed). The event bus is in-memory, so running more than one API instance will need Redis pub/sub.
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

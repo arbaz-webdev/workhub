@@ -1,6 +1,6 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
-import { jsonb, pgEnum, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { ROLES } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
@@ -129,5 +129,122 @@ export const notifications = pgTable('notifications', {
   body: text('body'),
   link: text('link'),
   readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---- Sprint 3: clients, projects and boards --------------------------------
+
+export const companies = pgTable('companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const projectStatus = pgEnum('project_status', ['active', 'on_hold', 'completed', 'archived']);
+
+export const projects = pgTable('projects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  clientId: uuid('client_id'),
+  status: projectStatus('status').notNull().default('active'),
+  budgetHours: numeric('budget_hours', { precision: 10, scale: 2, mode: 'number' }),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const projectMembers = pgTable('project_members', {
+  workspaceId: uuid('workspace_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const boardColumns = pgTable('board_columns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  name: text('name').notNull(),
+  position: doublePrecision('position').notNull(),
+  wipLimit: integer('wip_limit'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const taskPriority = pgEnum('task_priority', ['none', 'low', 'medium', 'high', 'urgent']);
+
+export const tasks = pgTable('tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  columnId: uuid('column_id').notNull(),
+  parentTaskId: uuid('parent_task_id'),
+  title: text('title').notNull(),
+  description: text('description'),
+  priority: taskPriority('priority').notNull().default('none'),
+  dueDate: date('due_date', { mode: 'string' }),
+  estimateHours: numeric('estimate_hours', { precision: 8, scale: 2, mode: 'number' }),
+  position: doublePrecision('position').notNull(),
+  createdBy: uuid('created_by'),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const taskAssignees = pgTable('task_assignees', {
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  userId: uuid('user_id').notNull(),
+});
+
+export const labels = pgTable('labels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  projectId: uuid('project_id').notNull(),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
+});
+
+export const taskLabels = pgTable('task_labels', {
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  labelId: uuid('label_id').notNull(),
+});
+
+export const checklistItems = pgTable('checklist_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  text: text('text').notNull(),
+  done: boolean('done').notNull().default(false),
+  position: doublePrecision('position').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const taskComments = pgTable('task_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  authorId: uuid('author_id'),
+  body: text('body').notNull(),
+  mentions: uuid('mentions').array().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  editedAt: timestamp('edited_at', { withTimezone: true }),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const taskActivity = pgTable('task_activity', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  actorId: uuid('actor_id'),
+  type: text('type').notNull(),
+  data: jsonb('data').$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

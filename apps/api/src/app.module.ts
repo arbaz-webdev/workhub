@@ -7,6 +7,9 @@ import { EmailModule } from './email/email.module';
 import { InvitationsController } from './invitations/invitations.controller';
 import { MembersController } from './members/members.controller';
 import { NotificationsController } from './notifications/notifications.controller';
+import { ProjectsController } from './projects/projects.controller';
+import { TasksController } from './projects/tasks.controller';
+import { RealtimeService } from './realtime/realtime.service';
 import { TeamsController } from './teams/teams.controller';
 import { WaitlistController } from './waitlist/waitlist.controller';
 import { WorkspaceGuard } from './workspaces/workspace.guard';
@@ -31,8 +34,10 @@ class HealthController {
     InvitationsController,
     NotificationsController,
     AuditController,
+    ProjectsController,
+    TasksController,
     WaitlistController,
   ],
-  providers: [WorkspaceGuard],
+  providers: [WorkspaceGuard, RealtimeService],
 })
 export class AppModule {}

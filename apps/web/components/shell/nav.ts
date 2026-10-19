@@ -13,6 +13,7 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { href: '/app', label: 'Home', keywords: 'dashboard start' },
+  { href: '/app/projects', label: 'Projects', keywords: 'boards kanban tasks clients' },
   { href: '/app/teams', label: 'Teams', keywords: 'departments groups' },
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },
   { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days' },
@@ -20,7 +21,6 @@ export const NAV: NavItem[] = [
 ];
 
 export const SOON: NavItem[] = [
-  { href: '#', label: 'Projects', soon: true },
   { href: '#', label: 'Attendance', soon: true },
   { href: '#', label: 'CRM', soon: true },
   { href: '#', label: 'Inbox', soon: true },

@@ -19,13 +19,15 @@ interface ApiOptions {
 /** Calls the API through the same-origin /api proxy. Throws ApiError on failure. */
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers: Record<string, string> = {};
-  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  // Files go as multipart; the browser sets that content type with its boundary.
+  const isForm = options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers['content-type'] = 'application/json';
   if (options.workspaceId) headers[WORKSPACE_HEADER] = options.workspaceId;
 
   const res = await fetch(`/api${path}`, {
     method: options.method ?? 'GET',
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
     credentials: 'same-origin',
   });
 

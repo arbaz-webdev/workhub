@@ -13,6 +13,7 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { href: '/app', label: 'Home', keywords: 'dashboard start' },
+  { href: '/app/my-work', label: 'My work', keywords: 'my tasks assigned due today overdue' },
   { href: '/app/projects', label: 'Projects', keywords: 'boards kanban tasks clients' },
   { href: '/app/teams', label: 'Teams', keywords: 'departments groups' },
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },

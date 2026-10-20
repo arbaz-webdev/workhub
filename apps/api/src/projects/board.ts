@@ -6,6 +6,7 @@ import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { WorkspaceContext } from '../common/request';
 import type { Tx } from '../db/db.service';
 import { boardColumns, projectMembers, projects, taskActivity, tasks } from '../db/schema';
+import { notify } from '../notifications/notify';
 
 export const GAP = 1024;
 
@@ -76,6 +77,7 @@ interface CardRow extends Record<string, unknown> {
   priority: Priority;
   due_date: string | null;
   estimate_hours: string | null;
+  actual_minutes: number;
   position: number;
   completed_at: Date | null;
   assignee_ids: string[];
@@ -99,7 +101,10 @@ export async function cardsFor(tx: Tx, projectId: string, taskId?: string): Prom
            (select count(*) filter (where s.completed_at is not null) from tasks s
               where s.parent_task_id = t.id and s.deleted_at is null)::int as subtasks_done,
            (select count(*) from tasks s where s.parent_task_id = t.id and s.deleted_at is null)::int as subtasks_total,
-           (select count(*) from task_comments m where m.task_id = t.id and m.deleted_at is null)::int as comment_count
+           (select count(*) from task_comments m where m.task_id = t.id and m.deleted_at is null)::int as comment_count,
+           (select coalesce(sum(e.minutes), 0) from time_entries e
+              where e.task_id = t.id
+                 or e.task_id in (select s.id from tasks s where s.parent_task_id = t.id))::int as actual_minutes
     from tasks t
     where t.project_id = ${projectId} and t.parent_task_id is null and t.deleted_at is null
       ${taskId ? sql`and t.id = ${taskId}` : sql``}
@@ -111,6 +116,7 @@ export async function cardsFor(tx: Tx, projectId: string, taskId?: string): Prom
     priority: r.priority,
     dueDate: r.due_date,
     estimateHours: r.estimate_hours === null ? null : Number(r.estimate_hours),
+    actualHours: Math.round((r.actual_minutes / 60) * 100) / 100,
     position: Number(r.position),
     assigneeIds: r.assignee_ids,
     labelIds: r.label_ids,
@@ -189,4 +195,38 @@ export async function recordActivity(
 
 export function asLabelColor(c: string): LabelColor {
   return c as LabelColor;
+}
+
+/**
+ * Announces budget thresholds once each: at 80% and at 100% of the project's
+ * hours budget. Recipients: the owner, admins, and managers on the project.
+ */
+export async function checkBudget(tx: Tx, workspaceId: string, projectId: string) {
+  const [p] = await tx
+    .select({ name: projects.name, budget: projects.budgetHours, level: projects.budgetAlertLevel })
+    .from(projects)
+    .where(eq(projects.id, projectId));
+  if (!p || !p.budget) return;
+  const [{ minutes }] = (await tx.execute<{ minutes: number }>(
+    sql`select coalesce(sum(minutes), 0)::int as minutes from time_entries where project_id = ${projectId}`,
+  )).rows as [{ minutes: number }];
+  const pct = (minutes / 60 / p.budget) * 100;
+  const level = pct >= 100 ? 100 : pct >= 80 ? 80 : 0;
+  if (level <= p.level) return;
+  await tx.update(projects).set({ budgetAlertLevel: level }).where(eq(projects.id, projectId));
+
+  const recipients = await tx.execute<{ user_id: string }>(sql`
+    select m.user_id from memberships m
+    where m.workspace_id = ${workspaceId}
+      and (m.role in ('owner', 'admin')
+           or (m.role = 'manager' and exists (select 1 from project_members pm where pm.project_id = ${projectId} and pm.user_id = m.user_id)))`);
+  const used = Math.round(minutes / 60);
+  await notify(
+    tx,
+    workspaceId,
+    recipients.rows.map((r) => r.user_id),
+    level === 100
+      ? { type: 'budget.exceeded', title: `${p.name} is over budget`, body: `${used}h logged of ${p.budget}h budget`, link: `/app/projects/${projectId}` }
+      : { type: 'budget.warning', title: `${p.name} has used 80% of its budget`, body: `${used}h logged of ${p.budget}h budget`, link: `/app/projects/${projectId}` },
+  );
 }

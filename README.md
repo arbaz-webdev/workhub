@@ -108,6 +108,21 @@ Security notes: verification and reset links are single-use, stored only as SHA-
 
 Live updates use **Server-Sent Events** rather than WebSockets: boards only need server→browser pushes, SSE works through ordinary HTTP proxies, and the browser reconnects automatically (the board reloads after a reconnect so nothing is missed). The event bus is in-memory, so running more than one API instance will need Redis pub/sub.
 
+## Sprint 4 status
+
+- [x] List view next to the board, with filters (search, column, assignee, label, priority, due date, completed)
+- [x] Bulk edit for up to 200 selected tasks: move, assign/unassign, priority, due date, label, complete/reopen, delete
+- [x] My Work: your open assigned tasks across projects, grouped by Overdue, Today, Next 7 days, Later, No date (in the workspace's time zone)
+- [x] File attachments up to 25 MB on tasks (button or drag and drop), image previews, Urdu/Arabic file names
+- [x] Time logging on tasks; cards and projects show logged vs estimated hours, red when over
+- [x] Budget alerts to managers and admins at 80% and 100% of a project's hours budget (once each; re-armed when the budget changes)
+- [x] Project templates: four built-in (website, SEO retainer, mobile app, marketing campaign) and "Save as template" for your own process
+- [x] 127 integration tests, incl. a check that every tenant table has Row-Level Security forced
+
+Files are stored on local disk in development (`.data/uploads`) and in any S3-compatible bucket (Cloudflare R2 recommended) in production. To use a bucket, set `STORAGE_DRIVER=s3` and the `S3_*` variables (see `apps/api/.env.example`). Downloads go through the API, which checks access and then redirects to a five-minute signed URL. Only common image types are shown inline. Everything else downloads as a file, so an uploaded HTML page can never run inside the app.
+
+**Local databases created before Sprint 4** may use the Windows code page (WIN1252), which can't store Urdu or Arabic text. Migrations now refuse to run on such a database. To fix it once, start the database and run `npm run db:fix-encoding`. It rebuilds both databases as UTF-8, keeps your data, and leaves the old copy as `workhub_old` until you drop it.
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

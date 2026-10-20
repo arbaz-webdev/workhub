@@ -11,43 +11,62 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import {
+  bulkTasksSchema,
   checklistItemSchema,
   commentSchema,
+  logTimeSchema,
   createTaskSchema,
   moveTaskSchema,
   updateChecklistItemSchema,
   updateTaskSchema,
+  type BulkTasksInput,
   type CommentInput,
+  type LogTimeInput,
   type CreateTaskInput,
   type MoveTaskInput,
   type TaskCardDto,
   type TaskDetailDto,
   type UpdateTaskInput,
 } from '@workhub/shared';
-import { and, asc, desc, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, max, sql } from 'drizzle-orm';
+import { config } from '../config';
 import { AuthContext, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import {
+  attachments,
   boardColumns,
   checklistItems,
   labels,
   memberships,
   projectMembers,
+  projects,
   taskActivity,
   taskAssignees,
   taskComments,
   taskLabels,
   tasks,
+  timeEntries,
   users,
 } from '../db/schema';
 import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
+import { contentDisposition, StorageService } from '../storage/storage.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
-import { cardsFor, GAP, loadColumn, loadProject, loadTask, recordActivity, requireEdit, taskPosition } from './board';
+import { canManage, cardsFor, checkBudget, GAP, loadColumn, loadProject, loadTask, recordActivity, requireEdit, taskPosition } from './board';
+
+/** Image types shown inline; everything else downloads as an attachment. */
+const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+const MAX_ATTACHMENTS = 50;
 
 type TaskRow = typeof tasks.$inferSelect;
 
@@ -58,6 +77,7 @@ export class TasksController {
   constructor(
     private readonly db: DbService,
     private readonly realtime: RealtimeService,
+    private readonly storage: StorageService,
   ) {}
 
   @Post('projects/:id/tasks')
@@ -330,7 +350,241 @@ export class TasksController {
     });
   }
 
+  // ---- Time --------------------------------------------------------------------------
+
+  /** Logs time against a task for the caller (the live timer arrives in sprint 6). */
+  @Post('tasks/:id/time')
+  async logTime(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodPipe(logTimeSchema)) body: LogTimeInput,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<TaskDetailDto> {
+    requireEdit(ws);
+    return this.changeTask(ws, auth, id, async (tx, task) => {
+      const workDate = body.workDate ?? (await this.workspaceToday(tx, ws.id));
+      await tx.insert(timeEntries).values({
+        workspaceId: ws.id,
+        projectId: task.projectId,
+        taskId: id,
+        userId: auth.userId,
+        workDate,
+        minutes: body.minutes,
+        note: body.note || null,
+        billable: body.billable ?? true,
+      });
+      await recordActivity(tx, ws.id, task.parentTaskId ?? id, auth.userId, 'time.logged', {
+        minutes: body.minutes,
+        ...(task.parentTaskId ? { subtask: task.title } : {}),
+      });
+      await checkBudget(tx, ws.id, task.projectId);
+    });
+  }
+
+  @Delete('tasks/:id/time/:entryId')
+  async deleteTime(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('entryId', ParseUUIDPipe) entryId: string,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<TaskDetailDto> {
+    requireEdit(ws);
+    return this.changeTask(ws, auth, id, async (tx) => {
+      const [entry] = await tx
+        .select({ userId: timeEntries.userId })
+        .from(timeEntries)
+        .where(and(eq(timeEntries.id, entryId), eq(timeEntries.taskId, id)));
+      if (!entry) throw new NotFoundException('Time entry not found');
+      if (entry.userId !== auth.userId && !canManage(ws)) throw new ForbiddenException('You can only remove your own time');
+      await tx.delete(timeEntries).where(eq(timeEntries.id, entryId));
+    });
+  }
+
+  // ---- Attachments ---------------------------------------------------------------------
+
+  @Post('tasks/:id/attachments')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: config.maxUploadBytes, files: 1 } }))
+  async upload(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<TaskDetailDto> {
+    requireEdit(ws);
+    if (!file || file.size === 0) throw new BadRequestException('Choose a file to upload');
+    // Browsers send the multipart file name as UTF-8 but multer reads it as Latin-1.
+    const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/[\\/\r\n\0]/g, '_').slice(0, 200) || 'file';
+    const contentType = /^[\w.+-]+\/[\w.+-]+$/.test(file.mimetype) ? file.mimetype : 'application/octet-stream';
+    const key = `${ws.id}/${id}/${randomUUID()}`;
+    let stored = false;
+    try {
+      return await this.changeTask(ws, auth, id, async (tx, task) => {
+        const [{ n }] = (await tx.select({ n: count() }).from(attachments).where(eq(attachments.taskId, id))) as [{ n: number }];
+        if (n >= MAX_ATTACHMENTS) throw new BadRequestException(`A task can have up to ${MAX_ATTACHMENTS} attachments`);
+        await this.storage.put(key, file.buffer, contentType);
+        stored = true;
+        await tx.insert(attachments).values({
+          workspaceId: ws.id,
+          taskId: id,
+          uploadedBy: auth.userId,
+          fileName,
+          contentType,
+          sizeBytes: file.size,
+          storageKey: key,
+        });
+        await recordActivity(tx, ws.id, task.parentTaskId ?? id, auth.userId, 'attachment.added', { fileName });
+      });
+    } catch (err) {
+      // The database rolled back, so don't leave an orphaned file behind.
+      if (stored) await this.storage.delete(key).catch(() => {});
+      throw err;
+    }
+  }
+
+  /** Anyone who can see the task can download its files (guests included). */
+  @Get('attachments/:attachmentId')
+  async download(
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @Res() res: Response,
+  ) {
+    const file = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      const [a] = await tx.select().from(attachments).where(eq(attachments.id, attachmentId));
+      if (!a) throw new NotFoundException('File not found');
+      await loadTask(tx, ws, auth.userId, a.taskId);
+      return a;
+    });
+    const inline = INLINE_IMAGE_TYPES.has(file.contentType);
+    const result = await this.storage.download(file.storageKey, { fileName: file.fileName, contentType: file.contentType, inline });
+    if (result.kind === 'redirect') {
+      res.redirect(302, result.url);
+      return;
+    }
+    res.setHeader('content-type', inline ? file.contentType : 'application/octet-stream');
+    res.setHeader('content-length', String(file.sizeBytes));
+    res.setHeader('content-disposition', contentDisposition(file.fileName, inline));
+    res.setHeader('cache-control', 'private, max-age=300');
+    result.stream.pipe(res);
+  }
+
+  @Delete('tasks/:id/attachments/:attachmentId')
+  async deleteAttachment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<TaskDetailDto> {
+    requireEdit(ws);
+    let key: string | undefined;
+    const detail = await this.changeTask(ws, auth, id, async (tx, task) => {
+      const [a] = await tx.select().from(attachments).where(and(eq(attachments.id, attachmentId), eq(attachments.taskId, id)));
+      if (!a) throw new NotFoundException('File not found');
+      if (a.uploadedBy !== auth.userId && !canManage(ws)) throw new ForbiddenException('You can only remove files you uploaded');
+      await tx.delete(attachments).where(eq(attachments.id, attachmentId));
+      await recordActivity(tx, ws.id, task.parentTaskId ?? id, auth.userId, 'attachment.removed', { fileName: a.fileName });
+      key = a.storageKey;
+    });
+    if (key) await this.storage.delete(key).catch(() => {});
+    return detail;
+  }
+
+  // ---- Bulk edit -----------------------------------------------------------------------
+
+  /** Applies one change to many cards at once (list view). All must be top-level tasks of this project. */
+  @Post('projects/:id/tasks/bulk')
+  @HttpCode(200)
+  async bulk(
+    @Param('id', ParseUUIDPipe) projectId: string,
+    @Body(new ZodPipe(bulkTasksSchema)) body: BulkTasksInput,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+  ): Promise<{ updated: number }> {
+    requireEdit(ws);
+    const ids = [...new Set(body.taskIds)];
+    const action = body.action;
+    await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      await loadProject(tx, ws, auth.userId, projectId);
+      const rows = await tx
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.projectId, projectId), inArray(tasks.id, ids), isNull(tasks.deletedAt), isNull(tasks.parentTaskId)));
+      if (rows.length !== ids.length) throw new BadRequestException('Some tasks are not on this board');
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      const ordered = ids.map((i) => byId.get(i)!);
+
+      switch (action.type) {
+        case 'move': {
+          const target = await loadColumn(tx, projectId, action.columnId);
+          for (const t of ordered) {
+            const position = await taskPosition(tx, target.id, Number.MAX_SAFE_INTEGER, t.id);
+            await tx.update(tasks).set({ columnId: target.id, position }).where(eq(tasks.id, t.id));
+            await tx.update(tasks).set({ columnId: target.id }).where(eq(tasks.parentTaskId, t.id));
+          }
+          break;
+        }
+        case 'assign':
+        case 'unassign': {
+          for (const t of ordered) {
+            const current = (await tx.select({ u: taskAssignees.userId }).from(taskAssignees).where(eq(taskAssignees.taskId, t.id))).map((r) => r.u);
+            const next = action.type === 'assign' ? [...new Set([...current, action.userId])] : current.filter((u) => u !== action.userId);
+            await this.setAssignees(tx, ws, t, next);
+          }
+          if (action.type === 'assign' && action.userId !== auth.userId) {
+            const [p] = await tx.select({ name: projects.name }).from(projects).where(eq(projects.id, projectId));
+            await notify(tx, ws.id, [action.userId], {
+              type: 'task.assigned',
+              title: `You were assigned ${ordered.length} task${ordered.length === 1 ? '' : 's'} in ${p!.name}`,
+              link: `/app/projects/${projectId}`,
+            });
+          }
+          break;
+        }
+        case 'priority':
+          await tx.update(tasks).set({ priority: action.priority }).where(inArray(tasks.id, ids));
+          break;
+        case 'due':
+          await tx.update(tasks).set({ dueDate: action.dueDate }).where(inArray(tasks.id, ids));
+          break;
+        case 'label': {
+          const [l] = await tx.select({ id: labels.id }).from(labels).where(and(eq(labels.id, action.labelId), eq(labels.projectId, projectId)));
+          if (!l) throw new BadRequestException('Unknown label');
+          await tx
+            .insert(taskLabels)
+            .values(ids.map((taskId) => ({ workspaceId: ws.id, taskId, labelId: action.labelId })))
+            .onConflictDoNothing();
+          break;
+        }
+        case 'complete':
+          await tx.update(tasks).set({ completedAt: action.completed ? new Date() : null }).where(inArray(tasks.id, ids));
+          break;
+        case 'delete':
+          await tx.update(tasks).set({ deletedAt: new Date() }).where(inArray(tasks.id, ids));
+          break;
+      }
+      for (const t of ordered) await recordActivity(tx, ws.id, t.id, auth.userId, 'task.bulk', { action: action.type });
+    });
+
+    // Tell every viewer about each changed card.
+    if (action.type === 'delete') {
+      for (const id of ids) this.realtime.publish(ws.id, projectId, { type: 'task.deleted', taskId: id });
+    } else {
+      const cards = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, (tx) => cardsFor(tx, projectId));
+      for (const card of cards.filter((c) => ids.includes(c.id))) {
+        this.realtime.publish(ws.id, projectId, { type: 'task.upserted', task: card });
+      }
+    }
+    return { updated: ids.length };
+  }
+
   // ---- Internals ---------------------------------------------------------------------
+
+  private async workspaceToday(tx: Tx, workspaceId: string): Promise<string> {
+    const result = await tx.execute<{ today: string }>(
+      sql`select (now() at time zone timezone)::date::text as today from workspaces where id = ${workspaceId}`,
+    );
+    return result.rows[0]!.today;
+  }
 
   /** Runs a change to a task's details, then returns its detail and updates live viewers. */
   private async changeTask(
@@ -424,6 +678,7 @@ export class TasksController {
             priority: task.priority,
             dueDate: task.dueDate,
             estimateHours: task.estimateHours,
+            actualHours: 0, // filled in below from this subtask's own time entries
             position: task.position,
             assigneeIds: (await tx.select({ u: taskAssignees.userId }).from(taskAssignees).where(eq(taskAssignees.taskId, task.id))).map((r) => r.u),
             labelIds: [],
@@ -485,8 +740,51 @@ export class TasksController {
         .limit(50)
     ).map((a) => ({ ...a, actorName: a.actorName ?? null, createdAt: a.createdAt.toISOString() }));
 
+    const files = (
+      await tx
+        .select({
+          id: attachments.id,
+          fileName: attachments.fileName,
+          contentType: attachments.contentType,
+          sizeBytes: attachments.sizeBytes,
+          createdAt: attachments.createdAt,
+          uploadedById: attachments.uploadedBy,
+          uploadedByName: users.name,
+        })
+        .from(attachments)
+        .leftJoin(users, eq(users.id, attachments.uploadedBy))
+        .where(eq(attachments.taskId, task.id))
+        .orderBy(asc(attachments.createdAt))
+    ).map((a) => ({
+      ...a,
+      uploadedByName: a.uploadedByName ?? null,
+      createdAt: a.createdAt.toISOString(),
+      url: `/attachments/${a.id}?workspace=${task.workspaceId}`,
+      isImage: INLINE_IMAGE_TYPES.has(a.contentType),
+    }));
+
+    const entries = await tx
+      .select({
+        id: timeEntries.id,
+        workDate: timeEntries.workDate,
+        minutes: timeEntries.minutes,
+        note: timeEntries.note,
+        billable: timeEntries.billable,
+        userId: users.id,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(timeEntries)
+      .leftJoin(users, eq(users.id, timeEntries.userId))
+      .where(eq(timeEntries.taskId, task.id))
+      .orderBy(desc(timeEntries.workDate), desc(timeEntries.createdAt))
+      .limit(50);
+    const ownMinutes = entries.reduce((sum, e) => sum + e.minutes, 0);
+
     return {
       ...base,
+      // Board cards already include subtasks' time; a subtask shows its own.
+      actualHours: task.parentTaskId || !card ? Math.round((ownMinutes / 60) * 100) / 100 : base.actualHours,
       projectId: task.projectId,
       description: task.description,
       createdAt: task.createdAt.toISOString(),
@@ -495,6 +793,15 @@ export class TasksController {
       subtasks,
       comments,
       activity,
+      attachments: files,
+      timeEntries: entries.map((e) => ({
+        id: e.id,
+        user: e.userId ? { id: e.userId, name: e.userName!, email: e.userEmail! } : null,
+        workDate: e.workDate,
+        minutes: e.minutes,
+        note: e.note,
+        billable: e.billable,
+      })),
     };
   }
 }

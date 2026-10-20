@@ -29,6 +29,8 @@ const pg = new EmbeddedPostgres({
   password: 'postgres',
   port,
   persistent: true,
+  // UTF-8 regardless of the Windows code page, so non-Latin text (Urdu, Arabic) can be stored.
+  initdbFlags: ['--encoding=UTF8', '--locale=C'],
   onLog: () => {},
 });
 
@@ -43,7 +45,7 @@ await client.connect();
 for (const name of databases) {
   const { rowCount } = await client.query('select 1 from pg_database where datname = $1', [name]);
   if (!rowCount) {
-    await client.query(`create database ${name}`);
+    await client.query(`create database ${name} encoding 'UTF8' lc_collate 'C' lc_ctype 'C' template template0`);
     console.log(`Created database ${name}`);
   }
 }

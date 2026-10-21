@@ -15,6 +15,7 @@ export const NAV: NavItem[] = [
   { href: '/app', label: 'Home', keywords: 'dashboard start' },
   { href: '/app/my-work', label: 'My work', keywords: 'my tasks assigned due today overdue' },
   { href: '/app/projects', label: 'Projects', keywords: 'boards kanban tasks clients' },
+  { href: '/app/attendance', label: 'Attendance', minRole: 'member', keywords: 'check in check out clock in selfie shift break late absent' },
   { href: '/app/teams', label: 'Teams', keywords: 'departments groups' },
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },
   { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days' },
@@ -22,7 +23,6 @@ export const NAV: NavItem[] = [
 ];
 
 export const SOON: NavItem[] = [
-  { href: '#', label: 'Attendance', soon: true },
   { href: '#', label: 'CRM', soon: true },
   { href: '#', label: 'Inbox', soon: true },
 ];

@@ -529,3 +529,220 @@ export const saveTemplateSchema = z.object({
   description: z.string().trim().max(300).optional(),
 });
 export type SaveTemplateInput = z.infer<typeof saveTemplateSchema>;
+
+// ---- Sprint 5: attendance ------------------------------------------------------
+
+/** 24-hour "HH:MM". */
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM (24-hour)');
+const weekdays = z
+  .array(z.number().int().min(1).max(7))
+  .max(7)
+  .transform((d) => [...new Set(d)].sort());
+
+export const shiftBreakSchema = z.object({
+  name: name('a break name', 40),
+  minutes: z.number().int().min(1).max(240),
+  /** Paid breaks count as work time (up to their allowance). */
+  paid: z.boolean(),
+  /** Only on these ISO weekdays (e.g. a longer Jumu'ah break on Fridays). Empty = every working day. */
+  days: weekdays.default([]),
+});
+export type ShiftBreak = z.infer<typeof shiftBreakSchema>;
+
+export const shiftSchema = z
+  .object({
+    name: name('a shift name', 60),
+    startTime: clockTime,
+    endTime: clockTime,
+    graceMinutes: z.number().int().min(0).max(240).default(15),
+    fullDayMinutes: z.number().int().min(1).max(1440).default(480),
+    halfDayMinutes: z.number().int().min(0).max(1440).default(240),
+    workingDays: weekdays.default([1, 2, 3, 4, 5]),
+    breaks: z.array(shiftBreakSchema).max(10).default([]),
+    isDefault: z.boolean().default(false),
+  })
+  .refine((s) => s.startTime !== s.endTime, { message: 'Start and end time must differ', path: ['endTime'] })
+  .refine((s) => s.halfDayMinutes <= s.fullDayMinutes, { message: 'A half day can’t be longer than a full day', path: ['halfDayMinutes'] })
+  .refine((s) => new Set(s.breaks.map((b) => b.name.toLowerCase())).size === s.breaks.length, {
+    message: 'Give each break a different name',
+    path: ['breaks'],
+  });
+export type ShiftInput = z.input<typeof shiftSchema>;
+
+export interface ShiftDto {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  /** True when the shift ends the next day (e.g. 18:00–03:00). */
+  overnight: boolean;
+  graceMinutes: number;
+  fullDayMinutes: number;
+  halfDayMinutes: number;
+  workingDays: number[];
+  breaks: ShiftBreak[];
+  isDefault: boolean;
+}
+
+/** IPv4/IPv6 address or CIDR range, e.g. 203.0.113.0/24. The API checks it properly. */
+const ipRange = z
+  .string()
+  .trim()
+  .regex(/^[0-9a-fA-F:.]+(\/\d{1,3})?$/, 'Enter an IP address or range like 203.0.113.0/24');
+
+export const siteSchema = z
+  .object({
+    name: name('a site name', 80),
+    latitude: z.number().min(-90).max(90).nullable().default(null),
+    longitude: z.number().min(-180).max(180).nullable().default(null),
+    radiusMeters: z.number().int().min(20).max(50_000).nullable().default(null),
+    ipRanges: z.array(ipRange).max(20).default([]),
+  })
+  .refine((s) => (s.latitude === null) === (s.longitude === null) && (s.latitude === null) === (s.radiusMeters === null), {
+    message: 'Set latitude, longitude and radius together',
+    path: ['radiusMeters'],
+  })
+  .refine((s) => s.latitude !== null || s.ipRanges.length > 0, { message: 'Add a location or at least one IP range', path: ['ipRanges'] });
+export type SiteInput = z.input<typeof siteSchema>;
+
+export interface SiteDto {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  radiusMeters: number | null;
+  ipRanges: string[];
+}
+
+export const updateAttendanceSettingsSchema = z.object({ requireSelfie: z.boolean() });
+
+export const assignAttendanceSchema = z
+  .object({
+    teamId: uuid.nullable(),
+    /** The person's own shift; null = use their team's or the default. */
+    shiftId: uuid.nullable(),
+    remote: z.boolean(),
+  })
+  .partial();
+export type AssignAttendanceInput = z.infer<typeof assignAttendanceSchema>;
+
+export const teamShiftSchema = z.object({ shiftId: uuid.nullable() });
+
+export interface AttendancePersonDto {
+  userId: string;
+  name: string;
+  email: string;
+  role: Role;
+  teamId: string | null;
+  shiftId: string | null;
+  remote: boolean;
+  /** The shift that actually applies (own, team's or default), if any. */
+  effectiveShiftId: string | null;
+}
+
+export interface AttendanceSettingsDto {
+  requireSelfie: boolean;
+  timezone: string;
+  shifts: ShiftDto[];
+  sites: SiteDto[];
+  teams: { id: string; name: string; shiftId: string | null }[];
+  people: AttendancePersonDto[];
+}
+
+export const ATTENDANCE_EVENT_TYPES = ['check_in', 'check_out', 'break_start', 'break_end'] as const;
+export type AttendanceEventType = (typeof ATTENDANCE_EVENT_TYPES)[number];
+
+/**
+ * Fields of POST /attendance/events (multipart, so numbers arrive as text).
+ * The selfie is the "selfie" file part.
+ */
+export const attendanceEventSchema = z
+  .object({
+    type: z.enum(ATTENDANCE_EVENT_TYPES),
+    /** Set by a device that queued the event offline. */
+    occurredAt: z.iso.datetime({ offset: true }).optional(),
+    clientEventId: uuid.optional(),
+    breakName: z.string().trim().min(1).max(40).optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+    accuracyMeters: z.coerce.number().min(0).max(100_000).optional(),
+    deviceId: z.string().trim().max(64).optional(),
+  })
+  .refine((e) => (e.latitude === undefined) === (e.longitude === undefined), { message: 'Send latitude and longitude together', path: ['longitude'] })
+  .refine((e) => e.type !== 'break_start' || !!e.breakName, { message: 'Choose which break', path: ['breakName'] });
+export type AttendanceEventInput = z.infer<typeof attendanceEventSchema>;
+
+export const ATTENDANCE_STATUSES = ['present', 'late', 'half_day', 'absent', 'on_leave', 'holiday', 'weekend', 'not_started'] as const;
+export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
+
+/**
+ * late · left_early · long_break · missed_check_out · short_day · day_off (worked on a
+ * non-working day) · outside_zone · no_location · offline (recorded offline, synced later)
+ */
+export const ATTENDANCE_FLAGS = [
+  'late',
+  'left_early',
+  'long_break',
+  'missed_check_out',
+  'short_day',
+  'day_off',
+  'outside_zone',
+  'no_location',
+  'offline',
+] as const;
+export type AttendanceFlag = (typeof ATTENDANCE_FLAGS)[number];
+
+export interface AttendanceEventDto {
+  id: string;
+  type: AttendanceEventType;
+  occurredAt: string;
+  breakName: string | null;
+  inZone: boolean | null;
+  siteName: string | null;
+  flags: AttendanceFlag[];
+  device: string | null;
+  ip: string | null;
+  /** Relative API path while the selfie is kept (30 days). */
+  selfieUrl: string | null;
+}
+
+export interface AttendanceDayDto {
+  date: string;
+  status: AttendanceStatus;
+  flags: AttendanceFlag[];
+  /** Checked in and not yet checked out. */
+  open: boolean;
+  /** The break in progress, if any. */
+  onBreak: string | null;
+  checkInAt: string | null;
+  checkOutAt: string | null;
+  workedMinutes: number;
+  breakMinutes: number;
+  lateMinutes: number;
+  shiftName: string | null;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  events: AttendanceEventDto[];
+}
+
+export interface AttendanceTodayDto {
+  /** The workday a check-in now would count towards (workspace time zone). */
+  date: string;
+  state: 'out' | 'in' | 'on_break';
+  day: AttendanceDayDto;
+  shift: ShiftDto | null;
+  /** Breaks allowed today under the shift. */
+  breaks: ShiftBreak[];
+  requireSelfie: boolean;
+  timezone: string;
+}
+
+export interface TeamAttendanceDto {
+  date: string;
+  timezone: string;
+  summary: Record<AttendanceStatus, number>;
+  rows: { userId: string; name: string; teamName: string | null; remote: boolean; day: AttendanceDayDto }[];
+}
+
+export const MAX_SELFIE_BYTES = 3 * 1024 * 1024;
+export const SELFIE_RETENTION_DAYS = 30;

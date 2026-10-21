@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   ForbiddenException,
   Get,
@@ -146,15 +147,17 @@ export class AttendanceController {
 
     // A retried event is answered with the current state, not recorded twice.
     const replay = async () => this.today(auth, ws);
-    if (body.clientEventId) {
+    const recorded = async () => {
+      if (!body.clientEventId) return false;
       const [seen] = await this.db.withContext(ctx, (tx) =>
         tx
           .select({ id: attendanceEvents.id })
           .from(attendanceEvents)
           .where(and(eq(attendanceEvents.userId, auth.userId), eq(attendanceEvents.clientEventId, body.clientEventId!))),
       );
-      if (seen) return replay();
-    }
+      return !!seen;
+    };
+    if (await recorded()) return replay();
 
     const eventId = randomUUID();
     let storedKey: string | null = null;
@@ -237,8 +240,9 @@ export class AttendanceController {
       });
     } catch (err) {
       if (storedKey) await this.storage.delete(storedKey).catch(() => undefined);
-      // Two copies of the same queued event raced each other: the other one won.
-      if (body.clientEventId && isUniqueViolation(err)) return replay();
+      // Two copies of the same queued event raced: if the other copy was recorded, this
+      // one's conflict (or duplicate key) is just the echo of it, so answer as a retry.
+      if ((isUniqueViolation(err) || err instanceof ConflictException) && (await recorded())) return replay();
       throw err;
     }
   }

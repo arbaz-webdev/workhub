@@ -289,8 +289,29 @@ describe('offline check-ins', () => {
     // Racing copies of the same event still record it once.
     const id2 = randomUUID();
     const at2 = new Date(Date.now() - 5 * 60_000).toISOString();
-    const results = await Promise.all([1, 2, 3].map(() => p.agent.post('/attendance/events').set(H()).send({ type: 'check_out', clientEventId: id2, occurredAt: at2 })));
-    expect(results.map((r) => r.status)).toEqual([200, 200, 200]);
+    const results = await Promise.all(Array.from({ length: 8 }, () => p.agent.post('/attendance/events').set(H()).send({ type: 'check_out', clientEventId: id2, occurredAt: at2 })));
+    expect(results.map((r) => r.status)).toEqual(Array(8).fill(200));
+    const today = (await p.agent.get('/attendance/today').set(H())).body as AttendanceTodayDto;
+    expect(today.day.events.map((e) => e.type)).toEqual(['check_in', 'check_out']);
+  });
+
+  it('copies of one event that queue behind each other still all succeed, recorded once', async () => {
+    const p = await newPerson('queued-twins');
+    await p.agent.post('/attendance/events').set(H()).send({ type: 'check_in', clientEventId: randomUUID() }).expect(200);
+    const clientEventId = randomUUID();
+    const occurredAt = new Date(Date.now() - 60_000).toISOString();
+    // Hold the day's lock so every copy gets past the duplicate check and waits, as on a slow server.
+    const results = await withAdmin(async (db) => {
+      await db.query('begin');
+      await db.query('select id from attendance_days where user_id = $1 for update', [p.user.id]);
+      const pending = Array.from({ length: 4 }, () =>
+        p.agent.post('/attendance/events').set(H()).send({ type: 'check_out', clientEventId, occurredAt }).then((r) => r),
+      );
+      await new Promise((r) => setTimeout(r, 750));
+      await db.query('commit');
+      return Promise.all(pending);
+    });
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200]);
     const today = (await p.agent.get('/attendance/today').set(H())).body as AttendanceTodayDto;
     expect(today.day.events.map((e) => e.type)).toEqual(['check_in', 'check_out']);
   });

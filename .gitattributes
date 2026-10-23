@@ -1,2 +1,4 @@
-# Shell scripts run in Linux containers: keep Unix line endings on every checkout.
-*.sh text eol=lf
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

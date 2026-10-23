@@ -84,8 +84,9 @@ Until then, signing in fails with "Origin not allowed".
 
 1. Open the site (allow a minute if it's asleep). Sign up and create your workspace.
 2. Attach a file to a task and download it again (this checks R2).
-3. **Attendance** → check in. The IP on the check-in should be **your** public IP. If it
-   isn't, `TRUST_PROXY` needs adjusting.
+3. **Attendance** → check in. The IP on the check-in should be **your** public IP. If it's a
+   Cloudflare address (e.g. 104.x.x.x), `TRUST_PROXY` is one too low. Render sits behind Cloudflare,
+   so the free single-service setup needs `3`.
 4. **People → Share a join link**: choose **Manager**, then **Create link** → **Copy**, and send it to your
    partner. Once they've joined, you can make them an **Admin** on the same page.
 

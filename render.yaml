@@ -31,9 +31,10 @@ services:
         value: https://workhub-staging.onrender.com
       - key: APP_URL
         value: https://workhub-staging.onrender.com
-      # Render's edge, then the website's proxy inside the container.
+      # Cloudflare (in front of Render), Render's load balancer, then the website's proxy
+      # inside the container. Measured on the live site: with 2 the API saw Cloudflare's IP.
       - key: TRUST_PROXY
-        value: '2'
+        value: '3'
       - key: EMAIL_TRANSPORT
         value: console
       - key: ALLOW_CONSOLE_EMAIL

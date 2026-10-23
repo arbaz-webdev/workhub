@@ -1,4 +1,7 @@
 import { Controller, Get, Module } from '@nestjs/common';
+import { AttendanceSettingsController } from './attendance/attendance-settings.controller';
+import { AttendanceController } from './attendance/attendance.controller';
+import { SelfieCleanupService } from './attendance/selfie-cleanup.service';
 import { AuditController } from './audit/audit.controller';
 import { AuthModule } from './auth/auth.module';
 import { Public } from './common/request';
@@ -39,8 +42,10 @@ class HealthController {
     ProjectsController,
     TasksController,
     MyWorkController,
+    AttendanceController,
+    AttendanceSettingsController,
     WaitlistController,
   ],
-  providers: [WorkspaceGuard, RealtimeService, StorageService],
+  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService],
 })
 export class AppModule {}

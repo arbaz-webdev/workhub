@@ -123,6 +123,27 @@ Files are stored on local disk in development (`.data/uploads`) and in any S3-co
 
 **Local databases created before Sprint 4** may use the Windows code page (WIN1252), which can't store Urdu or Arabic text. Migrations now refuse to run on such a database. To fix it once, start the database and run `npm run db:fix-encoding`. It rebuilds both databases as UTF-8, keeps your data, and leaves the old copy as `workhub_old` until you drop it.
 
+## Sprint 5 status
+
+- [x] Check in and out with one tap on phone or web, with a selfie (kept 30 days, visible to the person and their managers), time, IP and device
+- [x] Shifts, including night shifts across midnight: 18:00–03:00 counts as one workday dated by its start; grace period; full and half-day hours; working days
+- [x] Per-team and per-person shifts (a person's own shift, else their team's, else the default)
+- [x] Breaks per shift, paid or unpaid, with presets for Zuhr, Asr and a longer Jumu'ah break on Fridays; going over is flagged
+- [x] Office sites by GPS radius and/or office IP ranges: check-ins elsewhere are **flagged, not blocked**; remote people are exempt
+- [x] Daily status: present, late, half day, absent, day off, plus "on leave" and "holiday" ready for Sprint 6. Short days and leaving early are only judged once the shift has ended
+- [x] Offline queue: check-ins made without a connection are kept on the device with the time they were tapped and sync automatically, exactly once
+- [x] Team view for managers (who's in, late, on break, flagged) and a monthly history for everyone
+- [x] 176 tests, including unit tests for time zones (incl. daylight saving), night shifts, breaks and statuses
+
+How it decides things:
+- **Which workday:** a check-in belongs to the shift it falls in, opening 6 hours early. Without a shift, it's the local date in the workspace's time zone.
+- **Rules history:** a day keeps a copy of the shift rules it started under, so editing or deleting a shift never rewrites past days.
+- **What counts as absent:** a day with no check-in counts only from when the person joined and the workspace started using attendance.
+- **Offline sync:** events synced more than 2 minutes late keep the device's time and are marked "Synced later". Events older than 3 days are refused; a manager will correct them in Sprint 6.
+- **Selfie retention:** an hourly job deletes selfies after 30 days. The check-in record stays.
+
+Offline check-in works while the attendance page is open (or on its next load). Opening the app with no connection at all needs the installable app from Sprint 11. Behind a load balancer, set Express's `trust proxy` to match so office-IP rules see the real client address.
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

@@ -1,7 +1,7 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
-import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { ROLES } from '@workhub/shared';
+import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { ATTENDANCE_EVENT_TYPES, ROLES, type AttendanceFlag, type ShiftBreak } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
 
@@ -69,6 +69,7 @@ export const workspaces = pgTable('workspaces', {
   currency: text('currency').notNull().default('PKR'),
   /** ISO weekday numbers, 1 = Monday … 7 = Sunday. */
   workingDays: smallint('working_days').array().notNull().default([1, 2, 3, 4, 5]),
+  attendanceRequireSelfie: boolean('attendance_require_selfie').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -78,6 +79,9 @@ export const memberships = pgTable('memberships', {
   workspaceId: uuid('workspace_id').notNull(),
   userId: uuid('user_id').notNull(),
   role: memberRole('role').notNull().default('member'),
+  teamId: uuid('team_id'),
+  shiftId: uuid('shift_id'),
+  attendanceRemote: boolean('attendance_remote').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -85,6 +89,7 @@ export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),
   workspaceId: uuid('workspace_id').notNull(),
   name: text('name').notNull(),
+  shiftId: uuid('shift_id'),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -292,3 +297,85 @@ export interface TemplateStructure {
   labels: { name: string; color: string }[];
   tasks: { title: string; column: number; checklist?: string[]; estimateHours?: number | null }[];
 }
+
+// ---- Attendance (sprint 5) ----------------------------------------------------------
+
+export const shifts = pgTable('shifts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  /** "HH:MM:SS". An end at or before the start means the shift ends the next day. */
+  startTime: time('start_time').notNull(),
+  endTime: time('end_time').notNull(),
+  graceMinutes: smallint('grace_minutes').notNull().default(15),
+  fullDayMinutes: smallint('full_day_minutes').notNull().default(480),
+  halfDayMinutes: smallint('half_day_minutes').notNull().default(240),
+  workingDays: smallint('working_days').array().notNull().default([1, 2, 3, 4, 5]),
+  breaks: jsonb('breaks').$type<ShiftBreak[]>().notNull().default([]),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const attendanceSites = pgTable('attendance_sites', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  latitude: doublePrecision('latitude'),
+  longitude: doublePrecision('longitude'),
+  radiusMeters: integer('radius_meters'),
+  /** cidr[] in the database. */
+  ipRanges: text('ip_ranges').array().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The rules in force for a workday, copied from the shift at the first check-in. */
+export interface DayPolicy {
+  graceMinutes: number;
+  fullDayMinutes: number;
+  halfDayMinutes: number;
+  breaks: ShiftBreak[];
+  /** Whether the date was a working day under the shift. */
+  workingDay: boolean;
+}
+
+export const attendanceDays = pgTable('attendance_days', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  workDate: date('work_date', { mode: 'string' }).notNull(),
+  shiftId: uuid('shift_id'),
+  shiftName: text('shift_name'),
+  scheduledStart: timestamp('scheduled_start', { withTimezone: true }),
+  scheduledEnd: timestamp('scheduled_end', { withTimezone: true }),
+  policy: jsonb('policy').$type<DayPolicy>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const attendanceEventType = pgEnum('attendance_event_type', ATTENDANCE_EVENT_TYPES);
+
+export const attendanceEvents = pgTable('attendance_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  dayId: uuid('day_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  type: attendanceEventType('type').notNull(),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+  receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  clientEventId: uuid('client_event_id'),
+  breakName: text('break_name'),
+  /** inet in the database. */
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  deviceId: text('device_id'),
+  latitude: doublePrecision('latitude'),
+  longitude: doublePrecision('longitude'),
+  accuracyMeters: real('accuracy_meters'),
+  inZone: boolean('in_zone'),
+  siteId: uuid('site_id'),
+  flags: text('flags').array().$type<AttendanceFlag[]>().notNull().default([]),
+  selfieKey: text('selfie_key'),
+  selfieDeletedAt: timestamp('selfie_deleted_at', { withTimezone: true }),
+});

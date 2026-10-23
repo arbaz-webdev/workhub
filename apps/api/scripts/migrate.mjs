@@ -73,10 +73,23 @@ try {
   }
 
   const { rowCount } = await client.query('select 1 from pg_roles where rolname = $1', [appUser]);
-  const verb = rowCount ? 'alter' : 'create';
-  await client.query(
-    `${verb} role ${appUser} with login nosuperuser nobypassrls nocreatedb nocreaterole password ${client.escapeLiteral(appPassword)}`,
+  const password = client.escapeLiteral(appPassword);
+  if (rowCount) {
+    // Only keep the password current. Restating NOSUPERUSER needs a real superuser,
+    // which hosted Postgres (e.g. Neon) never gives, so it would fail on every restart.
+    await client.query(`alter role ${appUser} with login password ${password}`);
+  } else {
+    await client.query(`create role ${appUser} with login nosuperuser nobypassrls nocreatedb nocreaterole password ${password}`);
+  }
+  // However the role came to be, it must never be able to get around Row-Level Security.
+  const { rows: attrs } = await client.query(
+    'select rolsuper, rolbypassrls, rolcreaterole, rolcreatedb from pg_roles where rolname = $1',
+    [appUser],
   );
+  const risky = Object.entries(attrs[0]).filter(([, on]) => on).map(([name]) => name);
+  if (risky.length > 0) {
+    throw new Error(`app role "${appUser}" has ${risky.join(', ')}; it must be a plain login role so RLS always applies`);
+  }
 
   const { rows: db } = await client.query('select current_database() as name');
   await client.query(`grant connect on database ${client.escapeIdentifier(db[0].name)} to ${appUser}`);

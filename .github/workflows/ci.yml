@@ -152,13 +152,21 @@ jobs:
       - name: Build the staging image
         run: docker build -f deploy/staging.Dockerfile -t workhub-staging .
 
+      # Hosted Postgres (Neon) has no superuser: its owner role can create roles and
+      # bypass RLS, but not touch SUPERUSER. Run as one, so restarts can't break there.
+      - name: Create a Neon-style database owner (no superuser)
+        run: |
+          PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d workhub \
+            -c "create role neon_owner login password 'neon_owner_pw' createrole createdb bypassrls" \
+            -c "create database neonlike owner neon_owner"
+
       - name: Start it as Render would
         run: |
           docker run -d --name staging \
             --add-host=host.docker.internal:host-gateway \
             -p 3000:3000 -p 4000:4000 \
             -e NODE_ENV=production -e PORT=3000 \
-            -e DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/workhub \
+            -e DATABASE_URL=postgres://neon_owner:neon_owner_pw@host.docker.internal:5432/neonlike \
             -e 'APP_DB_PASSWORD=smoke+test/pass=word==' \
             -e WEB_ORIGIN=http://localhost:3000 -e APP_URL=http://localhost:3000 \
             -e TRUST_PROXY=2 \
@@ -183,6 +191,14 @@ jobs:
           docker exec staging bash -c 'for p in /proc/[0-9]*; do if tr "\0" " " < "$p/cmdline" 2>/dev/null | grep -q "dist/main.js"; then kill "${p#/proc/}"; break; fi; done'
           for i in $(seq 1 15); do [ "$(docker inspect -f '{{.State.Running}}' staging)" = "false" ] && break; sleep 1; done
           [ "$(docker inspect -f '{{.State.Running}}' staging)" = "false" ]
+
+      - name: Restart, as Render does after sleeping, and come back healthy
+        run: |
+          docker start staging
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health && break; sleep 2; done
+          curl -fsS http://localhost:3000/api/health | grep -q ok
+          docker logs staging 2>&1 | grep -c 'migrations up to date' | grep -q '^2$'
+          curl -fsS -b cookies.txt http://localhost:3000/api/auth/me | grep -q smoke@example.com
 
       - name: Container logs
         if: failure()

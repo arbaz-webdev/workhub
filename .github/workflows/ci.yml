@@ -58,3 +58,68 @@ jobs:
 
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=high
+
+  # Builds the deploy images and runs them together, as staging does: the web app
+  # proxies /api to the API container, which migrates a fresh database on start.
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: workhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the API image
+        run: docker build -f deploy/api.Dockerfile -t workhub-api .
+
+      - name: Build the web image
+        run: docker build -f deploy/web.Dockerfile --build-arg API_URL=http://localhost:4000 -t workhub-web .
+
+      - name: Start both containers
+        run: |
+          docker run -d --name api --network host \
+            -e PORT=4000 \
+            -e DATABASE_URL=postgres://postgres:postgres@localhost:5432/workhub \
+            -e DATABASE_APP_URL=postgres://workhub_app:image_smoke_test@localhost:5432/workhub \
+            -e WEB_ORIGIN=http://localhost:3000 -e APP_URL=http://localhost:3000 \
+            -e EMAIL_TRANSPORT=console -e ALLOW_CONSOLE_EMAIL=true \
+            -e STORAGE_DRIVER=s3 -e S3_BUCKET=smoke -e S3_ENDPOINT=http://localhost:9 \
+            -e S3_ACCESS_KEY_ID=smoke -e S3_SECRET_ACCESS_KEY=smoke \
+            -e TRUST_PROXY=1 \
+            workhub-api
+          docker run -d --name web --network host -e PORT=3000 workhub-web
+
+      - name: Sign up through the web app's proxy, as a browser would
+        run: |
+          for i in $(seq 1 45); do curl -fsS http://localhost:3000/api/health && break; sleep 2; done
+          curl -fsS http://localhost:3000/api/health | grep -q ok
+          curl -fsS -o /dev/null http://localhost:3000/sign-in
+          curl -fsS -X POST http://localhost:3000/api/auth/sign-up \
+            -H 'content-type: application/json' -H 'origin: http://localhost:3000' \
+            -d '{"name":"Smoke","email":"smoke@example.com","password":"correct-horse-battery","workspaceName":"Smoke Co"}' \
+            -c cookies.txt | grep -q '"workspace"'
+          curl -fsS -b cookies.txt http://localhost:3000/api/auth/me | grep -q smoke@example.com
+          # Migrations ran once; a restart must find nothing new to apply.
+          docker restart api
+          for i in $(seq 1 30); do curl -fsS http://localhost:4000/health && break; sleep 2; done
+          docker logs api 2>&1 | grep -q 'migrations up to date'
+
+      - name: Container logs
+        if: failure()
+        run: |
+          docker logs api || true
+          docker logs web || true

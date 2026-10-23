@@ -22,6 +22,8 @@ npm run db:migrate      # once, and after every new migration
 npm run dev             # terminal 2: API on :4000, web app on http://localhost:3000
 ```
 
+To put it online for others (staging), see [docs/STAGING.md](docs/STAGING.md).
+
 Checks (the same ones CI runs):
 
 ```bash

@@ -21,6 +21,15 @@ export const config = {
   get webOrigins() {
     return (process.env.WEB_ORIGIN ?? 'http://localhost:3000').split(',').map((o) => o.trim());
   },
+  /** Express "trust proxy": a hop count ("2") or a preset ("loopback"). */
+  get trustProxy(): number | string {
+    const value = process.env.TRUST_PROXY ?? 'loopback';
+    if (/^\d+$/.test(value)) return Number(value);
+    if (!/^(loopback|linklocal|uniquelocal)(,\s*(loopback|linklocal|uniquelocal))*$/.test(value)) {
+      throw new Error(`TRUST_PROXY must be a number of proxies or loopback/linklocal/uniquelocal, not ${value}`);
+    }
+    return value;
+  },
   get databaseAppUrl() {
     return required('DATABASE_APP_URL');
   },
@@ -33,6 +42,10 @@ export const config = {
     const value = process.env.EMAIL_TRANSPORT ?? 'console';
     if (value !== 'console' && value !== 'resend') throw new Error(`Unknown EMAIL_TRANSPORT ${value}`);
     return value;
+  },
+  /** Lets a staging site run with EMAIL_TRANSPORT=console (emails in the log). Never in real production. */
+  get allowConsoleEmail() {
+    return process.env.ALLOW_CONSOLE_EMAIL === 'true';
   },
   get emailFrom() {
     return process.env.EMAIL_FROM ?? 'WorkHub <no-reply@localhost>';

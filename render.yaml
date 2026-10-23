@@ -1,0 +1,71 @@
+# Render Blueprint for the staging site: Render dashboard → New → Blueprint → this repo.
+# The database is on Neon (paste its URL when asked); files go to Cloudflare R2.
+# Step-by-step guide: docs/STAGING.md
+
+services:
+  # The API: private, reachable only from the web app over Render's private network.
+  - type: pserv
+    name: workhub-api
+    runtime: docker
+    dockerfilePath: ./deploy/api.Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: 0.5c-512mb
+    branch: main
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '4000'
+      # Neon's direct (not pooled) connection string for the database owner.
+      - key: DATABASE_URL
+        sync: false
+      # The restricted app user (RLS always applies) is created with this password.
+      - key: APP_DB_PASSWORD
+        generateValue: true
+      # Must match the web app's address; change both if Render gives a different one.
+      - key: WEB_ORIGIN
+        value: https://workhub-staging.onrender.com
+      - key: APP_URL
+        value: https://workhub-staging.onrender.com
+      # Render's edge, then the web app. Checked after the first deploy (see the guide).
+      - key: TRUST_PROXY
+        value: '2'
+      - key: EMAIL_TRANSPORT
+        value: console
+      - key: ALLOW_CONSOLE_EMAIL
+        value: 'true'
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_BUCKET
+        value: workhub-staging
+      - key: S3_REGION
+        value: auto
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+
+  # The website: the address you share. It proxies /api/* to the private API.
+  - type: web
+    name: workhub-staging
+    runtime: docker
+    dockerfilePath: ./deploy/web.Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: 0.5c-512mb
+    branch: main
+    autoDeployTrigger: checksPass
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: '3000'
+      # "host:port" of the private API (the web app adds http://).
+      - key: API_URL
+        fromService:
+          type: pserv
+          name: workhub-api
+          property: hostport

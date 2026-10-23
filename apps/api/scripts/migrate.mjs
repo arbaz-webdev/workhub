@@ -3,6 +3,8 @@
 //
 //   DATABASE_URL      admin connection used to run migrations (owns the tables)
 //   DATABASE_APP_URL  connection the API uses; its user is created/updated here.
+//                     Or set APP_DB_PASSWORD instead, and it's built from DATABASE_URL
+//                     with the user workhub_app (as src/config.ts does).
 //                     It does not own the tables and has no BYPASSRLS, so
 //                     Row-Level Security always applies to it.
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
@@ -15,9 +17,15 @@ const envFile = join(here, '..', '.env');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
 
 const adminUrl = process.env.DATABASE_URL;
-const appUrl = process.env.DATABASE_APP_URL;
+let appUrl = process.env.DATABASE_APP_URL;
+if (!appUrl && adminUrl && process.env.APP_DB_PASSWORD) {
+  const url = new URL(adminUrl);
+  url.username = process.env.DATABASE_APP_USER ?? 'workhub_app';
+  url.password = process.env.APP_DB_PASSWORD;
+  appUrl = url.toString();
+}
 if (!adminUrl || !appUrl) {
-  console.error('DATABASE_URL and DATABASE_APP_URL must be set (see apps/api/.env.example).');
+  console.error('Set DATABASE_URL, and DATABASE_APP_URL or APP_DB_PASSWORD (see apps/api/.env.example).');
   process.exit(1);
 }
 

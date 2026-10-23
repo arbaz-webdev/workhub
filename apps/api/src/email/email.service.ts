@@ -17,7 +17,11 @@ export class EmailService implements OnModuleInit {
 
   onModuleInit() {
     if (config.isProduction && config.emailTransport === 'console') {
-      throw new Error('EMAIL_TRANSPORT=console is not allowed in production; configure a real provider.');
+      if (!config.allowConsoleEmail) {
+        throw new Error('EMAIL_TRANSPORT=console is not allowed in production; configure a real provider.');
+      }
+      // A staging site without a mail domain yet: emails go to this log instead.
+      this.logger.warn('Emails are written to this log, not sent (ALLOW_CONSOLE_EMAIL=true). Staging only.');
     }
   }
 

@@ -5,6 +5,22 @@ import { join } from 'node:path';
 const envFile = join(__dirname, '..', '.env');
 if (existsSync(envFile) && !process.env.JEST_WORKER_ID) process.loadEnvFile(envFile);
 
+/**
+ * The restricted connection the API uses. Either given in full (DATABASE_APP_URL), or
+ * built from the admin URL with the app user and APP_DB_PASSWORD, for hosts that can
+ * only hand over one database URL. scripts/migrate.mjs builds it the same way.
+ */
+export function appDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+  if (env.DATABASE_APP_URL) return env.DATABASE_APP_URL;
+  if (env.DATABASE_URL && env.APP_DB_PASSWORD) {
+    const url = new URL(env.DATABASE_URL);
+    url.username = env.DATABASE_APP_USER ?? 'workhub_app';
+    url.password = env.APP_DB_PASSWORD;
+    return url.toString();
+  }
+  throw new Error('Set DATABASE_APP_URL, or DATABASE_URL and APP_DB_PASSWORD (see apps/api/.env.example)');
+}
+
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable ${name} (see apps/api/.env.example)`);
@@ -21,8 +37,17 @@ export const config = {
   get webOrigins() {
     return (process.env.WEB_ORIGIN ?? 'http://localhost:3000').split(',').map((o) => o.trim());
   },
+  /** Express "trust proxy": a hop count ("2") or a preset ("loopback"). */
+  get trustProxy(): number | string {
+    const value = process.env.TRUST_PROXY ?? 'loopback';
+    if (/^\d+$/.test(value)) return Number(value);
+    if (!/^(loopback|linklocal|uniquelocal)(,\s*(loopback|linklocal|uniquelocal))*$/.test(value)) {
+      throw new Error(`TRUST_PROXY must be a number of proxies or loopback/linklocal/uniquelocal, not ${value}`);
+    }
+    return value;
+  },
   get databaseAppUrl() {
-    return required('DATABASE_APP_URL');
+    return appDatabaseUrl();
   },
   /** Public URL of the web app, used in email links and OAuth redirects. */
   get appUrl() {
@@ -33,6 +58,10 @@ export const config = {
     const value = process.env.EMAIL_TRANSPORT ?? 'console';
     if (value !== 'console' && value !== 'resend') throw new Error(`Unknown EMAIL_TRANSPORT ${value}`);
     return value;
+  },
+  /** Lets a staging site run with EMAIL_TRANSPORT=console (emails in the log). Never in real production. */
+  get allowConsoleEmail() {
+    return process.env.ALLOW_CONSOLE_EMAIL === 'true';
   },
   get emailFrom() {
     return process.env.EMAIL_FROM ?? 'WorkHub <no-reply@localhost>';

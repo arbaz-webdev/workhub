@@ -1,87 +1,80 @@
 # Staging site
 
 A permanent copy of WorkHub on the internet, for you and your partner to use and test.
-It updates itself after anything merged into `main` passes CI.
+It costs **nothing** and updates itself after anything merged into `main` passes CI.
 
 ```
-Browser ──https──▶ workhub-staging (Render web service, public)
-                        │  /api/* over Render's private network
-                        ▼
-                   workhub-api (Render private service) ──▶ Postgres on Neon (Singapore)
-                                                       └──▶ files on Cloudflare R2
+Browser ──https──▶ workhub-staging (one free Render web service, Singapore)
+                     ├─ website (Next.js)  ── /api/* ──▶ API (NestJS, 127.0.0.1 only)
+                     │                                    ├──▶ Postgres on Neon (Singapore, free)
+                     │                                    └──▶ files on Cloudflare R2 (free)
 ```
 
-The API has no public address: only the website can reach it. That keeps it simple (one
-origin, first-party cookies, no CORS) and means nobody can call the API directly to get
-around rate limits. Everything runs in or near **Singapore**, the closest region to Pakistan.
+The website and the API run in one container (`deploy/staging.Dockerfile`). The API
+listens only inside it, so nobody can call it directly. CI checks that it can't be
+reached from outside.
+
+**The catch with free:** the site goes to sleep after 15 minutes without visitors, and
+the next visit waits about a minute while it wakes. It's also slow while waking.
+That's fine for showing your partner. See "Always on" below for the paid layout.
 
 ## Accounts
 
-| Service | For | Cost | Card? |
-|---|---|---|---|
-| **Render** (render.com) | The website and the API | Two small instances, about $7 each a month (check the price shown before you apply) | Yes |
-| **Neon** (neon.com) | The Postgres database | Free | No |
-| **Cloudflare** (cloudflare.com) | R2 storage for attachments and selfies | Free up to 10 GB | Yes, to switch R2 on |
-
-Sign up to Render and Neon **with your GitHub account** (arbaz-webdev).
+| Service | For | Cost |
+|---|---|---|
+| **Render** (render.com) | Runs the site | Free plan, $0. A card is on file only to verify you |
+| **Neon** (neon.com) | The Postgres database | Free |
+| **Cloudflare** (cloudflare.com) | R2 storage for attachments and selfies | Free up to 10 GB a month. A card is on file to switch R2 on |
 
 **Not needed yet:**
-- **A domain and Resend**, for real emails. Until then emails are written to the API's log, and your partner joins with a join link.
+- **A domain and Resend**, for real emails. Until then emails are written to the site's log, and your partner joins with a join link.
 - **Google Cloud**, for "Sign in with Google".
 
 > Why Neon and not Render's own Postgres? WorkHub's API logs in as a second, restricted
 > database user that can never bypass the company-separation rules (Row-Level Security). Neon
 > documents that it supports creating that user; Render's Postgres docs don't say.
 
-## Before you start: merge to `main`
+## 1. Neon: the database
 
-Render reads `render.yaml` from the `main` branch, so this staging PR must be merged first.
-Merge the attendance PR (#102) too if you want it on the site.
-
-## 1. Neon: the database (about 3 minutes)
-
-1. **New project**: name `workhub-staging`, Postgres **17**, region **AWS Asia Pacific (Singapore)**.
-2. Open **Connect**:
+1. **New project**: name `workhub-staging`, Postgres **17**, region **AWS Asia Pacific 1 (Singapore)**.
+2. **Connect**:
    - Role `neondb_owner`, database `neondb`.
-   - Turn **Connection pooling off** (you want the *direct* connection).
-3. Copy the connection string, which starts `postgresql://neondb_owner:…@ep-…ap-southeast-1.aws.neon.tech/neondb?sslmode=require…`.
-   You'll paste it into Render in step 3. Don't share it anywhere else.
+   - Turn **Connection pooling off**. The address must not contain `-pooler`.
+3. **Copy snippet** copies the connection string with its password. Keep it private.
 
-## 2. Cloudflare R2: file storage (about 5 minutes)
+## 2. Cloudflare R2: file storage
 
-1. **R2 Object Storage** → turn on R2 (free plan).
-2. **Create bucket**: name `workhub-staging`, location hint **Asia-Pacific**. Keep it private.
-3. **Manage API tokens** → **Create API token**:
+1. **R2 Object Storage** → switch R2 on (free plan).
+2. **Create bucket** `workhub-staging`. The location is picked automatically (Asia Pacific), and public access stays disabled.
+3. **API Tokens → Create Account API token**:
    - Permission: **Object Read & Write**
-   - Apply to: **only** the `workhub-staging` bucket
-4. Keep the **Access Key ID**, the **Secret Access Key** and the **S3 endpoint**
-   (`https://<account-id>.r2.cloudflarestorage.com`) open for step 3.
+   - Buckets: **specific buckets only** → `workhub-staging`
+4. Keep the **Access Key ID** and **Secret Access Key** private. The secret is shown only once.
 
-## 3. Render: the website and the API (about 10 minutes, plus build time)
+## 3. Render: the site
 
-1. **Account settings → GitHub**: give Render access to **only** `arbaz-webdev/workhub`.
-2. **Billing**: add a card (the two services are paid instances).
-3. **New → Blueprint**, pick `arbaz-webdev/workhub`, branch **main**.
-   Render reads `render.yaml` and shows two services, `workhub-api` and `workhub-staging`, both in Singapore.
-4. It asks for the values it can't know. Paste them here:
+1. Install Render's GitHub app on **only** `arbaz-webdev/workhub`, and connect GitHub in Render.
+2. **New → Blueprint** → `arbaz-webdev/workhub`, branch **main**, name `workhub-staging`.
+   Render reads `render.yaml`. It should show **one web service, `workhub-staging`, on the free
+   plan ($0)**. If it shows a price, stop.
+3. Paste the three secrets:
 
    | Variable | Paste |
    |---|---|
-   | `DATABASE_URL` | the Neon connection string from step 1 |
-   | `S3_ENDPOINT` | the R2 S3 endpoint |
+   | `DATABASE_URL` | the Neon connection string |
    | `S3_ACCESS_KEY_ID` | from R2 |
    | `S3_SECRET_ACCESS_KEY` | from R2 |
 
-   Everything else is already set in `render.yaml`. The password for the API's restricted
-   database user is generated by Render, and the API creates that user, and applies the
-   database migrations, every time it starts.
-5. **Apply**. The first builds take about 5–10 minutes.
+   Everything else is in `render.yaml`. The R2 endpoint is already filled in, and Render
+   generates the password for the API's restricted database user. On every start the site
+   applies new database migrations and creates or updates that user.
+4. **Deploy Blueprint**. The first build takes about 10 minutes.
 
-### If the website's address isn't `https://workhub-staging.onrender.com`
+### If the address isn't `https://workhub-staging.onrender.com`
 
-Render adds a suffix when a name is taken. If the website shows a different `.onrender.com`
+Render adds a suffix when a name is taken. If the site has a different `.onrender.com`
 address:
-1. Open **workhub-api → Environment**.
+1. Open **workhub-staging → Environment**.
 2. Set `WEB_ORIGIN` and `APP_URL` to the real address (with `https://`, no trailing slash).
 3. Save, and let it redeploy.
 
@@ -89,33 +82,32 @@ Until then, signing in fails with "Origin not allowed".
 
 ## 4. Check it works
 
-1. Open the website. Sign up and create your workspace.
+1. Open the site (allow a minute if it's asleep). Sign up and create your workspace.
 2. Attach a file to a task and download it again (this checks R2).
-3. **Attendance** → check in. The IP on the check-in should be **your** public IP (search
-   "what is my IP" to compare). If it shows another address, `TRUST_PROXY` on `workhub-api`
-   needs adjusting.
+3. **Attendance** → check in. The IP on the check-in should be **your** public IP. If it
+   isn't, `TRUST_PROXY` needs adjusting.
 4. **People → Share a join link**: choose **Manager**, then **Create link** → **Copy**, and send it to your
    partner. Once they've joined, you can make them an **Admin** on the same page.
 
-Emails, such as the "confirm your email" link, are in **workhub-api → Logs**; search for `To:`.
+Emails, such as the "confirm your email" link, are in **workhub-staging → Logs**; search for `To:`.
 
 ## What CI checks
 
-Every pull request:
-- builds both images;
-- runs them configured as on Render (no `http://` on `API_URL`, the restricted database URL built from a generated password);
-- starts the API against a fresh Postgres, so the migrations run;
-- signs up through the website's `/api` proxy, as a browser would;
-- restarts the API to check that migrations don't re-run.
+On every pull request, CI builds the staging image and runs it as Render does. It checks that:
+- migrations apply to a fresh Postgres;
+- sign-up works through the website;
+- the API **can't** be reached from outside the container;
+- the whole container stops if either process dies, so Render restarts it.
 
-Render only deploys once those checks pass (`autoDeployTrigger: checksPass`).
+It also builds and tests the two separate images used for the always-on layout. Render only
+deploys after CI passes.
 
 ## Later
 
-- **Real emails:** buy the domain and add it to Resend. Then on `workhub-api` set
-  `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`,
-  and delete `ALLOW_CONSOLE_EMAIL`.
-- **Your own address:** the same domain (e.g. `staging.yourdomain.com`) can point at the website
-  in Render's **Custom domains**. Update `WEB_ORIGIN` and `APP_URL` to match.
-- **To save $7 a month:** the website can use Render's free plan, but it sleeps after 15
-  minutes idle and takes about a minute to wake.
+- **Always on, no sleeping (about $14/month):** run the website and the API as two Render services
+  (`deploy/web.Dockerfile`, and a private service from `deploy/api.Dockerfile`). Then set
+  `API_URL` on the website to the API's private `host:port`.
+- **Real emails:** buy the domain and add it to Resend. Then set `EMAIL_TRANSPORT=resend`,
+  `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`, and delete `ALLOW_CONSOLE_EMAIL`.
+- **Your own address:** point `staging.yourdomain.com` at the site in Render's **Custom domains**,
+  and update `WEB_ORIGIN` and `APP_URL`.

@@ -31,6 +31,10 @@ export const config = {
   get port() {
     return Number(process.env.PORT ?? 4000);
   },
+  /** Interface to listen on; unset means all of them. */
+  get host(): string | undefined {
+    return process.env.HOST || undefined;
+  },
   get isProduction() {
     return process.env.NODE_ENV === 'production';
   },

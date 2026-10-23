@@ -59,8 +59,9 @@ jobs:
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=high
 
-  # Builds the deploy images and runs them together, as staging does: the web app
-  # proxies /api to the API container, which migrates a fresh database on start.
+  # Builds the deploy images and runs them configured as on Render (render.yaml): the web
+  # app proxies /api to the API ("host:port", no scheme), and the API builds its restricted
+  # database URL from APP_DB_PASSWORD and migrates a fresh database on start.
   images:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -87,14 +88,14 @@ jobs:
         run: docker build -f deploy/api.Dockerfile -t workhub-api .
 
       - name: Build the web image
-        run: docker build -f deploy/web.Dockerfile --build-arg API_URL=http://localhost:4000 -t workhub-web .
+        run: docker build -f deploy/web.Dockerfile --build-arg API_URL=localhost:4000 -t workhub-web .
 
       - name: Start both containers
         run: |
           docker run -d --name api --network host \
             -e PORT=4000 \
             -e DATABASE_URL=postgres://postgres:postgres@localhost:5432/workhub \
-            -e DATABASE_APP_URL=postgres://workhub_app:image_smoke_test@localhost:5432/workhub \
+            -e 'APP_DB_PASSWORD=smoke+test/pass=word==' \
             -e WEB_ORIGIN=http://localhost:3000 -e APP_URL=http://localhost:3000 \
             -e EMAIL_TRANSPORT=console -e ALLOW_CONSOLE_EMAIL=true \
             -e STORAGE_DRIVER=s3 -e S3_BUCKET=smoke -e S3_ENDPOINT=http://localhost:9 \

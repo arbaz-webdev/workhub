@@ -1,128 +1,121 @@
 # Staging site
 
 A permanent copy of WorkHub on the internet, for you and your partner to use and test.
-It updates itself whenever something is merged into `main`.
+It updates itself after anything merged into `main` passes CI.
 
 ```
-Browser ──https──▶ web (Next.js, public)  ──/api/* over Railway's private network──▶ api (NestJS, private)
-                                                                                     │
-                                                         Postgres (Railway) ◀────────┤
-                                                         Files: Cloudflare R2 ◀──────┘
+Browser ──https──▶ workhub-staging (Render web service, public)
+                        │  /api/* over Render's private network
+                        ▼
+                   workhub-api (Render private service) ──▶ Postgres on Neon (Singapore)
+                                                       └──▶ files on Cloudflare R2
 ```
 
-The API has no public address: only the web app can reach it. That keeps the setup
-simple (one origin, first-party cookies, no CORS) and means nobody can call the API
-directly to get around rate limits.
+The API has no public address: only the website can reach it. That keeps it simple (one
+origin, first-party cookies, no CORS) and means nobody can call the API directly to get
+around rate limits. Everything runs in or near **Singapore**, the closest region to Pakistan.
 
-## Accounts you need
+## Accounts
 
-| Service | What it's for | Cost | Card? |
+| Service | For | Cost | Card? |
 |---|---|---|---|
-| **Railway** (railway.com) | Runs the web app, the API and the database | Hobby plan $5/month, which includes $5 of usage. Staging should cost about $5–10/month | A free 30-day trial needs none; the Hobby plan does |
-| **Cloudflare** (cloudflare.com) | R2 file storage for attachments and selfies | Free up to 10 GB | Yes, to switch R2 on, even on the free tier |
+| **Render** (render.com) | The website and the API | Two small instances, about $7 each a month (check the price shown before you apply) | Yes |
+| **Neon** (neon.com) | The Postgres database | Free | No |
+| **Cloudflare** (cloudflare.com) | R2 storage for attachments and selfies | Free up to 10 GB | Yes, to switch R2 on |
 
-Sign up to Railway **with your GitHub account** (arbaz-webdev), so it can deploy the
-private repository. Many Pakistani debit cards work for both once international online
-payments are switched on in your banking app; virtual cards from SadaPay or NayaPay
-work too.
+Sign up to Render and Neon **with your GitHub account** (arbaz-webdev).
 
 **Not needed yet:**
-- A domain and **Resend**, for real emails. Until then emails are written to the API's log, and your partner joins with an invite link.
+- **A domain and Resend**, for real emails. Until then emails are written to the API's log, and your partner joins with a join link.
 - **Google Cloud**, for "Sign in with Google".
 
-## 1. Cloudflare R2 (about 5 minutes)
+> Why Neon and not Render's own Postgres? WorkHub's API logs in as a second, restricted
+> database user that can never bypass the company-separation rules (Row-Level Security). Neon
+> documents that it supports creating that user; Render's Postgres docs don't say.
 
-1. Cloudflare dashboard → **R2 Object Storage** → turn on R2 (free plan).
-2. **Create bucket** → name `workhub-staging`, location hint **Asia-Pacific**. Leave it private.
+## Before you start: merge to `main`
+
+Render reads `render.yaml` from the `main` branch, so this staging PR must be merged first.
+Merge the attendance PR (#102) too if you want it on the site.
+
+## 1. Neon: the database (about 3 minutes)
+
+1. **New project**: name `workhub-staging`, Postgres **17**, region **AWS Asia Pacific (Singapore)**.
+2. Open **Connect**:
+   - Role `neondb_owner`, database `neondb`.
+   - Turn **Connection pooling off** (you want the *direct* connection).
+3. Copy the connection string, which starts `postgresql://neondb_owner:…@ep-…ap-southeast-1.aws.neon.tech/neondb?sslmode=require…`.
+   You'll paste it into Render in step 3. Don't share it anywhere else.
+
+## 2. Cloudflare R2: file storage (about 5 minutes)
+
+1. **R2 Object Storage** → turn on R2 (free plan).
+2. **Create bucket**: name `workhub-staging`, location hint **Asia-Pacific**. Keep it private.
 3. **Manage API tokens** → **Create API token**:
    - Permission: **Object Read & Write**
    - Apply to: **only** the `workhub-staging` bucket
-4. Keep this page open. You'll paste the **Access Key ID**, the **Secret Access Key** and the
-   **S3 endpoint** (`https://<account-id>.r2.cloudflarestorage.com`) into Railway in step 2.
-   Paste them straight into Railway; don't put them in chat, email or a file in the repo.
+4. Keep the **Access Key ID**, the **Secret Access Key** and the **S3 endpoint**
+   (`https://<account-id>.r2.cloudflarestorage.com`) open for step 3.
 
-## 2. Railway
+## 3. Render: the website and the API (about 10 minutes, plus build time)
 
-Create a project, choose the **Singapore** region if offered (closest to Pakistan), then add:
+1. **Account settings → GitHub**: give Render access to **only** `arbaz-webdev/workhub`.
+2. **Billing**: add a card (the two services are paid instances).
+3. **New → Blueprint**, pick `arbaz-webdev/workhub`, branch **main**.
+   Render reads `render.yaml` and shows two services, `workhub-api` and `workhub-staging`, both in Singapore.
+4. It asks for the values it can't know. Paste them here:
 
-### Postgres
-**+ New → Database → PostgreSQL.** Keep the service name `Postgres`.
+   | Variable | Paste |
+   |---|---|
+   | `DATABASE_URL` | the Neon connection string from step 1 |
+   | `S3_ENDPOINT` | the R2 S3 endpoint |
+   | `S3_ACCESS_KEY_ID` | from R2 |
+   | `S3_SECRET_ACCESS_KEY` | from R2 |
 
-### api
-**+ New → GitHub Repo → arbaz-webdev/workhub**, then:
-- Rename the service to **`api`**.
-- Settings → Source: branch **main**. Turn on **Wait for CI** if offered, so a red build never deploys.
-- Settings → Deploy: health check path **`/health`**.
-- Networking: **don't** generate a public domain.
-- Variables:
+   Everything else is already set in `render.yaml`. The password for the API's restricted
+   database user is generated by Render, and the API creates that user, and applies the
+   database migrations, every time it starts.
+5. **Apply**. The first builds take about 5–10 minutes.
 
-| Variable | Value |
-|---|---|
-| `RAILWAY_DOCKERFILE_PATH` | `deploy/api.Dockerfile` |
-| `NODE_ENV` | `production` |
-| `PORT` | `4000` |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-| `APP_DB_PASSWORD` | a long random password (see below) |
-| `DATABASE_APP_URL` | `postgresql://workhub_app:${{APP_DB_PASSWORD}}@${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/${{Postgres.PGDATABASE}}` |
-| `WEB_ORIGIN` | `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` |
-| `APP_URL` | `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` |
-| `TRUST_PROXY` | `2` (Railway's edge, then the web app) |
-| `EMAIL_TRANSPORT` | `console` |
-| `ALLOW_CONSOLE_EMAIL` | `true` (staging only: emails go to the log) |
-| `STORAGE_DRIVER` | `s3` |
-| `S3_BUCKET` | `workhub-staging` |
-| `S3_REGION` | `auto` |
-| `S3_ENDPOINT` | your R2 S3 endpoint |
-| `S3_ACCESS_KEY_ID` | from R2 |
-| `S3_SECRET_ACCESS_KEY` | from R2 |
+### If the website's address isn't `https://workhub-staging.onrender.com`
 
-To make a password for `APP_DB_PASSWORD`, run this on your computer and paste the result:
+Render adds a suffix when a name is taken. If the website shows a different `.onrender.com`
+address:
+1. Open **workhub-api → Environment**.
+2. Set `WEB_ORIGIN` and `APP_URL` to the real address (with `https://`, no trailing slash).
+3. Save, and let it redeploy.
 
-```bash
-node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
-```
+Until then, signing in fails with "Origin not allowed".
 
-The API creates its restricted database user (`workhub_app`, which Row-Level Security
-always applies to) with that password, and runs any new migrations every time it starts.
+## 4. Check it works
 
-### web
-**+ New → GitHub Repo → arbaz-webdev/workhub** again, then:
-- Rename the service to **`web`**.
-- Settings → Source: branch **main**.
-- Networking: **Generate domain** on port **3000**. This is the link you share.
-- Variables:
-
-| Variable | Value |
-|---|---|
-| `RAILWAY_DOCKERFILE_PATH` | `deploy/web.Dockerfile` |
-| `PORT` | `3000` |
-| `API_URL` | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:4000` |
-
-Deploy `api` first, then `web`. The first builds take a few minutes.
-
-## 3. Check it works
-
-1. Open the web link. Sign up and create your workspace.
-2. Attach a file to a task, then download it again (checks R2).
-3. Check in on the Attendance page (from Sprint 5). The IP shown on the check-in should be your
-   own public IP. If it's a Railway address, `TRUST_PROXY` needs changing.
+1. Open the website. Sign up and create your workspace.
+2. Attach a file to a task and download it again (this checks R2).
+3. **Attendance** → check in. The IP on the check-in should be **your** public IP (search
+   "what is my IP" to compare). If it shows another address, `TRUST_PROXY` on `workhub-api`
+   needs adjusting.
 4. **People → Share a join link**: choose **Manager**, then **Create link** → **Copy**, and send it to your
    partner. Once they've joined, you can make them an **Admin** on the same page.
 
-Emails, such as the "confirm your email" link, are in **api → Logs**; search for `To:`.
+Emails, such as the "confirm your email" link, are in **workhub-api → Logs**; search for `To:`.
 
 ## What CI checks
 
 Every pull request:
 - builds both images;
-- starts the API container against a fresh Postgres (running the migrations) and the web container;
-- signs up through the web app's `/api` proxy, as a browser would;
+- runs them configured as on Render (no `http://` on `API_URL`, the restricted database URL built from a generated password);
+- starts the API against a fresh Postgres, so the migrations run;
+- signs up through the website's `/api` proxy, as a browser would;
 - restarts the API to check that migrations don't re-run.
 
-So a change that would break the deploy is caught before it reaches staging.
+Render only deploys once those checks pass (`autoDeployTrigger: checksPass`).
 
-## Later: real emails
+## Later
 
-Buy the domain, add it to Resend, then on `api` set `EMAIL_TRANSPORT=resend`,
-`RESEND_API_KEY`, `EMAIL_FROM=WorkHub <no-reply@yourdomain>`, and delete
-`ALLOW_CONSOLE_EMAIL`. The same domain can then replace the `*.up.railway.app` address.
+- **Real emails:** buy the domain and add it to Resend. Then on `workhub-api` set
+  `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`,
+  and delete `ALLOW_CONSOLE_EMAIL`.
+- **Your own address:** the same domain (e.g. `staging.yourdomain.com`) can point at the website
+  in Render's **Custom domains**. Update `WEB_ORIGIN` and `APP_URL` to match.
+- **To save $7 a month:** the website can use Render's free plan, but it sleeps after 15
+  minutes idle and takes about a minute to wake.

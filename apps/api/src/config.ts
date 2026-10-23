@@ -5,6 +5,22 @@ import { join } from 'node:path';
 const envFile = join(__dirname, '..', '.env');
 if (existsSync(envFile) && !process.env.JEST_WORKER_ID) process.loadEnvFile(envFile);
 
+/**
+ * The restricted connection the API uses. Either given in full (DATABASE_APP_URL), or
+ * built from the admin URL with the app user and APP_DB_PASSWORD, for hosts that can
+ * only hand over one database URL. scripts/migrate.mjs builds it the same way.
+ */
+export function appDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+  if (env.DATABASE_APP_URL) return env.DATABASE_APP_URL;
+  if (env.DATABASE_URL && env.APP_DB_PASSWORD) {
+    const url = new URL(env.DATABASE_URL);
+    url.username = env.DATABASE_APP_USER ?? 'workhub_app';
+    url.password = env.APP_DB_PASSWORD;
+    return url.toString();
+  }
+  throw new Error('Set DATABASE_APP_URL, or DATABASE_URL and APP_DB_PASSWORD (see apps/api/.env.example)');
+}
+
 function required(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable ${name} (see apps/api/.env.example)`);
@@ -31,7 +47,7 @@ export const config = {
     return value;
   },
   get databaseAppUrl() {
-    return required('DATABASE_APP_URL');
+    return appDatabaseUrl();
   },
   /** Public URL of the web app, used in email links and OAuth redirects. */
   get appUrl() {

@@ -124,3 +124,66 @@ jobs:
         run: |
           docker logs api || true
           docker logs web || true
+
+  # The single-container image the free staging site runs (render.yaml): the website and
+  # the API together, with the API reachable only from inside the container.
+  staging-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: workhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the staging image
+        run: docker build -f deploy/staging.Dockerfile -t workhub-staging .
+
+      - name: Start it as Render would
+        run: |
+          docker run -d --name staging \
+            --add-host=host.docker.internal:host-gateway \
+            -p 3000:3000 -p 4000:4000 \
+            -e NODE_ENV=production -e PORT=3000 \
+            -e DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/workhub \
+            -e 'APP_DB_PASSWORD=smoke+test/pass=word==' \
+            -e WEB_ORIGIN=http://localhost:3000 -e APP_URL=http://localhost:3000 \
+            -e TRUST_PROXY=2 \
+            -e EMAIL_TRANSPORT=console -e ALLOW_CONSOLE_EMAIL=true \
+            -e STORAGE_DRIVER=s3 -e S3_BUCKET=smoke -e S3_ENDPOINT=http://localhost:9 \
+            -e S3_ACCESS_KEY_ID=smoke -e S3_SECRET_ACCESS_KEY=smoke \
+            workhub-staging
+
+      - name: Sign up through the website, and check the API isn't reachable from outside
+        run: |
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health && break; sleep 2; done
+          curl -fsS http://localhost:3000/api/health | grep -q ok
+          curl -fsS -o /dev/null http://localhost:3000/sign-in
+          curl -fsS -X POST http://localhost:3000/api/auth/sign-up \
+            -H 'content-type: application/json' -H 'origin: http://localhost:3000' \
+            -d '{"name":"Smoke","email":"smoke@example.com","password":"correct-horse-battery","workspaceName":"Smoke Co"}' \
+            -c cookies.txt | grep -q '"workspace"'
+          curl -fsS -b cookies.txt http://localhost:3000/api/auth/me | grep -q smoke@example.com
+          # Port 4000 is published, but the API listens on the container's loopback only.
+          if curl -sS --max-time 5 http://localhost:4000/health; then echo "API is exposed outside the container"; exit 1; fi
+          # If either process stops, the container stops (so the host restarts it).
+          docker exec staging bash -c 'for p in /proc/[0-9]*; do if tr "\0" " " < "$p/cmdline" 2>/dev/null | grep -q "dist/main.js"; then kill "${p#/proc/}"; break; fi; done'
+          for i in $(seq 1 15); do [ "$(docker inspect -f '{{.State.Running}}' staging)" = "false" ] && break; sleep 1; done
+          [ "$(docker inspect -f '{{.State.Running}}' staging)" = "false" ]
+
+      - name: Container logs
+        if: failure()
+        run: docker logs staging || true

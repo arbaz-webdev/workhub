@@ -36,7 +36,7 @@ import { randomUUID } from 'node:crypto';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService } from '../db/db.service';
-import { attendanceDays, attendanceEvents, memberships, teams, users } from '../db/schema';
+import { attendanceDays, attendanceEvents, memberships, shifts, teams, users } from '../db/schema';
 import { StorageService } from '../storage/storage.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import {
@@ -44,6 +44,7 @@ import {
   conflict,
   daysFor,
   eventsForDays,
+  extrasLoader,
   firstCountedDay,
   lockDay,
   openDay,
@@ -55,6 +56,7 @@ import {
   trackingStart,
   workspaceInfo,
 } from './attendance';
+import { monthReport, toCsv, toXlsx } from './export';
 import { checkZone, normalizeIp } from './location';
 import { breaksOn, punchState, resolveWorkday } from './rules';
 import { addDays, zonedParts } from './zoned';
@@ -278,6 +280,31 @@ export class AttendanceController {
     result.stream.pipe(res);
   }
 
+  /**
+   * A month for payroll: .xlsx with a Summary and a Daily sheet, or the summary as CSV.
+   */
+  @Get('export')
+  @MinRole('manager')
+  async export(
+    @Query('month') month: string | undefined,
+    @Query('format') format: string | undefined,
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @Res() res: Response,
+  ) {
+    if (!month || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new BadRequestException('Use month=YYYY-MM');
+    const csv = format === 'csv';
+    const file = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      const info = await workspaceInfo(tx, ws.id);
+      const report = await monthReport(tx, info, month);
+      return csv ? toCsv(report) : toXlsx(report, info);
+    });
+    res.setHeader('content-type', csv ? 'text/csv; charset=utf-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('content-disposition', `attachment; filename="attendance-${month}.${csv ? 'csv' : 'xlsx'}"`);
+    res.setHeader('cache-control', 'private, no-store');
+    res.send(file);
+  }
+
   /** Everyone's attendance for one workday (managers and above). */
   @Get('team')
   @MinRole('manager')
@@ -285,7 +312,13 @@ export class AttendanceController {
     return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
       const info = await workspaceInfo(tx, ws.id);
       const now = new Date();
-      const d = date ?? zonedParts(now, info.timezone).date;
+      // Default to the current workday under the default shift: at 01:00 a night shift
+      // that started at 18:00 is still yesterday's workday.
+      let d = date;
+      if (!d) {
+        const [fallback] = await tx.select().from(shifts).where(and(eq(shifts.workspaceId, ws.id), eq(shifts.isDefault, true)));
+        d = resolveWorkday(now, fallback ? shiftRule(fallback) : null, info.timezone);
+      }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d))) throw new BadRequestException('Use date=YYYY-MM-DD');
       const people = await tx
         .select({ userId: users.id, name: users.name, teamName: teams.name })
@@ -305,13 +338,14 @@ export class AttendanceController {
         rows.map((r) => r.id),
       );
       const siteNames = await siteNameMap(tx, ws.id);
+      const extras = await extrasLoader(tx, info, attendance, d, d);
       const start = await trackingStart(tx, info);
       const summary = Object.fromEntries(ATTENDANCE_STATUSES.map((s) => [s, 0])) as Record<AttendanceStatus, number>;
       const counted = people.filter((p) => byUser.has(p.userId) || d >= firstCountedDay(start, attendance.get(p.userId)?.joinedAt, info, now));
       const out = counted.map((p) => {
         const row = byUser.get(p.userId);
         const a = attendance.get(p.userId);
-        const day = buildDay(d, row, row ? (events.get(row.id) ?? []) : [], a?.shift ?? null, info, siteNames, now);
+        const day = buildDay(d, row, row ? (events.get(row.id) ?? []) : [], a?.shift ?? null, info, siteNames, now, extras(p.userId, d));
         summary[day.status] += 1;
         return { userId: p.userId, name: p.name, teamName: p.teamName, remote: a?.remote ?? false, day };
       });

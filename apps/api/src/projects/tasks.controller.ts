@@ -61,6 +61,7 @@ import {
 import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
 import { contentDisposition, StorageService } from '../storage/storage.service';
+import { assertWeekOpen } from '../timesheets/timesheets';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { canManage, cardsFor, checkBudget, GAP, loadColumn, loadProject, loadTask, recordActivity, requireEdit, taskPosition } from './board';
 
@@ -362,8 +363,14 @@ export class TasksController {
   ): Promise<TaskDetailDto> {
     requireEdit(ws);
     return this.changeTask(ws, auth, id, async (tx, task) => {
-      const workDate = body.workDate ?? (await this.workspaceToday(tx, ws.id));
+      const today = await this.workspaceToday(tx, ws.id);
+      const workDate = body.workDate ?? today;
+      if (workDate > today) throw new BadRequestException('You can’t log time for a future day.');
+      // Time typed in for an earlier day needs a word of explanation for whoever approves it.
+      if (workDate < today && !body.note) throw new BadRequestException({ message: 'Validation failed', errors: [{ path: 'note', message: 'Say what the time was for when logging an earlier day' }] });
+      await assertWeekOpen(tx, ws.id, auth.userId, workDate);
       await tx.insert(timeEntries).values({
+        source: 'manual',
         workspaceId: ws.id,
         projectId: task.projectId,
         taskId: id,
@@ -391,11 +398,12 @@ export class TasksController {
     requireEdit(ws);
     return this.changeTask(ws, auth, id, async (tx) => {
       const [entry] = await tx
-        .select({ userId: timeEntries.userId })
+        .select({ userId: timeEntries.userId, workDate: timeEntries.workDate })
         .from(timeEntries)
         .where(and(eq(timeEntries.id, entryId), eq(timeEntries.taskId, id)));
       if (!entry) throw new NotFoundException('Time entry not found');
       if (entry.userId !== auth.userId && !canManage(ws)) throw new ForbiddenException('You can only remove your own time');
+      await assertWeekOpen(tx, ws.id, entry.userId, entry.workDate);
       await tx.delete(timeEntries).where(eq(timeEntries.id, entryId));
     });
   }

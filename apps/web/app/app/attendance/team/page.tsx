@@ -3,7 +3,8 @@
 import { hasRole, type AttendanceStatus, type TeamAttendanceDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { clock, duration, Flags, prettyDate, STATUS_LABEL, StatusBadge } from '@/components/attendance/labels';
+import { clock, duration, Flags, INFO_FLAGS, prettyDate, STATUS_LABEL, StatusBadge } from '@/components/attendance/labels';
+import { CorrectionDialog } from '@/components/attendance/correction-dialog';
 import { AttendanceTabs } from '@/components/attendance/tabs';
 import { Alert, PageHeader, btn } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -17,12 +18,14 @@ function shift(date: string, days: number) {
 }
 
 export default function TeamAttendancePage() {
-  const { workspace } = useWorkspace();
+  const { workspace, me } = useWorkspace();
   const api = useWorkspaceApi();
   const [date, setDate] = useState<string>();
   const [data, setData] = useState<TeamAttendanceDto>();
   const [error, setError] = useState<string>();
   const [filter, setFilter] = useState<AttendanceStatus | 'flagged' | ''>('');
+  const [notice, setNotice] = useState<string>();
+  const [correcting, setCorrecting] = useState<TeamAttendanceDto['rows'][number] | null>(null);
 
   const load = useCallback(() => {
     setError(undefined);
@@ -39,7 +42,7 @@ export default function TeamAttendancePage() {
   const tz = data?.timezone ?? 'Asia/Karachi';
   const rows = useMemo(() => {
     if (!data) return [];
-    if (filter === 'flagged') return data.rows.filter((r) => r.day.flags.some((f) => f !== 'late' && f !== 'day_off'));
+    if (filter === 'flagged') return data.rows.filter((r) => r.day.flags.some((f) => f !== 'late' && !INFO_FLAGS.has(f)));
     return filter ? data.rows.filter((r) => r.day.status === filter) : data.rows;
   }, [data, filter]);
 
@@ -66,10 +69,27 @@ export default function TeamAttendancePage() {
           →
         </button>
         {data && <span className="text-sm font-medium text-gray-700">{prettyDate(data.date, { weekday: 'long', day: 'numeric', month: 'long' })}</span>}
-        <button type="button" className={`${btn.ghost} ml-auto`} onClick={load}>
-          Refresh
-        </button>
+        <span className="ml-auto flex flex-wrap items-center gap-2">
+          {data && (
+            <>
+              <a className={btn.secondary} href={`/api/attendance/export?month=${data.date.slice(0, 7)}&workspace=${workspace.id}`} download>
+                Export month (Excel)
+              </a>
+              <a className={btn.ghost} href={`/api/attendance/export?month=${data.date.slice(0, 7)}&format=csv&workspace=${workspace.id}`} download>
+                CSV
+              </a>
+            </>
+          )}
+          <button type="button" className={btn.ghost} onClick={load}>
+            Refresh
+          </button>
+        </span>
       </div>
+      {notice && (
+        <div className="mb-4">
+          <Alert kind="success">{notice}</Alert>
+        </div>
+      )}
 
       {error && <Alert>{error}</Alert>}
       {data && (
@@ -84,7 +104,7 @@ export default function TeamAttendancePage() {
               </Chip>
             ))}
             <Chip active={filter === 'flagged'} onClick={() => setFilter(filter === 'flagged' ? '' : 'flagged')}>
-              Needs a look <b>{data.rows.filter((r) => r.day.flags.some((f) => f !== 'late' && f !== 'day_off')).length}</b>
+              Needs a look <b>{data.rows.filter((r) => r.day.flags.some((f) => f !== 'late' && !INFO_FLAGS.has(f))).length}</b>
             </Chip>
           </div>
 
@@ -99,6 +119,7 @@ export default function TeamAttendancePage() {
                   <th className="px-3 py-2">Out</th>
                   <th className="px-3 py-2 text-right">Worked</th>
                   <th className="px-3 py-2">Selfies</th>
+                  <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
@@ -117,6 +138,8 @@ export default function TeamAttendancePage() {
                       <td className="px-3 py-2">
                         <span className="flex flex-wrap items-center gap-1">
                           <StatusBadge status={r.day.status} />
+                          {r.day.holidayName && <span className="text-xs text-rose-700">{r.day.holidayName}</span>}
+                          {r.day.leave && <span className="text-xs text-violet-700">{r.day.leave.typeName}{r.day.leave.fraction < 1 && ' (half)'}</span>}
                           {r.day.onBreak && <span className="text-xs text-gray-500">On break</span>}
                           {r.day.lateMinutes > 0 && <span className="text-xs text-amber-700">{duration(r.day.lateMinutes)} late</span>}
                         </span>
@@ -142,12 +165,20 @@ export default function TeamAttendancePage() {
                           ))}
                         </span>
                       </td>
+                      <td className="px-3 py-2 text-right">
+                        {/* Nobody corrects their own day directly, except the owner. */}
+                        {r.day.status !== 'not_started' && !r.day.open && (r.userId !== me.user.id || workspace.role === 'owner') && (
+                          <button type="button" className="text-xs text-brand-700 hover:underline" onClick={() => setCorrecting(r)}>
+                            Correct
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-10 text-center text-gray-500">
+                    <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
                       Nobody matches this filter.
                     </td>
                   </tr>
@@ -155,6 +186,25 @@ export default function TeamAttendancePage() {
               </tbody>
             </table>
           </div>
+          {correcting && data && (
+            <CorrectionDialog
+              date={data.date}
+              timeZone={tz}
+              userId={correcting.userId}
+              personName={correcting.name}
+              direct
+              current={correcting.day}
+              onClose={() => setCorrecting(null)}
+              onDone={(m) => {
+                setCorrecting(null);
+                setNotice(`${m} ${correcting.name} has been told.`);
+                load();
+              }}
+            />
+          )}
+          <p className="mt-3 text-xs text-gray-500">
+            Corrections people ask for are on the <Link href="/app/leave/approvals" className="underline">Approvals</Link> page.
+          </p>
           {hasRole(workspace.role, 'admin') && (
             <p className="mt-3 text-xs text-gray-500">
               Set shifts, breaks and office locations in <Link href="/app/attendance/settings" className="underline">Shifts and offices</Link>.

@@ -1,7 +1,10 @@
 'use client';
 
-import { MAX_UPLOAD_MB, type TaskDetailDto } from '@workhub/shared';
-import { useRef, useState } from 'react';
+import { MAX_UPLOAD_MB, type TaskDetailDto, type TimerDto } from '@workhub/shared';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { announceTimer, TIMER_EVENT } from '@/components/shell/timer-chip';
+import { ApiError } from '@/lib/api';
+import { useWorkspaceApi } from '@/lib/workspace';
 import { btn, input, timeAgo } from '@/components/ui';
 import { hoursText, localToday } from './style';
 
@@ -163,9 +166,12 @@ export function TimeLog({
           {task.estimateHours !== null && <span className="font-normal text-gray-500"> of {hoursText(task.estimateHours)}</span>}
         </h3>
         {canEdit && !open && (
-          <button type="button" className={`${btn.ghost} ml-auto !py-1`} onClick={() => setOpen(true)}>
-            Log time
-          </button>
+          <span className="ml-auto flex items-center gap-1">
+            <TimerButton taskId={task.id} />
+            <button type="button" className={`${btn.ghost} !py-1`} onClick={() => setOpen(true)}>
+              Log time
+            </button>
+          </span>
         )}
       </div>
       {open && (
@@ -219,5 +225,53 @@ export function TimeLog({
         </ul>
       )}
     </section>
+  );
+}
+
+/** Start or stop timing this task. Starting stops (and logs) a timer on another task. */
+function TimerButton({ taskId }: { taskId: string }) {
+  const api = useWorkspaceApi();
+  const [running, setRunning] = useState<TimerDto | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+
+  const load = useCallback(() => {
+    api<TimerDto | Record<string, never>>('/timer')
+      .then((t) => setRunning('taskId' in t ? (t as TimerDto) : null))
+      .catch(() => setRunning(null));
+  }, [api]);
+
+  useEffect(() => {
+    load();
+    window.addEventListener(TIMER_EVENT, load);
+    return () => window.removeEventListener(TIMER_EVENT, load);
+  }, [load]);
+
+  const here = running?.taskId === taskId;
+  async function toggle() {
+    setBusy(true);
+    setError(undefined);
+    try {
+      if (here) await api('/timer/stop', { method: 'POST' });
+      else await api(`/tasks/${taskId}/timer/start`, { method: 'POST' });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not change the timer.');
+    } finally {
+      setBusy(false);
+      announceTimer();
+    }
+  }
+
+  return (
+    <>
+      <button type="button" onClick={toggle} disabled={busy} className={`${btn.ghost} !py-1 ${here ? 'text-red-600' : ''}`} title={running && !here ? `Stops the timer on ${running.taskTitle}` : undefined}>
+        {here ? '■ Stop timer' : '▶ Start timer'}
+      </button>
+      {error && (
+        <span role="alert" className="text-xs text-red-600">
+          {error}
+        </span>
+      )}
+    </>
   );
 }

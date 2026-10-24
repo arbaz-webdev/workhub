@@ -76,8 +76,10 @@ export interface DayInput {
   /** Sorted by time. */
   events: DayEvent[];
   now: Date;
-  /** Filled in by leave and holidays (sprint 6). */
+  /** A public or company holiday. */
   holiday?: boolean;
+  /** Approved leave: 1 for a full day, 0.5 for half. `onLeave` is shorthand for 1. */
+  leaveFraction?: number;
   onLeave?: boolean;
 }
 
@@ -110,12 +112,17 @@ export function evaluateDay(input: DayInput): DayResult {
   const flags = new Set<AttendanceFlag>();
   for (const e of events) for (const f of e.flags) flags.add(f);
 
+  const leave = input.leaveFraction ?? (input.onLeave ? 1 : 0);
+  const halfLeave = leave > 0 && leave < 1 && !input.holiday && input.workingDay;
+  if (halfLeave) flags.add('half_day_leave');
+
   const firstIn = events.find((e) => e.type === 'check_in')?.at ?? null;
   if (!firstIn) {
     const over = now >= (input.scheduledEnd ?? input.dayEnd);
+    // A half day off still owes the other half: without a check-in it's absent.
     const status: AttendanceStatus = input.holiday
       ? 'holiday'
-      : input.onLeave
+      : leave >= 1
         ? 'on_leave'
         : !input.workingDay
           ? 'weekend'
@@ -183,22 +190,27 @@ export function evaluateDay(input: DayInput): DayResult {
   const lateMinutes = input.scheduledStart ? minutes(firstIn.getTime() - input.scheduledStart.getTime()) : 0;
   const late = !!input.scheduledStart && lateMinutes > input.graceMinutes;
 
-  const dayOff = !input.workingDay || !!input.holiday || !!input.onLeave;
+  const dayOff = !input.workingDay || !!input.holiday || leave >= 1;
+  // With half the day on leave, half the hours are owed, and either half may be worked.
+  const fullDay = halfLeave ? input.fullDayMinutes / 2 : input.fullDayMinutes;
+  const halfDay = halfLeave ? input.halfDayMinutes / 2 : input.halfDayMinutes;
+  const judgeTimes = !halfLeave;
   let status: AttendanceStatus;
   if (dayOff) {
     // Working on a day off: record it, but don't judge it as late or short.
     flags.add('day_off');
     status = 'present';
   } else {
-    if (late) flags.add('late');
+    if (late && judgeTimes) flags.add('late');
     // Until the shift is over someone who checked out may still come back (lunch, an
     // errand), so short days and leaving early are only judged once it has ended.
     const over = now >= (input.scheduledEnd ?? input.dayEnd);
-    if (over && !open && lastOut && input.scheduledEnd && !flags.has('missed_check_out') && lastOut.getTime() < input.scheduledEnd.getTime() - input.graceMinutes * 60_000) {
+    if (judgeTimes && over && !open && lastOut && input.scheduledEnd && !flags.has('missed_check_out') && lastOut.getTime() < input.scheduledEnd.getTime() - input.graceMinutes * 60_000) {
       flags.add('left_early');
     }
-    if (open || !over || workedMinutes >= input.fullDayMinutes) status = late ? 'late' : 'present';
-    else if (workedMinutes >= input.halfDayMinutes) status = 'half_day';
+    const isLate = late && judgeTimes;
+    if (open || !over || workedMinutes >= fullDay) status = isLate ? 'late' : 'present';
+    else if (workedMinutes >= halfDay) status = 'half_day';
     else {
       status = 'absent';
       flags.add('short_day');
@@ -215,7 +227,7 @@ export function evaluateDay(input: DayInput): DayResult {
     checkOutAt: state === 'out' ? lastOut : null,
     workedMinutes,
     breakMinutes: minutes(totalBreakMs),
-    lateMinutes: late ? lateMinutes : 0,
+    lateMinutes: late && judgeTimes && !dayOff ? lateMinutes : 0,
   };
 }
 

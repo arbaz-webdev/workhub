@@ -689,6 +689,8 @@ export const ATTENDANCE_FLAGS = [
   'outside_zone',
   'no_location',
   'offline',
+  'half_day_leave',
+  'corrected',
 ] as const;
 export type AttendanceFlag = (typeof ATTENDANCE_FLAGS)[number];
 
@@ -710,6 +712,10 @@ export interface AttendanceDayDto {
   date: string;
   status: AttendanceStatus;
   flags: AttendanceFlag[];
+  /** The public or company holiday on this date, if any. */
+  holidayName: string | null;
+  /** Approved leave covering this date (fraction 0.5 for a half day). */
+  leave: { typeName: string; fraction: number; paid: boolean } | null;
   /** Checked in and not yet checked out. */
   open: boolean;
   /** The break in progress, if any. */
@@ -746,3 +752,186 @@ export interface TeamAttendanceDto {
 
 export const MAX_SELFIE_BYTES = 3 * 1024 * 1024;
 export const SELFIE_RETENTION_DAYS = 30;
+
+// ---- Sprint 6: holidays, leave, corrections, timer and timesheets -------------------
+
+export const holidaySchema = z.object({
+  date: calendarDate,
+  name: name('a holiday name', 80),
+});
+export type HolidayInput = z.infer<typeof holidaySchema>;
+
+export interface HolidayDto {
+  id: string;
+  date: string;
+  name: string;
+  kind: 'public' | 'company';
+  /** Moon-sighting date not yet announced. */
+  estimated: boolean;
+}
+
+export const LEAVE_COLORS = ['blue', 'teal', 'amber', 'violet', 'pink', 'gray'] as const;
+
+export const leaveTypeSchema = z.object({
+  name: name('a leave type name', 40),
+  paid: z.boolean(),
+  /** Days a year; null for no limit (e.g. unpaid leave). */
+  daysPerYear: z.number().min(0).max(365).multipleOf(0.5).nullable(),
+  accrual: z.enum(['yearly', 'monthly']),
+  color: z.enum(LEAVE_COLORS).default('blue'),
+});
+export type LeaveTypeInput = z.input<typeof leaveTypeSchema>;
+
+export interface LeaveTypeDto {
+  id: string;
+  name: string;
+  paid: boolean;
+  daysPerYear: number | null;
+  accrual: 'yearly' | 'monthly';
+  color: (typeof LEAVE_COLORS)[number];
+}
+
+export const HALF_DAYS = ['none', 'first', 'second'] as const;
+export type HalfDay = (typeof HALF_DAYS)[number];
+
+export const leaveRequestSchema = z
+  .object({
+    leaveTypeId: uuid,
+    startDate: calendarDate,
+    endDate: calendarDate,
+    halfDay: z.enum(HALF_DAYS).default('none'),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .refine((r) => r.endDate >= r.startDate, { message: 'The leave must end on or after its first day', path: ['endDate'] })
+  .refine((r) => r.halfDay === 'none' || r.startDate === r.endDate, { message: 'A half day is for a single date', path: ['halfDay'] })
+  .refine((r) => r.startDate.slice(0, 4) === r.endDate.slice(0, 4), {
+    message: 'Leave can’t span two years; make one request for each year',
+    path: ['endDate'],
+  });
+export type LeaveRequestInput = z.input<typeof leaveRequestSchema>;
+
+export const REQUEST_STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+
+export const decisionSchema = z.object({ note: z.string().trim().max(500).optional() });
+export type DecisionInput = z.infer<typeof decisionSchema>;
+
+export interface LeaveRequestDto {
+  id: string;
+  user: PersonDto;
+  leaveType: Pick<LeaveTypeDto, 'id' | 'name' | 'color' | 'paid'>;
+  startDate: string;
+  endDate: string;
+  halfDay: HalfDay;
+  days: number;
+  /** Shown to the person and to managers only. */
+  reason: string | null;
+  status: RequestStatus;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+export interface LeaveBalanceDto {
+  leaveType: LeaveTypeDto;
+  year: number;
+  /** Earned so far this year (null when the type has no limit). */
+  entitled: number | null;
+  adjustments: number;
+  used: number;
+  pending: number;
+  /** What can still be requested (null when the type has no limit). */
+  available: number | null;
+}
+
+export interface MyLeaveDto {
+  year: number;
+  balances: LeaveBalanceDto[];
+  requests: LeaveRequestDto[];
+}
+
+export const leaveAdjustmentSchema = z.object({
+  userId: uuid,
+  leaveTypeId: uuid,
+  year: z.number().int().min(2000).max(2100),
+  days: z.number().min(-365).max(365).multipleOf(0.5).refine((d) => d !== 0, 'Enter a number of days'),
+  reason: name('a reason', 300),
+});
+export type LeaveAdjustmentInput = z.infer<typeof leaveAdjustmentSchema>;
+
+export interface LeaveCalendarDto {
+  month: string;
+  holidays: HolidayDto[];
+  people: { userId: string; name: string; entries: { date: string; typeName: string; color: string; status: 'pending' | 'approved'; fraction: number }[] }[];
+}
+
+export const correctionSchema = z
+  .object({
+    date: calendarDate,
+    checkInAt: z.iso.datetime({ offset: true }),
+    checkOutAt: z.iso.datetime({ offset: true }),
+    reason: name('a reason', 500),
+    /** Managers correcting someone else's day; applied straight away. */
+    userId: uuid.optional(),
+  })
+  .refine((c) => new Date(c.checkOutAt) > new Date(c.checkInAt), { message: 'Check-out must be after check-in', path: ['checkOutAt'] })
+  .refine((c) => new Date(c.checkOutAt).getTime() - new Date(c.checkInAt).getTime() <= 20 * 3600_000, {
+    message: 'A day can’t be longer than 20 hours',
+    path: ['checkOutAt'],
+  });
+export type CorrectionInput = z.infer<typeof correctionSchema>;
+
+export interface CorrectionDto {
+  id: string;
+  user: PersonDto;
+  date: string;
+  checkInAt: string;
+  checkOutAt: string;
+  reason: string;
+  status: RequestStatus;
+  requestedByName: string | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+export interface TimerDto {
+  taskId: string;
+  taskTitle: string;
+  projectId: string;
+  projectName: string;
+  startedAt: string;
+}
+
+export const TIMESHEET_STATUSES = ['draft', 'submitted', 'approved', 'rejected'] as const;
+export type TimesheetStatus = (typeof TIMESHEET_STATUSES)[number];
+
+export interface TimesheetDto {
+  id: string | null;
+  user: PersonDto;
+  weekStart: string;
+  /** The seven dates, Monday first. */
+  days: string[];
+  status: TimesheetStatus;
+  decidedByName: string | null;
+  decisionNote: string | null;
+  rows: { taskId: string | null; taskTitle: string; projectId: string; projectName: string; minutes: number[]; total: number; billable: number }[];
+  dayTotals: number[];
+  total: number;
+  billable: number;
+  /** Minutes from timers vs. typed in by hand. */
+  fromTimer: number;
+  manual: number;
+}
+
+export interface TimesheetSummaryDto {
+  user: PersonDto;
+  timesheetId: string | null;
+  status: TimesheetStatus;
+  total: number;
+  billable: number;
+}
+
+export const submitTimesheetSchema = z.object({ weekStart: calendarDate });

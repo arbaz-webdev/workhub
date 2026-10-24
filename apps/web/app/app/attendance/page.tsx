@@ -4,6 +4,7 @@ import type { AttendanceDayDto, AttendanceEventType, AttendanceTodayDto } from '
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AttendanceTabs } from '@/components/attendance/tabs';
 import { clock, duration, EVENT_LABEL, Flags, prettyDate, shiftHours, StatusBadge } from '@/components/attendance/labels';
+import { CorrectionDialog } from '@/components/attendance/correction-dialog';
 import { SelfieCamera } from '@/components/attendance/selfie-camera';
 import { Alert, Card, PageHeader, btn } from '@/components/ui';
 import { ApiError } from '@/lib/api';
@@ -266,14 +267,18 @@ export default function AttendancePage() {
 
 function History({ timezone, currentMonth, version }: { timezone: string; currentMonth: string; version: number }) {
   const api = useWorkspaceApi();
+  const { workspace } = useWorkspace();
   const [month, setMonth] = useState(currentMonth);
   const [days, setDays] = useState<AttendanceDayDto[]>();
+  const [fixing, setFixing] = useState<AttendanceDayDto | null>(null);
+  const [notice, setNotice] = useState<string>();
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     api<AttendanceDayDto[]>(`/attendance/me?month=${month}`)
       .then(setDays)
       .catch(() => setDays([]));
-  }, [api, month, version]);
+  }, [api, month, version, reload]);
 
   const worked = days?.reduce((s, d) => s + d.workedMinutes, 0) ?? 0;
   const count = (pred: (d: AttendanceDayDto) => boolean) => days?.filter(pred).length ?? 0;
@@ -303,6 +308,7 @@ function History({ timezone, currentMonth, version }: { timezone: string; curren
                   <th className="py-2 pr-2 font-medium">In</th>
                   <th className="py-2 pr-2 font-medium">Out</th>
                   <th className="py-2 text-right font-medium">Worked</th>
+                  <th className="py-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -312,18 +318,51 @@ function History({ timezone, currentMonth, version }: { timezone: string; curren
                     <td className="py-2 pr-2">
                       <span className="flex flex-wrap items-center gap-1">
                         <StatusBadge status={d.status} />
+                        {d.holidayName && <span className="text-xs text-rose-700">{d.holidayName}</span>}
+                        {d.leave && (
+                          <span className="text-xs text-violet-700">
+                            {d.leave.typeName}
+                            {d.leave.fraction < 1 && ' (half)'}
+                          </span>
+                        )}
                         <Flags flags={d.flags} />
                       </span>
                     </td>
                     <td className="py-2 pr-2 tabular-nums text-gray-600">{clock(d.checkInAt, timezone)}</td>
                     <td className="py-2 pr-2 tabular-nums text-gray-600">{d.open ? 'Now' : clock(d.checkOutAt, timezone)}</td>
                     <td className="py-2 text-right tabular-nums">{d.workedMinutes > 0 ? duration(d.workedMinutes) : '—'}</td>
+                    <td className="py-2 pl-2 text-right">
+                      {!d.open && d.status !== 'not_started' && d.status !== 'holiday' && d.status !== 'on_leave' && (
+                        <button type="button" className="text-xs text-brand-700 hover:underline" onClick={() => setFixing(d)} aria-label={`Ask to correct ${d.date}`}>
+                          Fix
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </>
+      )}
+      {notice && (
+        <p className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700" role="status">
+          {notice}
+        </p>
+      )}
+      {fixing && (
+        <CorrectionDialog
+          date={fixing.date}
+          timeZone={timezone}
+          current={fixing}
+          direct={workspace.role === 'owner'}
+          onClose={() => setFixing(null)}
+          onDone={(m) => {
+            setFixing(null);
+            setNotice(m);
+            setReload((r) => r + 1);
+          }}
+        />
       )}
     </Card>
   );

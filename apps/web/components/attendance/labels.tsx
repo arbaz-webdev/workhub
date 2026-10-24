@@ -32,7 +32,12 @@ export const FLAG_LABEL: Record<AttendanceFlag, string> = {
   outside_zone: 'Outside office',
   no_location: 'No location',
   offline: 'Synced later',
+  half_day_leave: 'Half day leave',
+  corrected: 'Corrected',
 };
+
+/** Flags that are just information, not something to look into. */
+export const INFO_FLAGS = new Set<AttendanceFlag>(['day_off', 'offline', 'half_day_leave', 'corrected']);
 
 export const EVENT_LABEL: Record<AttendanceEventType, string> = {
   check_in: 'Checked in',
@@ -54,7 +59,7 @@ export function Flags({ flags }: { flags: AttendanceFlag[] }) {
       {shown.map((f) => (
         <span
           key={f}
-          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${f === 'day_off' || f === 'offline' ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-800'}`}
+          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${INFO_FLAGS.has(f) ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-800'}`}
         >
           {FLAG_LABEL[f]}
         </span>

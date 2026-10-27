@@ -211,6 +211,21 @@ How it decides things:
   - Excel's Windows encoding and semicolon-separated files both work.
 - [x] 243 tests
 
+## Sprint 9 status
+
+- [x] Pipelines and deals:
+  - Every workspace starts with a Sales pipeline (New 10%, Qualified 25%, Proposal sent 50%, Negotiation 75%, then Won and Lost).
+  - Managers can add pipelines and rename, reorder, add or remove stages; a stage that still has deals can't be removed.
+  - A Kanban board you can drag on (mouse, touch, or keyboard), plus a list view of open, won and lost deals.
+  - Totals and a weighted forecast are kept per currency (PKR and USD are never added together).
+- [x] Activities and follow-ups:
+  - Log calls, meetings, emails, WhatsApp chats and notes on any deal, company, contact or lead, or schedule a follow-up.
+  - Its owner gets a notification when it's due, and a Follow-ups tab lists what's overdue, due today and coming up.
+- [x] Won deal creates a project: mark it won and, in the same step, start the project for the client from any template (managers).
+- [x] Lead conversion can open a deal with the lead's value.
+- [x] Client 360: one page per company with money won, the open pipeline and forecast, hours this month and in total, each project's hours against its budget, people, deals, the activity timeline and recent files.
+- [x] 251 tests
+
 The app also now waits for the server when it's starting up (after a deploy, or when the free staging plan wakes from sleep) instead of staying on "Loading your workspace…".
 
 ## Key decisions so far

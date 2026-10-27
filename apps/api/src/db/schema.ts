@@ -6,10 +6,12 @@ import {
   CHANNEL_KINDS,
   REQUEST_STATUSES,
   ROLES,
+  type ActivityKind,
   type AttendanceFlag,
   type CrmEntity,
   type CustomFieldType,
   type CustomValues,
+  type DealStatus,
   type FeedbackKind,
   type HalfDay,
   type ImportMode,
@@ -17,6 +19,7 @@ import {
   type LeadSource,
   type LeadStatus,
   type ShiftBreak,
+  type StageKind,
 } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
@@ -669,4 +672,71 @@ export const crmImports = pgTable('crm_imports', {
   problems: jsonb('problems').$type<ImportProblem[]>().notNull().default([]),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---- Deals and activities (sprint 9) -------------------------------------------------
+
+export const pipelines = pgTable('pipelines', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  isDefault: boolean('is_default').notNull().default(false),
+  position: integer('position').notNull().default(0),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const pipelineStages = pgTable('pipeline_stages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  pipelineId: uuid('pipeline_id').notNull(),
+  name: text('name').notNull(),
+  probability: smallint('probability').notNull().default(0),
+  kind: text('kind').$type<StageKind>().notNull().default('open'),
+  position: integer('position').notNull().default(0),
+});
+
+export const deals = pgTable('deals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  pipelineId: uuid('pipeline_id').notNull(),
+  stageId: uuid('stage_id').notNull(),
+  title: text('title').notNull(),
+  value: numeric('value', { precision: 14, scale: 2, mode: 'number' }),
+  currency: text('currency').notNull().default('PKR'),
+  companyId: uuid('company_id'),
+  contactId: uuid('contact_id'),
+  leadId: uuid('lead_id'),
+  ownerId: uuid('owner_id'),
+  expectedClose: date('expected_close', { mode: 'string' }),
+  status: text('status').$type<DealStatus>().notNull().default('open'),
+  wonAt: timestamp('won_at', { withTimezone: true }),
+  lostAt: timestamp('lost_at', { withTimezone: true }),
+  lostReason: text('lost_reason'),
+  projectId: uuid('project_id'),
+  position: doublePrecision('position').notNull().default(0),
+  notes: text('notes'),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const activities = pgTable('activities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  kind: text('kind').$type<ActivityKind>().notNull(),
+  subject: text('subject').notNull(),
+  body: text('body'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  doneAt: timestamp('done_at', { withTimezone: true }),
+  dealId: uuid('deal_id'),
+  companyId: uuid('company_id'),
+  contactId: uuid('contact_id'),
+  leadId: uuid('lead_id'),
+  ownerId: uuid('owner_id'),
+  remindedAt: timestamp('reminded_at', { withTimezone: true }),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

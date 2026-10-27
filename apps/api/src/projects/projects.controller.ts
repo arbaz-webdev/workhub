@@ -40,13 +40,11 @@ import {
 } from '@workhub/shared';
 import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Observable } from 'rxjs';
-import { audit } from '../audit/audit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import {
   boardColumns,
-  checklistItems,
   companies,
   labels,
   memberships,
@@ -60,8 +58,9 @@ import {
 import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
-import { asLabelColor, canEdit, canManage, cardsFor, checkBudget, columnPosition, GAP, loadColumn, loadProject, requireEdit, requireManage } from './board';
-import { BLANK, builtinDtos, findBuiltin } from './templates';
+import { asLabelColor, canEdit, canManage, cardsFor, checkBudget, columnPosition, loadColumn, loadProject, requireEdit, requireManage } from './board';
+import { createProject } from './create';
+import { builtinDtos } from './templates';
 import { Track } from '../analytics/track';
 
 @Controller()
@@ -123,30 +122,8 @@ export class ProjectsController {
   ): Promise<ProjectSummaryDto> {
     return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
       if (body.clientId) await this.assertCompany(tx, ws.id, body.clientId);
-      const [project] = await tx
-        .insert(projects)
-        .values({
-          workspaceId: ws.id,
-          name: body.name,
-          description: body.description || null,
-          clientId: body.clientId ?? null,
-          budgetHours: body.budgetHours ?? null,
-          createdBy: auth.userId,
-        })
-        .returning();
-      const structure = await this.resolveTemplate(tx, ws.id, body.templateId);
-      await this.applyTemplate(tx, ws.id, project!.id, auth.userId, structure);
-      await tx.insert(projectMembers).values({ workspaceId: ws.id, projectId: project!.id, userId: auth.userId });
-      await audit(tx, {
-        workspaceId: ws.id,
-        actorUserId: auth.userId,
-        action: 'project.created',
-        entityType: 'project',
-        entityId: project!.id,
-        metadata: { name: body.name, template: body.templateId ?? null },
-        ip,
-      });
-      return (await this.summaries(tx, ws, auth.userId, project!.id))[0]!;
+      const id = await createProject(tx, ws.id, auth.userId, body, ip);
+      return (await this.summaries(tx, ws, auth.userId, id))[0]!;
     });
   }
 
@@ -453,56 +430,6 @@ export class ProjectsController {
   }
 
   // ---- Internals -------------------------------------------------------------------
-
-  private async resolveTemplate(tx: Tx, workspaceId: string, templateId?: string): Promise<TemplateStructure> {
-    if (!templateId) return BLANK;
-    if (templateId.startsWith('builtin:')) {
-      const builtin = findBuiltin(templateId);
-      if (!builtin) throw new BadRequestException('Unknown template');
-      return builtin;
-    }
-    const [row] = /^[0-9a-f-]{36}$/i.test(templateId)
-      ? await tx
-          .select({ structure: projectTemplates.structure })
-          .from(projectTemplates)
-          .where(and(eq(projectTemplates.id, templateId), eq(projectTemplates.workspaceId, workspaceId)))
-      : [];
-    if (!row) throw new BadRequestException('Unknown template');
-    return row.structure;
-  }
-
-  /** Creates a template's columns, labels and starter tasks (with checklists) in a new project. */
-  private async applyTemplate(tx: Tx, workspaceId: string, projectId: string, userId: string, t: TemplateStructure) {
-    const columnNames = t.columns.length > 0 ? t.columns : BLANK.columns;
-    const cols = await tx
-      .insert(boardColumns)
-      .values(columnNames.map((name, i) => ({ workspaceId, projectId, name, position: (i + 1) * GAP })))
-      .returning({ id: boardColumns.id });
-    if (t.labels.length > 0) {
-      await tx.insert(labels).values(t.labels.map((l) => ({ workspaceId, projectId, name: l.name, color: l.color })));
-    }
-    for (const [i, task] of t.tasks.entries()) {
-      const column = cols[Math.min(Math.max(task.column, 0), cols.length - 1)]!;
-      const [row] = await tx
-        .insert(tasks)
-        .values({
-          workspaceId,
-          projectId,
-          columnId: column.id,
-          title: task.title,
-          estimateHours: task.estimateHours ?? null,
-          position: (i + 1) * GAP,
-          createdBy: userId,
-        })
-        .returning({ id: tasks.id });
-      if (task.checklist?.length) {
-        await tx
-          .insert(checklistItems)
-          .values(task.checklist.map((text, j) => ({ workspaceId, taskId: row!.id, text, position: (j + 1) * GAP })));
-      }
-    }
-  }
-
 
   private async columnsChanged(
     ws: WorkspaceContext,

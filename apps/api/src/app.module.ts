@@ -10,6 +10,8 @@ import { AuditController } from './audit/audit.controller';
 import { AuthModule } from './auth/auth.module';
 import { Public } from './common/request';
 import { CrmController } from './crm/crm.controller';
+import { DealsController } from './crm/deals.controller';
+import { FollowUpRemindersService } from './crm/reminders.service';
 import { CrmImportController } from './crm/import.controller';
 import { DbModule } from './db/db.module';
 import { EmailModule } from './email/email.module';
@@ -63,8 +65,9 @@ class HealthController {
     FeedbackController,
     CrmController,
     CrmImportController,
+    DealsController,
     WaitlistController,
   ],
-  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
+  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })
 export class AppModule {}

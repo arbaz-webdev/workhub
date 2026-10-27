@@ -11,7 +11,7 @@ import {
   updateCustomFieldSchema,
   updateLeadSchema,
   type CompanyInput,
-  type CompanyPageDto,
+  type ClientOverviewDto,
   type ContactDto,
   type ContactInput,
   type ConvertLeadInput,
@@ -25,16 +25,19 @@ import {
   type Page,
   type UpdateLeadInput,
 } from '@workhub/shared';
-import { and, asc, desc, eq, ilike, isNull, max, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, max, or, sql, type SQL } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Track } from '../analytics/track';
+import { workspaceInfo } from '../attendance/attendance';
+import { zonedParts } from '../attendance/zoned';
 import { audit } from '../audit/audit';
 import { isUniqueViolation } from '../common/db-errors';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
-import { companies, contacts, customFields, leads, projects, workspaces } from '../db/schema';
+import { activities, attachments, companies, contacts, customFields, deals, leads, projects, tasks, workspaces } from '../db/schema';
+import { INLINE_IMAGE_TYPES } from '../storage/storage.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import {
   assertCompany,
@@ -58,6 +61,7 @@ import {
   phoneKey,
   splitName,
 } from './crm';
+import { activityDtos, dealDtos, endOfStage, resolveStage, sumByCurrency } from './deals';
 
 const PAGE_SIZE = 50;
 const pageOf = (p: string | undefined) => Math.max(1, Math.min(10_000, Number.parseInt(p ?? '1', 10) || 1));
@@ -119,9 +123,12 @@ export class CrmController {
     });
   }
 
-  /** A company with its contacts and projects. */
+  /**
+   * Client 360: a company with its people, deals, projects (and the hours on them),
+   * money won and in the pipeline, recent activity and files.
+   */
   @Get('companies/:id')
-  async company(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<CompanyPageDto> {
+  async company(@Param('id', ParseUUIDPipe) id: string, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<ClientOverviewDto> {
     return this.db.withContext(this.ctx(auth, ws), async (tx) => {
       const row = await loadCompany(tx, ws.id, id);
       const people = await tx
@@ -129,12 +136,95 @@ export class CrmController {
         .from(contacts)
         .where(and(eq(contacts.companyId, id), isNull(contacts.deletedAt)))
         .orderBy(asc(sql`lower(${contacts.firstName})`));
+      const dealRows = await tx
+        .select()
+        .from(deals)
+        .where(and(eq(deals.companyId, id), isNull(deals.deletedAt)))
+        .orderBy(desc(deals.createdAt))
+        .limit(200);
+      const dealList = await dealDtos(tx, dealRows);
+
+      const { timezone } = await workspaceInfo(tx, ws.id);
+      const monthStart = `${zonedParts(new Date(), timezone).date.slice(0, 7)}-01`;
       const work = await tx
-        .select({ id: projects.id, name: projects.name, status: projects.status })
+        .select({
+          id: projects.id,
+          name: projects.name,
+          status: projects.status,
+          budgetHours: projects.budgetHours,
+          minutes: sql<number>`coalesce((select sum(t.minutes) from time_entries t where t.project_id = "projects"."id"), 0)::int`,
+          billable: sql<number>`coalesce((select sum(t.minutes) from time_entries t where t.project_id = "projects"."id" and t.billable), 0)::int`,
+          month: sql<number>`coalesce((select sum(t.minutes) from time_entries t where t.project_id = "projects"."id" and t.work_date >= ${monthStart}::date), 0)::int`,
+        })
         .from(projects)
         .where(eq(projects.clientId, id))
         .orderBy(desc(projects.createdAt));
-      return { company: (await companyDtos(tx, [row]))[0]!, contacts: await contactDtos(tx, people), projects: work };
+      const hours = (m: number) => Math.round((m / 60) * 10) / 10;
+
+      // Activity on the company itself, its people and its deals.
+      const personIds = people.map((p) => p.id);
+      const dealIds = dealRows.map((d) => d.id);
+      const actRows = await tx
+        .select()
+        .from(activities)
+        .where(
+          and(
+            eq(activities.workspaceId, ws.id),
+            or(
+              eq(activities.companyId, id),
+              personIds.length ? inArray(activities.contactId, personIds) : undefined,
+              dealIds.length ? inArray(activities.dealId, dealIds) : undefined,
+            ),
+          ),
+        )
+        .orderBy(desc(activities.createdAt))
+        .limit(40);
+
+      const projectIds = work.map((p) => p.id);
+      const files = projectIds.length
+        ? await tx
+            .select({
+              id: attachments.id,
+              fileName: attachments.fileName,
+              contentType: attachments.contentType,
+              sizeBytes: attachments.sizeBytes,
+              createdAt: attachments.createdAt,
+              projectId: tasks.projectId,
+              projectName: projects.name,
+            })
+            .from(attachments)
+            .innerJoin(tasks, eq(tasks.id, attachments.taskId))
+            .innerJoin(projects, eq(projects.id, tasks.projectId))
+            .where(and(inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt)))
+            .orderBy(desc(attachments.createdAt))
+            .limit(12)
+        : [];
+
+      const open = dealList.filter((d) => d.status === 'open');
+      return {
+        company: (await companyDtos(tx, [row]))[0]!,
+        contacts: await contactDtos(tx, people),
+        deals: dealList,
+        projects: work.map((p) => ({ id: p.id, name: p.name, status: p.status, budgetHours: p.budgetHours, hours: hours(p.minutes), billableHours: hours(p.billable) })),
+        totals: {
+          won: sumByCurrency(dealList.filter((d) => d.status === 'won')),
+          open: sumByCurrency(open),
+          weighted: sumByCurrency(open.map((d) => ({ ...d, weight: d.probability / 100 }))),
+          hoursThisMonth: hours(work.reduce((n, p) => n + p.month, 0)),
+          hoursTotal: hours(work.reduce((n, p) => n + p.minutes, 0)),
+        },
+        activities: await activityDtos(tx, actRows),
+        files: files.map((f) => ({
+          id: f.id,
+          fileName: f.fileName,
+          sizeBytes: f.sizeBytes,
+          url: `/attachments/${f.id}?workspace=${ws.id}`,
+          isImage: INLINE_IMAGE_TYPES.has(f.contentType),
+          projectId: f.projectId,
+          projectName: f.projectName,
+          createdAt: f.createdAt.toISOString(),
+        })),
+      };
     });
   }
 
@@ -398,7 +488,7 @@ export class CrmController {
     @Body(new ZodPipe(convertLeadSchema)) body: ConvertLeadInput,
     @CurrentAuth() auth: AuthContext,
     @CurrentWorkspace() ws: WorkspaceContext,
-  ): Promise<{ lead: LeadDto; contactId: string; companyId: string | null }> {
+  ): Promise<{ lead: LeadDto; contactId: string; companyId: string | null; dealId: string | null }> {
     return this.db.withContext(this.ctx(auth, ws), async (tx) => {
       const lead = await loadLead(tx, ws.id, id);
       if (lead.status === 'converted') throw new ConflictException('This lead was already converted.');
@@ -444,7 +534,30 @@ export class CrmController {
         .set({ status: 'converted', convertedContactId: contactId, convertedCompanyId: companyId, convertedAt: new Date() })
         .where(eq(leads.id, id))
         .returning();
-      return { lead: (await leadDtos(tx, [updated!]))[0]!, contactId, companyId };
+      let dealId: string | null = null;
+      if (body.createDeal) {
+        const stage = await resolveStage(tx, ws.id);
+        const [deal] = await tx
+          .insert(deals)
+          .values({
+            workspaceId: ws.id,
+            pipelineId: stage.pipelineId,
+            stageId: stage.id,
+            title: lead.companyName ?? lead.name,
+            value: lead.value,
+            currency: lead.currency,
+            companyId,
+            contactId,
+            leadId: lead.id,
+            ownerId: lead.ownerId ?? auth.userId,
+            notes: lead.notes,
+            position: await endOfStage(tx, stage.id),
+            createdBy: auth.userId,
+          })
+          .returning({ id: deals.id });
+        dealId = deal!.id;
+      }
+      return { lead: (await leadDtos(tx, [updated!]))[0]!, contactId, companyId, dealId };
     });
   }
 

@@ -1251,6 +1251,8 @@ export const convertLeadSchema = z
     /** new: create a company from the lead's company name; existing: link companyId; none: no company. */
     company: z.enum(['new', 'existing', 'none']),
     companyId: uuid.optional(),
+    /** Also open a deal in the default pipeline, with the lead's value. */
+    createDeal: z.boolean().default(false),
   })
   .refine((c) => c.company !== 'existing' || !!c.companyId, { message: 'Choose the company', path: ['companyId'] });
 export type ConvertLeadInput = z.infer<typeof convertLeadSchema>;
@@ -1378,4 +1380,165 @@ export interface ImportReportDto {
   failed: number;
   problems: ImportProblem[];
   createdAt: string;
+}
+
+// ---- Sprint 9: pipelines, deals, activities, Client 360 --------------------------------
+
+export const STAGE_KINDS = ['open', 'won', 'lost'] as const;
+export type StageKind = (typeof STAGE_KINDS)[number];
+export type DealStatus = StageKind;
+
+export const ACTIVITY_KINDS = ['call', 'meeting', 'email', 'whatsapp', 'note', 'task'] as const;
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+export const ACTIVITY_LABELS: Record<ActivityKind, string> = { call: 'Call', meeting: 'Meeting', email: 'Email', whatsapp: 'WhatsApp', note: 'Note', task: 'To-do' };
+
+const stageInput = z.object({
+  id: uuid.optional(),
+  name: name('a stage name', 60),
+  probability: z.number().int().min(0).max(100),
+});
+/** A pipeline's open stages, in order; its Won and Lost stages are added automatically. */
+export const pipelineSchema = z.object({
+  name: name('a pipeline name', 80),
+  stages: z.array(stageInput).min(1, 'Add at least one stage').max(15),
+});
+export type PipelineInput = z.infer<typeof pipelineSchema>;
+
+const optionalDate = calendarDate.nullish();
+export const dealSchema = z.object({
+  title: name('a deal name', 150),
+  /** Defaults to the workspace's default pipeline and its first stage. */
+  pipelineId: uuid.optional(),
+  stageId: uuid.optional(),
+  value: z.number().min(0).max(999_999_999_999).nullish(),
+  currency: z.enum(CURRENCIES).optional(),
+  companyId: uuid.nullish(),
+  contactId: uuid.nullish(),
+  ownerId: uuid.nullish(),
+  expectedClose: optionalDate,
+  notes: z.string().trim().max(5000).nullish(),
+});
+export type DealInput = z.infer<typeof dealSchema>;
+export const updateDealSchema = dealSchema.omit({ pipelineId: true, stageId: true }).partial();
+export type UpdateDealInput = z.infer<typeof updateDealSchema>;
+
+export const moveDealSchema = z.object({
+  stageId: uuid,
+  /** Place in the stage's column, from the top; the end when left out. */
+  index: z.number().int().min(0).optional(),
+  lostReason: z.string().trim().max(300).optional(),
+});
+export type MoveDealInput = z.infer<typeof moveDealSchema>;
+export const winDealSchema = z.object({
+  /** Also start the work: a project for the deal's company, from a template. */
+  project: z.object({ name: name('a project name'), templateId: z.string().max(80).optional() }).optional(),
+});
+export type WinDealInput = z.infer<typeof winDealSchema>;
+
+export const activitySchema = z
+  .object({
+    kind: z.enum(ACTIVITY_KINDS),
+    subject: name('a subject', 200),
+    body: z.string().trim().max(5000).nullish(),
+    /** A follow-up: its owner is reminded at this time. */
+    dueAt: z.iso.datetime({ offset: true }).nullish(),
+    done: z.boolean().default(false),
+    dealId: uuid.nullish(),
+    companyId: uuid.nullish(),
+    contactId: uuid.nullish(),
+    leadId: uuid.nullish(),
+    ownerId: uuid.nullish(),
+  })
+  .refine((a) => a.dealId || a.companyId || a.contactId || a.leadId, { message: 'Link it to a deal, company, contact or lead', path: ['dealId'] });
+export type ActivityInput = z.infer<typeof activitySchema>;
+export const updateActivitySchema = z
+  .object({
+    kind: z.enum(ACTIVITY_KINDS),
+    subject: name('a subject', 200),
+    body: z.string().trim().max(5000).nullable(),
+    dueAt: z.iso.datetime({ offset: true }).nullable(),
+    done: z.boolean(),
+    ownerId: uuid.nullable(),
+  })
+  .partial();
+export type UpdateActivityInput = z.infer<typeof updateActivitySchema>;
+
+export interface StageDto {
+  id: string;
+  name: string;
+  probability: number;
+  kind: StageKind;
+  position: number;
+}
+
+export interface PipelineDto {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  stages: StageDto[];
+}
+
+export interface DealDto {
+  id: string;
+  title: string;
+  pipelineId: string;
+  stageId: string;
+  stageName: string;
+  probability: number;
+  value: number | null;
+  currency: string;
+  company: CompanyDto | null;
+  contact: { id: string; name: string } | null;
+  owner: PersonDto | null;
+  expectedClose: string | null;
+  status: DealStatus;
+  wonAt: string | null;
+  lostAt: string | null;
+  lostReason: string | null;
+  projectId: string | null;
+  position: number;
+  notes: string | null;
+  /** The next open follow-up on it, if any. */
+  nextActivity: { id: string; subject: string; dueAt: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmActivityDto {
+  id: string;
+  kind: ActivityKind;
+  subject: string;
+  body: string | null;
+  dueAt: string | null;
+  doneAt: string | null;
+  overdue: boolean;
+  owner: PersonDto | null;
+  createdBy: PersonDto | null;
+  deal: { id: string; title: string } | null;
+  company: CompanyDto | null;
+  contact: { id: string; name: string } | null;
+  lead: { id: string; name: string } | null;
+  createdAt: string;
+}
+
+/** Money by currency: deals in different currencies are never added together. */
+export interface MoneyDto {
+  currency: string;
+  value: number;
+}
+
+/** Everything about one client on one page. */
+export interface ClientOverviewDto extends Omit<CompanyPageDto, 'projects'> {
+  deals: DealDto[];
+  projects: { id: string; name: string; status: ProjectStatus; budgetHours: number | null; hours: number; billableHours: number }[];
+  totals: {
+    won: MoneyDto[];
+    open: MoneyDto[];
+    /** Open value times each stage's probability. */
+    weighted: MoneyDto[];
+    hoursThisMonth: number;
+    hoursTotal: number;
+  };
+  activities: CrmActivityDto[];
+  files: { id: string; fileName: string; sizeBytes: number; url: string; isImage: boolean; projectId: string; projectName: string; createdAt: string }[];
 }

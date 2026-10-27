@@ -15,7 +15,10 @@ export type AnalyticsEvent =
   | 'feedback sent'
   | 'lead created'
   | 'lead converted'
-  | 'crm imported';
+  | 'crm imported'
+  | 'deal created'
+  | 'deal won'
+  | 'activity logged';
 
 type Props = Record<string, string | number | boolean | null>;
 

@@ -204,6 +204,7 @@ function ConvertDialog({ lead, onClose, onDone }: { lead: LeadDto; onClose: () =
   const [q, setQ] = useState(lead.companyName ?? '');
   const [matches, setMatches] = useState<CompanyDto[]>([]);
   const [companyId, setCompanyId] = useState('');
+  const [createDeal, setCreateDeal] = useState(lead.status === 'qualified' || lead.value !== null);
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
 
@@ -220,7 +221,7 @@ function ConvertDialog({ lead, onClose, onDone }: { lead: LeadDto; onClose: () =
   async function convert() {
     setSaving(true);
     try {
-      await api(`/crm/leads/${lead.id}/convert`, { method: 'POST', body: { company: mode, companyId: mode === 'existing' ? companyId : undefined } });
+      await api(`/crm/leads/${lead.id}/convert`, { method: 'POST', body: { company: mode, companyId: mode === 'existing' ? companyId : undefined, createDeal } });
       onDone();
     } catch (err) {
       setError(errorText(err, 'Could not convert the lead.'));
@@ -233,7 +234,7 @@ function ConvertDialog({ lead, onClose, onDone }: { lead: LeadDto; onClose: () =
       <div className="space-y-4 overflow-y-auto p-5">
         <div>
           <h2 className="text-base font-semibold">Convert {lead.name}</h2>
-          <p className="text-sm text-gray-500">They become a contact. Deals arrive in the next update.</p>
+          <p className="text-sm text-gray-500">They become a contact; their notes and owner come along.</p>
         </div>
         {error && <Alert>{error}</Alert>}
         <fieldset className="space-y-2 text-sm">
@@ -269,6 +270,10 @@ function ConvertDialog({ lead, onClose, onDone }: { lead: LeadDto; onClose: () =
             </ul>
           </div>
         )}
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={createDeal} onChange={(e) => setCreateDeal(e.target.checked)} className="h-4 w-4 accent-brand-600" />
+          Also open a deal{lead.value !== null ? ` worth ${lead.currency} ${lead.value.toLocaleString('en')}` : ''}
+        </label>
         <div className="flex gap-2">
           <button type="button" className={btn.primary} disabled={saving || (mode === 'existing' && !companyId)} onClick={convert}>
             {saving ? 'Converting…' : 'Convert'}

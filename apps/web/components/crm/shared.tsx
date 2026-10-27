@@ -9,10 +9,13 @@ import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 const TABS: { href: string; label: string; minRole: Role }[] = [
+  { href: '/app/crm/deals', label: 'Deals', minRole: 'member' },
+  { href: '/app/crm/follow-ups', label: 'Follow-ups', minRole: 'member' },
   { href: '/app/crm/leads', label: 'Leads', minRole: 'member' },
   { href: '/app/crm/contacts', label: 'Contacts', minRole: 'member' },
   { href: '/app/crm/companies', label: 'Companies', minRole: 'member' },
   { href: '/app/crm/import', label: 'Import', minRole: 'manager' },
+  { href: '/app/crm/pipelines', label: 'Pipelines', minRole: 'manager' },
   { href: '/app/crm/fields', label: 'Custom fields', minRole: 'manager' },
 ];
 

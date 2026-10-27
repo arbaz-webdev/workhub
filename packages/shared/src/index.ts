@@ -1129,3 +1129,253 @@ export const feedbackSchema = z.object({
   page: z.string().trim().max(300).optional(),
 });
 export type FeedbackInput = z.infer<typeof feedbackSchema>;
+
+// ---- Sprint 8: CRM core -------------------------------------------------------------
+
+export const CRM_ENTITIES = ['company', 'contact', 'lead'] as const;
+export type CrmEntity = (typeof CRM_ENTITIES)[number];
+
+/** Where leads come from, Pakistani freelancing and agency channels first. */
+export const LEAD_SOURCES = ['upwork', 'fiverr', 'linkedin', 'whatsapp', 'referral', 'website', 'facebook', 'instagram', 'cold_call', 'event', 'other'] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  upwork: 'Upwork',
+  fiverr: 'Fiverr',
+  linkedin: 'LinkedIn',
+  whatsapp: 'WhatsApp',
+  referral: 'Referral',
+  website: 'Website',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  cold_call: 'Cold call',
+  event: 'Event',
+  other: 'Other',
+};
+
+export const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export const CUSTOM_FIELD_TYPES = ['text', 'number', 'date', 'select', 'checkbox', 'url'] as const;
+export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number];
+export type CustomValue = string | number | boolean | null;
+export type CustomValues = Record<string, CustomValue>;
+
+export const IMPORT_MODES = ['skip', 'update', 'create'] as const;
+export type ImportMode = (typeof IMPORT_MODES)[number];
+export interface ImportProblem {
+  /** 1-based, counting the header as row 1 (as a spreadsheet shows it). */
+  row: number;
+  message: string;
+}
+export const MAX_IMPORT_ROWS = 5000;
+
+/** Optional text: blank becomes null. */
+const optional = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((v) => (v ? v : null));
+const optionalEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(254)
+  .nullish()
+  .transform((v) => v || null)
+  .pipe(z.string().email('Enter a valid email address').nullable());
+const optionalPhone = optional(40).pipe(
+  z
+    .string()
+    .regex(/^\+?[\d\s().-]{7,}$/, 'Enter a phone number, e.g. 0300 1234567 or +92 300 1234567')
+    .nullable(),
+);
+const customValues = z.record(z.string(), z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])).default({});
+
+export const companySchema = z.object({
+  name: name('a company name', 150),
+  website: optional(200),
+  email: optionalEmail,
+  phone: optionalPhone,
+  industry: optional(80),
+  city: optional(80),
+  country: optional(80),
+  address: optional(300),
+  notes: optional(5000),
+  ownerId: uuid.nullish(),
+  custom: customValues,
+});
+export type CompanyInput = z.infer<typeof companySchema>;
+
+export const contactSchema = z.object({
+  firstName: name('a first name', 100),
+  lastName: optional(100),
+  email: optionalEmail,
+  phone: optionalPhone,
+  title: optional(100),
+  companyId: uuid.nullish(),
+  notes: optional(5000),
+  ownerId: uuid.nullish(),
+  custom: customValues,
+});
+export type ContactInput = z.infer<typeof contactSchema>;
+
+export const leadSchema = z.object({
+  name: name('a name', 150),
+  companyName: optional(150),
+  email: optionalEmail,
+  phone: optionalPhone,
+  source: z.enum(LEAD_SOURCES).default('other'),
+  sourceDetail: optional(300),
+  status: z.enum(LEAD_STATUSES).exclude(['converted']).default('new'),
+  value: z.number().min(0).max(999_999_999_999).nullish(),
+  currency: z.enum(CURRENCIES).optional(),
+  notes: optional(5000),
+  ownerId: uuid.nullish(),
+  custom: customValues,
+});
+export type LeadInput = z.infer<typeof leadSchema>;
+/** For edits: like leadSchema but every field optional and without defaults (a default would overwrite the saved value). */
+export const updateLeadSchema = leadSchema
+  .extend({
+    source: z.enum(LEAD_SOURCES),
+    status: z.enum(LEAD_STATUSES).exclude(['converted']),
+    custom: z.record(z.string(), z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])),
+  })
+  .partial();
+export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
+
+export const convertLeadSchema = z
+  .object({
+    /** new: create a company from the lead's company name; existing: link companyId; none: no company. */
+    company: z.enum(['new', 'existing', 'none']),
+    companyId: uuid.optional(),
+  })
+  .refine((c) => c.company !== 'existing' || !!c.companyId, { message: 'Choose the company', path: ['companyId'] });
+export type ConvertLeadInput = z.infer<typeof convertLeadSchema>;
+
+export const customFieldSchema = z
+  .object({
+    entity: z.enum(CRM_ENTITIES),
+    label: name('a field name', 60),
+    type: z.enum(CUSTOM_FIELD_TYPES),
+    options: z.array(z.string().trim().min(1).max(60)).max(50).default([]),
+  })
+  .refine((f) => f.type !== 'select' || f.options.length > 0, { message: 'Add at least one option', path: ['options'] });
+export type CustomFieldInput = z.infer<typeof customFieldSchema>;
+export const updateCustomFieldSchema = z.object({
+  label: name('a field name', 60).optional(),
+  options: z.array(z.string().trim().min(1).max(60)).max(50).optional(),
+  position: z.number().int().min(0).max(1000).optional(),
+});
+
+export interface CustomFieldDto {
+  id: string;
+  entity: CrmEntity;
+  key: string;
+  label: string;
+  type: CustomFieldType;
+  options: string[];
+  position: number;
+}
+
+export interface CrmCompanyDto {
+  id: string;
+  name: string;
+  website: string | null;
+  email: string | null;
+  phone: string | null;
+  industry: string | null;
+  city: string | null;
+  country: string | null;
+  address: string | null;
+  notes: string | null;
+  owner: PersonDto | null;
+  custom: CustomValues;
+  contactCount: number;
+  projectCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactDto {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  title: string | null;
+  company: CompanyDto | null;
+  notes: string | null;
+  owner: PersonDto | null;
+  leadId: string | null;
+  custom: CustomValues;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadDto {
+  id: string;
+  name: string;
+  companyName: string | null;
+  email: string | null;
+  phone: string | null;
+  source: LeadSource;
+  sourceDetail: string | null;
+  status: LeadStatus;
+  value: number | null;
+  currency: string;
+  notes: string | null;
+  owner: PersonDto | null;
+  custom: CustomValues;
+  convertedContactId: string | null;
+  convertedCompanyId: string | null;
+  convertedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+}
+
+export interface CompanyPageDto {
+  company: CrmCompanyDto;
+  contacts: ContactDto[];
+  projects: { id: string; name: string; status: ProjectStatus }[];
+}
+
+/** An existing record that looks like the same person or company. */
+export interface DuplicateDto {
+  entity: CrmEntity;
+  id: string;
+  label: string;
+  reason: 'email' | 'phone' | 'website' | 'name';
+}
+
+export interface ImportPreviewDto {
+  headers: string[];
+  /** The first few rows, to check the mapping against. */
+  sample: string[][];
+  total: number;
+  /** Column → field, guessed from the headers. */
+  suggested: Record<string, string>;
+  /** Fields a column can go into: standard ones, then custom ones as "custom.<key>". */
+  targets: { key: string; label: string }[];
+}
+
+export interface ImportReportDto {
+  id: string;
+  entity: CrmEntity;
+  fileName: string;
+  mode: ImportMode;
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  problems: ImportProblem[];
+  createdAt: string;
+}

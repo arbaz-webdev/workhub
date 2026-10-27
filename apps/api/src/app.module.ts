@@ -9,6 +9,8 @@ import { SelfieCleanupService } from './attendance/selfie-cleanup.service';
 import { AuditController } from './audit/audit.controller';
 import { AuthModule } from './auth/auth.module';
 import { Public } from './common/request';
+import { CrmController } from './crm/crm.controller';
+import { CrmImportController } from './crm/import.controller';
 import { DbModule } from './db/db.module';
 import { EmailModule } from './email/email.module';
 import { FeedbackController } from './feedback/feedback.controller';
@@ -59,6 +61,8 @@ class HealthController {
     ChatController,
     AnnouncementsController,
     FeedbackController,
+    CrmController,
+    CrmImportController,
     WaitlistController,
   ],
   providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],

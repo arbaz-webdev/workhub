@@ -12,7 +12,10 @@ export type AnalyticsEvent =
   | 'timesheet submitted'
   | 'message sent'
   | 'announcement posted'
-  | 'feedback sent';
+  | 'feedback sent'
+  | 'lead created'
+  | 'lead converted'
+  | 'crm imported';
 
 type Props = Record<string, string | number | boolean | null>;
 

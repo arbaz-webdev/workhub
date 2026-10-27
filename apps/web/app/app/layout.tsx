@@ -22,11 +22,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [workspace, setWorkspace] = useState<WorkspaceDto>();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [unreachable, setUnreachable] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const data = await api<MeResponse>('/auth/me');
       setMe(data);
+      setUnreachable(false);
       setWorkspace((current) => {
         const wanted = current?.id ?? readStoredWorkspace();
         return data.workspaces.find((w) => w.id === wanted) ?? data.workspaces[0];
@@ -34,13 +36,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         router.replace(`/sign-in?next=${encodeURIComponent(pathname)}`);
+      } else {
+        // The server is starting (a deploy, or waking from sleep) or the network dropped.
+        setUnreachable(true);
+        throw err;
       }
     }
   }, [router, pathname]);
 
-  // Load once; pages call refresh() after changes that affect the user or their workspaces.
+  // Load once, retrying until the server answers; pages call refresh() after changes
+  // that affect the user or their workspaces.
   useEffect(() => {
-    void refresh();
+    let cancelled = false;
+    let delay = 2000;
+    const load = () =>
+      refresh().catch(() => {
+        if (cancelled) return;
+        setTimeout(load, delay);
+        delay = Math.min(delay * 2, 30_000);
+      });
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const switchTo = useCallback((next: WorkspaceDto) => {
@@ -48,9 +66,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setWorkspace(next);
   }, []);
 
+  // Pages refresh after their own changes; a failed refresh just keeps what's shown.
+  const refreshQuietly = useCallback(() => refresh().catch(() => {}), [refresh]);
   const context = useMemo(
-    () => (me && workspace ? { me, workspace, switchTo, refresh } : null),
-    [me, workspace, switchTo, refresh],
+    () => (me && workspace ? { me, workspace, switchTo, refresh: refreshQuietly } : null),
+    [me, workspace, switchTo, refreshQuietly],
   );
 
   async function signOut() {
@@ -58,7 +78,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.replace('/sign-in');
   }
 
-  if (!me) return <p className="p-8 text-sm text-gray-500">Loading your workspace…</p>;
+  if (!me) {
+    return (
+      <p role="status" className="p-8 text-sm text-gray-500">
+        {unreachable ? 'WorkHub is starting up. This can take up to a minute; it will open by itself.' : 'Loading your workspace…'}
+      </p>
+    );
+  }
 
   if (!workspace || !context) {
     return (

@@ -1,7 +1,23 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
 import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { ATTENDANCE_EVENT_TYPES, CHANNEL_KINDS, REQUEST_STATUSES, ROLES, type AttendanceFlag, type FeedbackKind, type HalfDay, type ShiftBreak } from '@workhub/shared';
+import {
+  ATTENDANCE_EVENT_TYPES,
+  CHANNEL_KINDS,
+  REQUEST_STATUSES,
+  ROLES,
+  type AttendanceFlag,
+  type CrmEntity,
+  type CustomFieldType,
+  type CustomValues,
+  type FeedbackKind,
+  type HalfDay,
+  type ImportMode,
+  type ImportProblem,
+  type LeadSource,
+  type LeadStatus,
+  type ShiftBreak,
+} from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
 
@@ -143,6 +159,18 @@ export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().defaultRandom(),
   workspaceId: uuid('workspace_id').notNull(),
   name: text('name').notNull(),
+  website: text('website'),
+  domain: text('domain'),
+  email: text('email'),
+  phone: text('phone'),
+  phoneKey: text('phone_key'),
+  industry: text('industry'),
+  city: text('city'),
+  country: text('country'),
+  address: text('address'),
+  notes: text('notes'),
+  ownerId: uuid('owner_id'),
+  custom: jsonb('custom').$type<CustomValues>().notNull().default({}),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -565,5 +593,80 @@ export const feedback = pgTable('feedback', {
   message: text('message').notNull(),
   page: text('page'),
   userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---- CRM core (sprint 8) -----------------------------------------------------------
+
+export const contacts = pgTable('contacts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  companyId: uuid('company_id'),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
+  email: text('email'),
+  phone: text('phone'),
+  phoneKey: text('phone_key'),
+  title: text('title'),
+  notes: text('notes'),
+  ownerId: uuid('owner_id'),
+  leadId: uuid('lead_id'),
+  custom: jsonb('custom').$type<CustomValues>().notNull().default({}),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const leads = pgTable('leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  companyName: text('company_name'),
+  email: text('email'),
+  phone: text('phone'),
+  phoneKey: text('phone_key'),
+  source: text('source').$type<LeadSource>().notNull().default('other'),
+  sourceDetail: text('source_detail'),
+  status: text('status').$type<LeadStatus>().notNull().default('new'),
+  value: numeric('value', { precision: 14, scale: 2, mode: 'number' }),
+  currency: text('currency').notNull().default('PKR'),
+  notes: text('notes'),
+  ownerId: uuid('owner_id'),
+  custom: jsonb('custom').$type<CustomValues>().notNull().default({}),
+  convertedContactId: uuid('converted_contact_id'),
+  convertedCompanyId: uuid('converted_company_id'),
+  convertedAt: timestamp('converted_at', { withTimezone: true }),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const customFields = pgTable('custom_fields', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  entity: text('entity').$type<CrmEntity>().notNull(),
+  key: text('key').notNull(),
+  label: text('label').notNull(),
+  type: text('type').$type<CustomFieldType>().notNull(),
+  options: text('options').array().notNull().default([]),
+  position: integer('position').notNull().default(0),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const crmImports = pgTable('crm_imports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  entity: text('entity').$type<CrmEntity>().notNull(),
+  fileName: text('file_name').notNull(),
+  mode: text('mode').$type<ImportMode>().notNull(),
+  createdCount: integer('created_count').notNull().default(0),
+  updatedCount: integer('updated_count').notNull().default(0),
+  skippedCount: integer('skipped_count').notNull().default(0),
+  failedCount: integer('failed_count').notNull().default(0),
+  problems: jsonb('problems').$type<ImportProblem[]>().notNull().default([]),
+  createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

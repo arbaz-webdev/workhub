@@ -193,6 +193,26 @@ How it decides things:
 - **Unread:** counts new top-level messages since you last read the conversation. Thread replies don't count, but replies to your messages notify you.
 - **Analytics:** sent from the server only, with hashed ids and no names, emails or message text. No cookies, so no consent banner is needed. Only the feature used is recorded (for example "message sent", with whether it had files).
 
+## Sprint 8 status
+
+- [x] Companies and contacts (`/app/crm`):
+  - Full records with an owner, and a company page that lists its people and projects.
+  - The existing client list became the companies, so projects already linked to a client show up there.
+- [x] Duplicate warnings while typing:
+  - People and leads match on the same email or phone. Phone numbers are compared however they're written: 0300 1234567, +92 300 1234567 and 923001234567 all match.
+  - Companies match on the same website or name. Gmail, Yahoo and other free mailboxes don't count as a company website.
+- [x] Leads with local sources: Upwork, Fiverr, LinkedIn, WhatsApp, referral, website, Facebook, Instagram, cold call and event, plus a detail such as the job link or who referred them. Statuses run from new to qualified, and a lead can carry an estimated value in any currency.
+- [x] Lead conversion: one step turns a lead into a contact, with a new or existing company. (Deals come in Sprint 9.)
+- [x] Custom fields on companies, contacts and leads: text, number, date, choice, yes/no and link, checked on every save.
+- [x] CSV import (managers):
+  - Columns are matched by name, and each match can be changed.
+  - Rows that match an existing record are skipped, updated or added anyway, your choice. Duplicates within the file count too.
+  - A report lists every row that was skipped or rejected.
+  - Excel's Windows encoding and semicolon-separated files both work.
+- [x] 243 tests
+
+The app also now waits for the server when it's starting up (after a deploy, or when the free staging plan wakes from sleep) instead of staying on "Loading your workspace…".
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

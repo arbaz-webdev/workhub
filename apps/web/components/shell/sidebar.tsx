@@ -45,7 +45,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
-      <p className="mt-6 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Coming soon</p>
+      {SOON.length > 0 && <p className="mt-6 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Coming soon</p>}
       {SOON.map((item) => (
         <span key={item.label} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-gray-400">
           {item.label}

@@ -56,7 +56,7 @@ Every company is a **workspace**. Workspace-owned tables carry `workspace_id` an
 
 Auth: Argon2id password hashes, opaque session tokens (only a SHA-256 hash is stored) in an HttpOnly SameSite=Lax cookie, rate-limited sign-in, an Origin check on state-changing requests, and Helmet security headers.
 
-Local demo account (dev database only): `demo.owner@example.test` / `local-dev-test-1234`.
+Local demo accounts (dev database only, password `local-dev-test-1234`): `demo.owner@example.test`, and `demo.member@example.test` (a member of the owner's workspace, for trying chat between two people).
 
 ## Email and Google sign-in
 
@@ -171,6 +171,27 @@ How it decides things:
 - **Payable days:** days in the period, minus absences, half the half days, and unpaid leave.
 
 Two dependencies are pinned for security: `multer` (2.5.0, via an npm override) and `body-parser` (2.4.0). Both fix high-severity advisories published this month.
+
+## Sprint 7 status
+
+- [x] Inbox:
+  - Public channels (everyone except guests is in #general), private channels, and direct messages with one person or a group of up to 8.
+  - Live delivery over Server-Sent Events, tested at under half a second. The connection comes back by itself after a deploy or a dropped network.
+  - Unread and @mention counts in the sidebar. Channels can be muted.
+- [x] Threads and @mentions: replies sit under a message, and both a mention and a reply to your message notify you.
+- [x] Files in chat: up to 5 per message, 25 MB each, stored like task attachments and downloadable only by people who can read the conversation.
+- [x] Presence from attendance: checked in, on a break, checked out, on leave or not checked in, updated live as people punch.
+- [x] Task cards: type `#` to pick a task, or paste a task link, and the message shows its current column, priority, due date and assignees. People who can't see the task don't get the card.
+- [x] Announcements: managers post to everyone or one team, can pin them, and see who has read each one.
+- [x] Feedback button in the top bar: an idea, a problem or praise, saved and emailed to `FEEDBACK_TO`.
+- [x] Product analytics: PostHog events for key actions, off until `POSTHOG_KEY` is set.
+- [x] 231 tests
+
+How it decides things:
+- **Privacy of conversations:** the database itself limits private channels and DMs to their members (RLS), so admins and owners can't read DMs they aren't in. Admins can delete messages in channels, never in DMs.
+- **Guests:** they only see the conversations they're added to, can't browse channels or start DMs, and get no presence or announcements.
+- **Unread:** counts new top-level messages since you last read the conversation. Thread replies don't count, but replies to your messages notify you.
+- **Analytics:** sent from the server only, with hashed ids and no names, emails or message text. No cookies, so no consent banner is needed. Only the feature used is recorded (for example "message sent", with whether it had files).
 
 ## Key decisions so far
 

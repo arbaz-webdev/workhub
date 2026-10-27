@@ -19,6 +19,7 @@ import { AppRequest, AuthContext, CurrentAuth, Public } from '../common/request'
 import { ZodPipe } from '../common/zod.pipe';
 import { AuthService } from './auth.service';
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './session';
+import { Track } from '../analytics/track';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -42,6 +43,7 @@ export class AuthController {
 
   @Public()
   @Post('sign-up')
+  @Track('workspace created', (r: { user: { id: string }; workspace: { id: string } | null }) => (r.workspace ? { userId: r.user.id, workspaceId: r.workspace.id } : null))
   async signUp(
     @Body(new ZodPipe(signUpSchema)) body: SignUpInput,
     @Req() req: AppRequest,

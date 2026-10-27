@@ -39,6 +39,7 @@ import { EmailService } from '../email/email.service';
 import { inviteMessage } from '../email/templates';
 import { notifyRoles } from '../notifications/notify';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
+import { Track } from '../analytics/track';
 
 const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
 
@@ -247,6 +248,7 @@ export class InvitationsController {
 
   /** Joins the workspace an invitation is for. Email invitations only work for that address. */
   @Post('accept')
+  @Track('member joined', (w: { id: string }) => ({ workspaceId: w.id }))
   async accept(
     @Body(new ZodPipe(acceptInviteSchema)) body: AcceptInviteInput,
     @CurrentAuth() auth: AuthContext,

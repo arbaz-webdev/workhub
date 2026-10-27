@@ -16,6 +16,7 @@ import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import { workspaces } from '../db/schema';
 import { WorkspaceGuard } from './workspace.guard';
+import { Track } from '../analytics/track';
 
 const TIME_ZONES = new Set([...Intl.supportedValuesOf('timeZone'), 'UTC']);
 
@@ -30,6 +31,7 @@ export class WorkspacesController {
 
   /** Creates a new workspace owned by the caller (e.g. after signing up with Google). */
   @Post()
+  @Track('workspace created', (w: { id: string }) => ({ workspaceId: w.id }))
   create(
     @Body(new ZodPipe(createWorkspaceSchema)) body: CreateWorkspaceInput,
     @CurrentAuth() auth: AuthContext,

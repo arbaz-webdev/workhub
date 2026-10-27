@@ -5,6 +5,7 @@ import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import type { Readable } from 'node:stream';
+import type { Response } from 'express';
 import { config } from '../config';
 
 export interface StoredFile {
@@ -84,6 +85,31 @@ export class StorageService implements OnModuleInit {
     if (!path.startsWith(root + sep)) throw new Error('Invalid storage key');
     return path;
   }
+}
+
+/** Image types shown inline; everything else downloads as an attachment. */
+export const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
+/** A multer upload's name and type, made safe to store. */
+export function uploadMeta(file: Express.Multer.File): { fileName: string; contentType: string } {
+  // Browsers send the multipart file name as UTF-8 but multer reads it as Latin-1.
+  const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/[\\/\r\n\0]/g, '_').slice(0, 200) || 'file';
+  const contentType = /^[\w.+-]+\/[\w.+-]+$/.test(file.mimetype) ? file.mimetype : 'application/octet-stream';
+  return { fileName, contentType };
+}
+
+/** Sends a stored file: a redirect to a presigned URL, or the bytes themselves. */
+export function sendDownload(res: Response, result: Download, file: { fileName: string; contentType: string; sizeBytes: number }) {
+  if (result.kind === 'redirect') {
+    res.redirect(302, result.url);
+    return;
+  }
+  const inline = INLINE_IMAGE_TYPES.has(file.contentType);
+  res.setHeader('content-type', inline ? file.contentType : 'application/octet-stream');
+  res.setHeader('content-length', String(file.sizeBytes));
+  res.setHeader('content-disposition', contentDisposition(file.fileName, inline));
+  res.setHeader('cache-control', 'private, max-age=300');
+  result.stream.pipe(res);
 }
 
 /** RFC 6266 header with an ASCII fallback and the exact UTF-8 name (Urdu file names survive). */

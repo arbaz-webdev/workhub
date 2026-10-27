@@ -1,4 +1,7 @@
 import { Controller, Get, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AnalyticsService } from './analytics/analytics.service';
+import { TrackInterceptor } from './analytics/track';
 import { AttendanceSettingsController } from './attendance/attendance-settings.controller';
 import { AttendanceController } from './attendance/attendance.controller';
 import { CorrectionsController } from './attendance/corrections.controller';
@@ -8,6 +11,9 @@ import { AuthModule } from './auth/auth.module';
 import { Public } from './common/request';
 import { DbModule } from './db/db.module';
 import { EmailModule } from './email/email.module';
+import { FeedbackController } from './feedback/feedback.controller';
+import { AnnouncementsController } from './inbox/announcements.controller';
+import { ChatController } from './inbox/chat.controller';
 import { InvitationsController } from './invitations/invitations.controller';
 import { LeaveController } from './leave/leave.controller';
 import { MembersController } from './members/members.controller';
@@ -50,8 +56,11 @@ class HealthController {
     CorrectionsController,
     LeaveController,
     TimesheetsController,
+    ChatController,
+    AnnouncementsController,
+    FeedbackController,
     WaitlistController,
   ],
-  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService],
+  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })
 export class AppModule {}

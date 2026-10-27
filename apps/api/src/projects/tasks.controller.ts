@@ -60,13 +60,12 @@ import {
 } from '../db/schema';
 import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
-import { contentDisposition, StorageService } from '../storage/storage.service';
+import { INLINE_IMAGE_TYPES, sendDownload, StorageService, uploadMeta } from '../storage/storage.service';
 import { assertWeekOpen } from '../timesheets/timesheets';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { canManage, cardsFor, checkBudget, GAP, loadColumn, loadProject, loadTask, recordActivity, requireEdit, taskPosition } from './board';
+import { Track } from '../analytics/track';
 
-/** Image types shown inline; everything else downloads as an attachment. */
-const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const MAX_ATTACHMENTS = 50;
 
 type TaskRow = typeof tasks.$inferSelect;
@@ -82,6 +81,7 @@ export class TasksController {
   ) {}
 
   @Post('projects/:id/tasks')
+  @Track('task created')
   async create(
     @Param('id', ParseUUIDPipe) projectId: string,
     @Body(new ZodPipe(createTaskSchema)) body: CreateTaskInput,
@@ -420,9 +420,7 @@ export class TasksController {
   ): Promise<TaskDetailDto> {
     requireEdit(ws);
     if (!file || file.size === 0) throw new BadRequestException('Choose a file to upload');
-    // Browsers send the multipart file name as UTF-8 but multer reads it as Latin-1.
-    const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/[\\/\r\n\0]/g, '_').slice(0, 200) || 'file';
-    const contentType = /^[\w.+-]+\/[\w.+-]+$/.test(file.mimetype) ? file.mimetype : 'application/octet-stream';
+    const { fileName, contentType } = uploadMeta(file);
     const key = `${ws.id}/${id}/${randomUUID()}`;
     let stored = false;
     try {
@@ -465,15 +463,7 @@ export class TasksController {
     });
     const inline = INLINE_IMAGE_TYPES.has(file.contentType);
     const result = await this.storage.download(file.storageKey, { fileName: file.fileName, contentType: file.contentType, inline });
-    if (result.kind === 'redirect') {
-      res.redirect(302, result.url);
-      return;
-    }
-    res.setHeader('content-type', inline ? file.contentType : 'application/octet-stream');
-    res.setHeader('content-length', String(file.sizeBytes));
-    res.setHeader('content-disposition', contentDisposition(file.fileName, inline));
-    res.setHeader('cache-control', 'private, max-age=300');
-    result.stream.pipe(res);
+    sendDownload(res, result, file);
   }
 
   @Delete('tasks/:id/attachments/:attachmentId')

@@ -2,11 +2,12 @@
 
 import type { BoardEvent } from '@workhub/shared';
 import { useEffect, useRef, useState } from 'react';
+import { keepAlive } from '@/lib/event-stream';
 
 /**
  * Subscribes to a board's server-sent events. `onOpen` fires on every
- * (re)connection so the caller can reload anything missed while offline;
- * the browser reconnects automatically after network drops.
+ * reconnection so the caller can reload anything missed while offline;
+ * the connection comes back by itself after network drops and deploys.
  */
 export function useBoardEvents(
   projectId: string,
@@ -19,24 +20,22 @@ export function useBoardEvents(
   const [live, setLive] = useState(false);
 
   useEffect(() => {
-    const source = new EventSource(`/api/projects/${projectId}/events?workspace=${encodeURIComponent(workspaceId)}`);
-    let opened = false;
-    source.onopen = () => {
-      setLive(true);
-      // The first open follows the initial load; later ones are reconnects that may have missed events.
-      if (opened) handlers.current.onOpen();
-      opened = true;
-    };
-    source.onerror = () => setLive(false);
-    source.onmessage = (e) => {
-      if (!e.data) return; // heartbeat
-      try {
-        handlers.current.onEvent(JSON.parse(e.data) as BoardEvent);
-      } catch {
-        // Ignore malformed events rather than breaking the board.
-      }
-    };
-    return () => source.close();
+    const stream = keepAlive(`/api/projects/${projectId}/events?workspace=${encodeURIComponent(workspaceId)}`, {
+      onOpen: (reconnect) => {
+        setLive(true);
+        // The first open follows the initial load; later ones may have missed events.
+        if (reconnect) handlers.current.onOpen();
+      },
+      onDown: () => setLive(false),
+      onMessage: (data) => {
+        try {
+          handlers.current.onEvent(JSON.parse(data) as BoardEvent);
+        } catch {
+          // Ignore malformed events rather than breaking the board.
+        }
+      },
+    });
+    return () => stream.close();
   }, [projectId, workspaceId]);
 
   return live;

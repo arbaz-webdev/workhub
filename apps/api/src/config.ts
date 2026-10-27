@@ -93,6 +93,16 @@ export const config = {
       secretAccessKey: driver === 's3' ? required('S3_SECRET_ACCESS_KEY') : '',
     };
   },
+  /** Product analytics; off unless POSTHOG_KEY is set (and always off in tests). */
+  get posthog(): { key: string; host: string } | null {
+    const key = process.env.POSTHOG_KEY;
+    if (!key || process.env.JEST_WORKER_ID) return null;
+    return { key, host: (process.env.POSTHOG_HOST ?? 'https://eu.i.posthog.com').replace(/\/$/, '') };
+  },
+  /** Where the in-app feedback button's messages are emailed; unset keeps them in the database only. */
+  get feedbackTo(): string | undefined {
+    return process.env.FEEDBACK_TO || undefined;
+  },
   maxUploadBytes: 25 * 1024 * 1024,
   sessionTtlDays: 30,
 };

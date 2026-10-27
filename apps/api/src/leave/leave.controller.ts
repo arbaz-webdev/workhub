@@ -47,6 +47,7 @@ import { notify, notifyRoles } from '../notifications/notify';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { pakistanHolidays, PRESET_YEARS } from './holidays-pk';
 import { entitlement, leaveDates, sumDays } from './leave-rules';
+import { Track } from '../analytics/track';
 
 type LeaveTypeRow = typeof leaveTypes.$inferSelect;
 type LeaveTypeValues = z.output<typeof leaveTypeSchema>;
@@ -275,6 +276,7 @@ export class LeaveController {
   }
 
   @Post('leave/requests')
+  @Track('leave requested')
   request(
     @Body(new ZodPipe(leaveRequestSchema)) body: LeaveRequestValues,
     @CurrentAuth() auth: AuthContext,

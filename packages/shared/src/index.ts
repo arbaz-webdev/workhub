@@ -935,3 +935,197 @@ export interface TimesheetSummaryDto {
 }
 
 export const submitTimesheetSchema = z.object({ weekStart: calendarDate });
+
+// ---- Sprint 7: inbox, presence, announcements, feedback ---------------------------
+
+export const CHANNEL_KINDS = ['public', 'private', 'dm'] as const;
+export type ChannelKind = (typeof CHANNEL_KINDS)[number];
+/** A group DM holds up to this many people, the sender included. */
+export const MAX_DM_PEOPLE = 8;
+export const MAX_CHAT_FILES = 5;
+export const MAX_TASK_CARDS = 5;
+
+/** A multipart field holding a JSON array (or nothing). */
+const jsonIds = (max: number) =>
+  z.preprocess((v) => {
+    if (typeof v !== 'string') return v;
+    if (v.trim() === '') return [];
+    try {
+      return JSON.parse(v);
+    } catch {
+      return v;
+    }
+  }, z.array(uuid).max(max).default([]));
+
+const channelName = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .transform((s) => s.replace(/\s+/g, '-'))
+  .pipe(
+    z
+      .string()
+      .min(1, 'Enter a channel name')
+      .max(80)
+      .regex(/^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u, 'Use letters, numbers, - and _'),
+  );
+const topic = z.string().trim().max(250).nullable();
+
+export const createChannelSchema = z.object({
+  name: channelName,
+  topic: topic.optional(),
+  private: z.boolean().default(false),
+  memberIds: z.array(uuid).max(200).default([]),
+});
+export type CreateChannelInput = z.infer<typeof createChannelSchema>;
+export const updateChannelSchema = z.object({ name: channelName, topic }).partial();
+export const openDmSchema = z.object({ userIds: z.array(uuid).min(1, 'Choose someone').max(MAX_DM_PEOPLE - 1) });
+export const addMembersSchema = z.object({ userIds: z.array(uuid).min(1, 'Choose someone').max(200) });
+export const muteSchema = z.object({ muted: z.boolean() });
+
+/** Multipart (files go with it), so the id lists arrive as JSON text. */
+export const sendMessageSchema = z.object({
+  body: z.string().trim().max(8000, 'Keep a message under 8,000 characters').default(''),
+  parentId: uuid.optional(),
+  mentions: jsonIds(50),
+  taskIds: jsonIds(MAX_TASK_CARDS),
+});
+export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+export const editMessageSchema = z.object({
+  body: z.string().trim().min(1, 'Write a message').max(8000, 'Keep a message under 8,000 characters'),
+  mentions: z.array(uuid).max(50).default([]),
+  taskIds: z.array(uuid).max(MAX_TASK_CARDS).default([]),
+});
+export type EditMessageInput = z.infer<typeof editMessageSchema>;
+
+/** in: checked in; break: on a break; out: checked out today; leave: on leave today; away: not checked in. */
+export const PRESENCES = ['in', 'break', 'out', 'leave', 'away'] as const;
+export type Presence = (typeof PRESENCES)[number];
+
+export interface PresenceDto {
+  userId: string;
+  presence: Presence;
+  /** When it last changed (the punch time), if known. */
+  since: string | null;
+}
+
+export interface ChannelDto {
+  id: string;
+  kind: ChannelKind;
+  /** Null for DMs; show the people instead. */
+  name: string | null;
+  topic: string | null;
+  isDefault: boolean;
+  /** For DMs: everyone else in it. Empty for channels. */
+  people: PersonDto[];
+  memberCount: number;
+  joined: boolean;
+  muted: boolean;
+  /** Unread top-level messages, and unread messages that mention you. */
+  unread: number;
+  mentions: number;
+  lastMessageAt: string | null;
+  archived: boolean;
+  createdById: string | null;
+}
+
+export interface ChatFileDto {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+  isImage: boolean;
+}
+
+export interface ChatMessageDto {
+  id: string;
+  channelId: string;
+  parentId: string | null;
+  author: PersonDto | null;
+  body: string;
+  mentions: string[];
+  taskIds: string[];
+  files: ChatFileDto[];
+  replyCount: number;
+  lastReplyAt: string | null;
+  createdAt: string;
+  editedAt: string | null;
+  deleted: boolean;
+}
+
+export interface MessagePageDto {
+  /** Oldest first. */
+  messages: ChatMessageDto[];
+  hasMore: boolean;
+}
+
+export interface ThreadDto {
+  root: ChatMessageDto;
+  replies: ChatMessageDto[];
+}
+
+/** A task shown as a card in chat; only tasks the viewer may see are returned. */
+export interface TaskRefDto {
+  id: string;
+  title: string;
+  projectId: string;
+  projectName: string;
+  columnName: string;
+  priority: Priority;
+  dueDate: string | null;
+  completed: boolean;
+  assignees: PersonDto[];
+}
+
+export interface InboxSummaryDto {
+  unread: number;
+  mentions: number;
+  announcements: number;
+}
+
+/** Server-sent inbox events for one person; clients refetch or apply them by id. */
+export type InboxEvent =
+  | { type: 'message.created'; message: ChatMessageDto }
+  | { type: 'message.updated'; message: ChatMessageDto }
+  | { type: 'channel.changed'; channelId: string }
+  | { type: 'channel.read'; channelId: string }
+  | { type: 'presence.changed'; userId: string; presence: Presence; since: string }
+  | { type: 'announcement.changed' };
+
+export const announcementSchema = z.object({
+  title: name('a title', 150),
+  body: z.string().trim().min(1, 'Write the announcement').max(10_000),
+  /** Null: everyone. */
+  teamId: uuid.nullable().default(null),
+  pinned: z.boolean().default(false),
+});
+export type AnnouncementInput = z.infer<typeof announcementSchema>;
+
+export interface AnnouncementDto {
+  id: string;
+  title: string;
+  body: string;
+  author: PersonDto | null;
+  team: { id: string; name: string } | null;
+  pinned: boolean;
+  createdAt: string;
+  editedAt: string | null;
+  read: boolean;
+  /** Read receipts, for its author and managers and above; null for everyone else. */
+  receipts: { read: number; total: number } | null;
+}
+
+export interface AnnouncementReceiptsDto {
+  read: { person: PersonDto; readAt: string }[];
+  unread: PersonDto[];
+}
+
+export const FEEDBACK_KINDS = ['idea', 'problem', 'praise'] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
+export const feedbackSchema = z.object({
+  kind: z.enum(FEEDBACK_KINDS, { message: 'Choose what kind of feedback' }),
+  message: z.string().trim().min(1, 'Write your feedback').max(4000),
+  page: z.string().trim().max(300).optional(),
+});
+export type FeedbackInput = z.infer<typeof feedbackSchema>;

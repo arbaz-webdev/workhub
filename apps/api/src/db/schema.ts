@@ -1,7 +1,7 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
 import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { ATTENDANCE_EVENT_TYPES, REQUEST_STATUSES, ROLES, type AttendanceFlag, type HalfDay, type ShiftBreak } from '@workhub/shared';
+import { ATTENDANCE_EVENT_TYPES, CHANNEL_KINDS, REQUEST_STATUSES, ROLES, type AttendanceFlag, type FeedbackKind, type HalfDay, type ShiftBreak } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
 
@@ -478,4 +478,92 @@ export const timesheets = pgTable('timesheets', {
   decidedBy: uuid('decided_by'),
   decidedAt: timestamp('decided_at', { withTimezone: true }),
   decisionNote: text('decision_note'),
+});
+
+// ---- Inbox, announcements, feedback (sprint 7) ---------------------------------------
+
+export const chatChannelKind = pgEnum('chat_channel_kind', CHANNEL_KINDS);
+
+export const chatChannels = pgTable('chat_channels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  kind: chatChannelKind('kind').notNull(),
+  name: text('name'),
+  topic: text('topic'),
+  dmKey: text('dm_key'),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdBy: uuid('created_by'),
+  lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const chatMembers = pgTable('chat_members', {
+  workspaceId: uuid('workspace_id').notNull(),
+  channelId: uuid('channel_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  lastReadAt: timestamp('last_read_at', { withTimezone: true }).notNull().defaultNow(),
+  muted: boolean('muted').notNull().default(false),
+  joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  channelId: uuid('channel_id').notNull(),
+  authorId: uuid('author_id'),
+  parentId: uuid('parent_id'),
+  body: text('body').notNull(),
+  mentions: uuid('mentions').array().notNull().default([]),
+  taskIds: uuid('task_ids').array().notNull().default([]),
+  replyCount: integer('reply_count').notNull().default(0),
+  lastReplyAt: timestamp('last_reply_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  editedAt: timestamp('edited_at', { withTimezone: true }),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+});
+
+export const chatFiles = pgTable('chat_files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  channelId: uuid('channel_id').notNull(),
+  messageId: uuid('message_id').notNull(),
+  uploadedBy: uuid('uploaded_by'),
+  fileName: text('file_name').notNull(),
+  contentType: text('content_type').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  storageKey: text('storage_key').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const announcements = pgTable('announcements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  authorId: uuid('author_id'),
+  teamId: uuid('team_id'),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  pinned: boolean('pinned').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  editedAt: timestamp('edited_at', { withTimezone: true }),
+});
+
+export const announcementReads = pgTable('announcement_reads', {
+  workspaceId: uuid('workspace_id').notNull(),
+  announcementId: uuid('announcement_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const feedback = pgTable('feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id'),
+  kind: text('kind').$type<FeedbackKind>().notNull(),
+  message: text('message').notNull(),
+  page: text('page'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

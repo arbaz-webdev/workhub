@@ -35,8 +35,11 @@ import type { Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { DbService } from '../db/db.service';
 import { attendanceDays, attendanceEvents, memberships, shifts, teams, users } from '../db/schema';
+import { presenceAfter } from '../inbox/presence';
+import { RealtimeService } from '../realtime/realtime.service';
 import { StorageService } from '../storage/storage.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import {
@@ -87,6 +90,8 @@ export class AttendanceController {
   constructor(
     private readonly db: DbService,
     private readonly storage: StorageService,
+    private readonly realtime: RealtimeService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Get('today')
@@ -164,7 +169,7 @@ export class AttendanceController {
     const eventId = randomUUID();
     let storedKey: string | null = null;
     try {
-      return await this.db.withContext(ctx, async (tx) => {
+      const today = await this.db.withContext(ctx, async (tx) => {
         const info = await workspaceInfo(tx, ws.id);
         const punch = body.type === 'check_in' || body.type === 'check_out';
         if (punch && info.requireSelfie && !selfie) throw new BadRequestException(`Take a selfie to ${body.type === 'check_in' ? 'check in' : 'check out'}.`);
@@ -240,6 +245,10 @@ export class AttendanceController {
         });
         return todayFor(tx, info, auth.userId, new Date());
       });
+      // Colleagues see them come in, step out for a break and leave.
+      this.realtime.toStaff(ws.id, { type: 'presence.changed', userId: auth.userId, presence: presenceAfter(body.type), since: at.toISOString() });
+      this.analytics.capture('attendance recorded', { userId: auth.userId, workspaceId: ws.id }, { type: body.type, offline, selfie: !!selfie });
+      return today;
     } catch (err) {
       if (storedKey) await this.storage.delete(storedKey).catch(() => undefined);
       // Two copies of the same queued event raced: if the other copy was recorded, this

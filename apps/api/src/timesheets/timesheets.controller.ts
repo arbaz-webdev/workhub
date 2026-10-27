@@ -22,6 +22,7 @@ import { checkBudget, loadTask, requireEdit } from '../projects/board';
 import { RealtimeService } from '../realtime/realtime.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { assertWeekOpen, buildTimesheet } from './timesheets';
+import { Track } from '../analytics/track';
 
 interface Stopped {
   loggedMinutes: number;
@@ -128,6 +129,7 @@ export class TimesheetsController {
   }
 
   @Post('timesheets/submit')
+  @Track('timesheet submitted')
   @HttpCode(200)
   submit(@Body(new ZodPipe(submitTimesheetSchema)) body: { weekStart: string }, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<TimesheetDto> {
     return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {

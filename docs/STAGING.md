@@ -112,3 +112,9 @@ deploys after CI passes.
   `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`, and delete `ALLOW_CONSOLE_EMAIL`.
 - **Your own address:** point `staging.yourdomain.com` at the site in Render's **Custom domains**,
   and update `WEB_ORIGIN` and `APP_URL`.
+- **Feedback by email:** set `FEEDBACK_TO` to your address. Until then feedback is saved in the
+  `feedback` table (and, while emails go to the log, the email shows there too).
+- **Product analytics (free PostHog plan):** create an EU project at posthog.com and set
+  `POSTHOG_KEY` to its project API key. Nothing is sent until you do.
+- **Chat with several API copies:** live updates go through the API's memory, which is fine for
+  one copy. Running two or more needs Redis pub/sub first (Sprint 12).

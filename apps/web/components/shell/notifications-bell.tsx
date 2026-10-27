@@ -4,12 +4,14 @@ import type { NotificationDto, NotificationsResponse } from '@workhub/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { timeAgo } from '@/components/ui';
-import { useWorkspaceApi } from '@/lib/workspace';
+import { useInboxEvents } from '@/lib/inbox';
+import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
-const POLL_MS = 60_000; // Real-time delivery arrives with WebSockets in sprint 3.
+const POLL_MS = 60_000;
 
 export function NotificationsBell() {
   const api = useWorkspaceApi();
+  const { me } = useWorkspace();
   const router = useRouter();
   const [data, setData] = useState<NotificationsResponse>({ items: [], unreadCount: 0 });
   const [open, setOpen] = useState(false);
@@ -19,6 +21,12 @@ export function NotificationsBell() {
   const load = useCallback(() => {
     api<NotificationsResponse>('/notifications').then(setData).catch(() => {});
   }, [api]);
+
+  // Mentions, replies and announcements arrive live; everything else on the next poll.
+  useInboxEvents((s) => {
+    if (s.type === 'announcement.changed' || s.type === 'reconnected') load();
+    else if (s.type === 'message.created' && s.message.author?.id !== me.user.id && (s.message.mentions.includes(me.user.id) || s.message.parentId)) load();
+  });
 
   useEffect(() => {
     load();

@@ -62,6 +62,7 @@ import { RealtimeService } from '../realtime/realtime.service';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { asLabelColor, canEdit, canManage, cardsFor, checkBudget, columnPosition, GAP, loadColumn, loadProject, requireEdit, requireManage } from './board';
 import { BLANK, builtinDtos, findBuiltin } from './templates';
+import { Track } from '../analytics/track';
 
 @Controller()
 @UseGuards(WorkspaceGuard)
@@ -112,6 +113,7 @@ export class ProjectsController {
   }
 
   @Post('projects')
+  @Track('project created')
   @MinRole('manager')
   async create(
     @Body(new ZodPipe(createProjectSchema)) body: CreateProjectInput,

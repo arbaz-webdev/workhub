@@ -364,11 +364,19 @@ describe('team view', () => {
   it('shows managers everyone’s day, with a summary', async () => {
     await member.agent.get('/attendance/team').set(H()).expect(403);
     const r = (await manager.agent.get('/attendance/team').set(H()).expect(200)).body as TeamAttendanceDto;
-    expect(r.rows.map((x) => x.userId)).toContain(member.user.id);
     expect(r.rows.map((x) => x.userId)).not.toContain(guest.user.id);
+    // Everyone who has joined is listed for today (the default date may be last night's shift).
+    const calendarToday = zonedParts(new Date(), PK).date;
+    const today = (await manager.agent.get('/attendance/team').query({ date: calendarToday }).set(H()).expect(200)).body as TeamAttendanceDto;
+    expect(today.rows.map((x) => x.userId)).toContain(member.user.id);
+    expect(today.rows.map((x) => x.userId)).not.toContain(guest.user.id);
     const total = Object.values(r.summary).reduce((a, b) => a + b, 0);
     expect(total).toBe(r.rows.length);
-    expect(r.rows.some((x) => x.day.events.length > 0)).toBe(true);
+    // A fresh check-in shows up on the day it counts towards (whatever the time of day).
+    const p = await newPerson('team-row');
+    const checkedIn = (await p.agent.post('/attendance/events').set(H()).send({ type: 'check_in' }).expect(200)).body as AttendanceTodayDto;
+    const onThatDay = (await manager.agent.get('/attendance/team').query({ date: checkedIn.date }).set(H()).expect(200)).body as TeamAttendanceDto;
+    expect(onThatDay.rows.find((x) => x.userId === p.user.id)!.day.events).toHaveLength(1);
     await manager.agent.get('/attendance/team').query({ date: 'yesterday' }).set(H()).expect(400);
     const rivalView = (await rival.agent.get('/attendance/team').set(WORKSPACE_HEADER, rival.workspace.id).expect(200)).body as TeamAttendanceDto;
     expect(rivalView.rows.map((x) => x.userId)).toEqual([rival.user.id]);

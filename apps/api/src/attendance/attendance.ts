@@ -2,9 +2,10 @@
 // the checks that decide which day a new event belongs to.
 import { ConflictException } from '@nestjs/common';
 import type { AttendanceDayDto, AttendanceEventDto, AttendanceFlag, AttendanceTodayDto, ShiftDto } from '@workhub/shared';
-import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import type { Tx } from '../db/db.service';
 import { attendanceDays, attendanceEvents, attendanceSites, memberships, shifts, teams, workspaces, type DayPolicy } from '../db/schema';
+import { holidayMap, leaveMap } from './calendar';
 import { deviceLabel, type SiteRule } from './location';
 import { breaksOn, evaluateDay, punchState, resolveWorkday, shiftWindow, type DayEvent, type ShiftRule } from './rules';
 import { addDays, isoWeekday, zonedParts, zonedTime } from './zoned';
@@ -130,6 +131,12 @@ export function eventDto(e: EventRow, workspaceId: string, siteNames: Map<string
   };
 }
 
+/** What else is true of a date for a person: a holiday, or approved leave. */
+export interface DayExtras {
+  holidayName?: string | null;
+  leave?: { typeName: string; fraction: number; paid: boolean } | null;
+}
+
 /** A day as the person (or their manager) sees it. Days never checked into have no row. */
 export function buildDay(
   date: string,
@@ -139,6 +146,7 @@ export function buildDay(
   ws: WorkspaceInfo,
   siteNames: Map<string, string>,
   now: Date,
+  extras: DayExtras = {},
 ): AttendanceDayDto {
   // A recorded day keeps the rules it started under; others use today's shift.
   const sched = row
@@ -156,11 +164,15 @@ export function buildDay(
     dayEnd: zonedTime(addDays(date, 1), 0, ws.timezone),
     events: toDayEvents(events),
     now,
+    holiday: !!extras.holidayName,
+    leaveFraction: extras.leave?.fraction ?? 0,
   });
   return {
     date,
     status: r.status,
     flags: r.flags,
+    holidayName: extras.holidayName ?? null,
+    leave: extras.leave ?? null,
     open: r.open,
     onBreak: r.onBreak,
     checkInAt: r.checkInAt?.toISOString() ?? null,
@@ -217,7 +229,8 @@ export async function eventsForDays(tx: Tx, dayIds: string[]): Promise<Map<strin
   const rows = await tx
     .select()
     .from(attendanceEvents)
-    .where(inArray(attendanceEvents.dayId, dayIds))
+    // Events replaced by an approved correction are kept, but don't count.
+    .where(and(inArray(attendanceEvents.dayId, dayIds), isNull(attendanceEvents.voidedAt)))
     .orderBy(asc(attendanceEvents.occurredAt), asc(attendanceEvents.receivedAt));
   for (const e of rows) map.set(e.dayId, [...(map.get(e.dayId) ?? []), e]);
   return map;
@@ -252,9 +265,20 @@ export async function siteNameMap(tx: Tx, workspaceId: string) {
   return new Map(sites.map((s) => [s.id, s.name]));
 }
 
+/** Holidays and approved leave for a range of dates, looked up per person and date. */
+export async function extrasLoader(tx: Tx, ws: WorkspaceInfo, people: Map<string, PersonAttendance>, from: string, to: string) {
+  const holidayNames = await holidayMap(tx, ws.id, from, to);
+  const leave = await leaveMap(tx, ws, people, from, to, holidayNames);
+  return (userId: string, date: string): DayExtras => {
+    const l = leave.get(userId)?.get(date);
+    return { holidayName: holidayNames.get(date) ?? null, leave: l ? { typeName: l.typeName, fraction: l.fraction, paid: l.paid } : null };
+  };
+}
+
 /** What the attendance page shows: today's (or tonight's) workday and where the person stands. */
 export async function todayFor(tx: Tx, ws: WorkspaceInfo, userId: string, now: Date): Promise<AttendanceTodayDto> {
-  const person = (await peopleAttendance(tx, ws.id, [userId])).get(userId);
+  const people = await peopleAttendance(tx, ws.id, [userId]);
+  const person = people.get(userId);
   const shift = person?.shift ?? null;
   const siteNames = await siteNameMap(tx, ws.id);
   const open = await openDay(tx, ws.id, userId, now);
@@ -293,7 +317,7 @@ export async function todayFor(tx: Tx, ws: WorkspaceInfo, userId: string, now: D
   return {
     date,
     state: open ? punchState(open.events) : 'out',
-    day: buildDay(date, row, events, shift, ws, siteNames, now),
+    day: buildDay(date, row, events, shift, ws, siteNames, now, (await extrasLoader(tx, ws, people, date, date))(userId, date)),
     shift: shift ? shiftDto(shift) : null,
     breaks: breaksOn(policyBreaks, date),
     requireSelfie: ws.requireSelfie,
@@ -303,7 +327,9 @@ export async function todayFor(tx: Tx, ws: WorkspaceInfo, userId: string, now: D
 
 /** A person's days from `from` to `to` (inclusive), newest first. */
 export async function daysFor(tx: Tx, ws: WorkspaceInfo, userId: string, from: string, to: string, now: Date): Promise<AttendanceDayDto[]> {
-  const person = (await peopleAttendance(tx, ws.id, [userId])).get(userId);
+  const people = await peopleAttendance(tx, ws.id, [userId]);
+  const person = people.get(userId);
+  const extras = await extrasLoader(tx, ws, people, from, to);
   const shift = person?.shift ?? null;
   const counted = firstCountedDay(await trackingStart(tx, ws), person?.joinedAt, ws, now);
   const rows = await tx
@@ -320,7 +346,7 @@ export async function daysFor(tx: Tx, ws: WorkspaceInfo, userId: string, from: s
   for (let d = to; d >= from; d = addDays(d, -1)) {
     const row = byDate.get(d);
     if (!row && d < counted) continue; // before they joined, or before attendance was set up
-    out.push(buildDay(d, row, row ? (events.get(row.id) ?? []) : [], shift, ws, siteNames, now));
+    out.push(buildDay(d, row, row ? (events.get(row.id) ?? []) : [], shift, ws, siteNames, now, extras(userId, d)));
   }
   return out;
 }

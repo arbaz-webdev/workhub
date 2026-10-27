@@ -78,7 +78,7 @@ describe('time logging and actual hours', () => {
     await owner.agent.post(`/tasks/${t.id}/time`).set(H()).send({ minutes: 0 }).expect(400);
     await owner.agent.post(`/tasks/${t.id}/time`).set(H()).send({ minutes: 25 * 60 }).expect(400);
     await owner.agent.post(`/tasks/${t.id}/time`).set(H()).send({ minutes: 10, workDate: '2026-02-30' }).expect(400);
-    const dated = await owner.agent.post(`/tasks/${t.id}/time`).set(H()).send({ minutes: 10, workDate: '2026-10-01' }).expect(201);
+    const dated = await owner.agent.post(`/tasks/${t.id}/time`).set(H()).send({ minutes: 10, workDate: '2026-10-01', note: 'Kick-off call' }).expect(201);
     expect(dated.body.timeEntries.map((e: { workDate: string }) => e.workDate)).toContain('2026-10-01');
   });
 });

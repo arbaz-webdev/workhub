@@ -146,6 +146,32 @@ How it decides things:
 
 Offline check-in works while the attendance page is open (or on its next load). Opening the app with no connection at all needs the installable app from Sprint 11. Behind a load balancer, set Express's `trust proxy` to match so office-IP rules see the real client address.
 
+## Sprint 6 status
+
+- [x] Leave types, balances and approvals:
+  - Annual (14 days, earned monthly), Casual (10), Sick (8) and Unpaid by default, all editable.
+  - Requests count working days only and can be half days.
+  - A manager approves; both sides are notified; there's a team leave calendar and manual balance adjustments.
+- [x] Pakistan's public holidays: fixed dates for any year, plus Eid ul-Fitr, Eid ul-Adha, Ashura and Eid Milad-un-Nabi loaded as *estimated* for 2026–2028, editable once announced. Company holidays too.
+- [x] Leave and holidays in attendance: those days show as on leave or holiday, never absent. A half day off halves the hours owed.
+- [x] Attendance corrections:
+  - Ask for corrected times and a manager approves, or a manager corrects someone's day directly.
+  - The replaced events are kept (voided, not deleted) and copied into the audit log.
+- [x] Task timer and weekly timesheets:
+  - One running timer per person, shown in the top bar.
+  - Back-dated manual entries need a reason.
+  - Weeks are submitted, approved or sent back; approved weeks are locked.
+- [x] Monthly attendance export for payroll: .xlsx with Summary and Daily sheets (including payable days), or CSV.
+- [x] 212 tests, including unit tests for leave arithmetic, entitlement and the holiday list
+
+How it decides things:
+- **Leave days:** a request takes the person's working days (their shift's, or the workspace's) minus holidays.
+- **Earned leave:** yearly types give all their days at once and monthly ones a twelfth each month, prorated from when someone joined.
+- **Who approves:** managers approve others' requests; only the owner can approve their own.
+- **Payable days:** days in the period, minus absences, half the half days, and unpaid leave.
+
+Two dependencies are pinned for security: `multer` (2.5.0, via an npm override) and `body-parser` (2.4.0). Both fix high-severity advisories published this month.
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

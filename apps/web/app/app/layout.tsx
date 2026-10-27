@@ -7,6 +7,7 @@ import { CommandPalette } from '@/components/shell/command-palette';
 import { FirstWorkspace } from '@/components/shell/first-workspace';
 import { NotificationsBell } from '@/components/shell/notifications-bell';
 import { Sidebar } from '@/components/shell/sidebar';
+import { TimerChip } from '@/components/shell/timer-chip';
 import { VerifyBanner } from '@/components/shell/verify-banner';
 import { roleLabel } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
@@ -143,6 +144,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </svg>
               </button>
 
+              <span className="hidden sm:inline">
+                <TimerChip key={workspace.id} />
+              </span>
               <NotificationsBell key={workspace.id} />
 
               <span className="hidden text-sm text-gray-600 md:inline">

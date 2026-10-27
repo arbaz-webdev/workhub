@@ -1,7 +1,7 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
 import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { ATTENDANCE_EVENT_TYPES, ROLES, type AttendanceFlag, type ShiftBreak } from '@workhub/shared';
+import { ATTENDANCE_EVENT_TYPES, REQUEST_STATUSES, ROLES, type AttendanceFlag, type HalfDay, type ShiftBreak } from '@workhub/shared';
 
 export const memberRole = pgEnum('member_role', ROLES);
 
@@ -267,6 +267,8 @@ export const timeEntries = pgTable('time_entries', {
   minutes: integer('minutes').notNull(),
   note: text('note'),
   billable: boolean('billable').notNull().default(true),
+  source: text('source').$type<'manual' | 'timer'>().notNull().default('manual'),
+  startedAt: timestamp('started_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -378,4 +380,102 @@ export const attendanceEvents = pgTable('attendance_events', {
   flags: text('flags').array().$type<AttendanceFlag[]>().notNull().default([]),
   selfieKey: text('selfie_key'),
   selfieDeletedAt: timestamp('selfie_deleted_at', { withTimezone: true }),
+  /** Replaced by an approved correction; kept for the record, ignored everywhere else. */
+  voidedAt: timestamp('voided_at', { withTimezone: true }),
+  voidedBy: uuid('voided_by'),
+});
+
+// ---- Leave, holidays, corrections, timers, timesheets (sprint 6) --------------------
+
+export const holidays = pgTable('holidays', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  date: date('date', { mode: 'string' }).notNull(),
+  name: text('name').notNull(),
+  kind: text('kind').$type<'public' | 'company'>().notNull().default('company'),
+  estimated: boolean('estimated').notNull().default(false),
+  presetKey: text('preset_key'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const leaveTypes = pgTable('leave_types', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  paid: boolean('paid').notNull().default(true),
+  daysPerYear: numeric('days_per_year', { precision: 5, scale: 1 }),
+  accrual: text('accrual').$type<'yearly' | 'monthly'>().notNull().default('yearly'),
+  color: text('color').notNull().default('blue'),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const requestStatus = pgEnum('request_status', REQUEST_STATUSES);
+
+export const leaveRequests = pgTable('leave_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  leaveTypeId: uuid('leave_type_id').notNull(),
+  startDate: date('start_date', { mode: 'string' }).notNull(),
+  endDate: date('end_date', { mode: 'string' }).notNull(),
+  halfDay: text('half_day').$type<HalfDay>().notNull().default('none'),
+  days: numeric('days', { precision: 5, scale: 1 }).notNull(),
+  reason: text('reason'),
+  status: requestStatus('status').notNull().default('pending'),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  decisionNote: text('decision_note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const leaveAdjustments = pgTable('leave_adjustments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  leaveTypeId: uuid('leave_type_id').notNull(),
+  year: smallint('year').notNull(),
+  days: numeric('days', { precision: 5, scale: 1 }).notNull(),
+  reason: text('reason').notNull(),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const attendanceCorrections = pgTable('attendance_corrections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  workDate: date('work_date', { mode: 'string' }).notNull(),
+  checkInAt: timestamp('check_in_at', { withTimezone: true }).notNull(),
+  checkOutAt: timestamp('check_out_at', { withTimezone: true }).notNull(),
+  reason: text('reason').notNull(),
+  status: requestStatus('status').notNull().default('pending'),
+  requestedBy: uuid('requested_by'),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  decisionNote: text('decision_note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const taskTimers = pgTable('task_timers', {
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const timesheets = pgTable('timesheets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  weekStart: date('week_start', { mode: 'string' }).notNull(),
+  status: text('status').$type<'submitted' | 'approved' | 'rejected'>().notNull(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  decisionNote: text('decision_note'),
 });

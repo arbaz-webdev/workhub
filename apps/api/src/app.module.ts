@@ -26,6 +26,7 @@ import { MyWorkController } from './projects/my-work.controller';
 import { ProjectsController } from './projects/projects.controller';
 import { TasksController } from './projects/tasks.controller';
 import { RealtimeService } from './realtime/realtime.service';
+import { ReportsController } from './reports/reports.controller';
 import { StorageService } from './storage/storage.service';
 import { TeamsController } from './teams/teams.controller';
 import { TimesheetsController } from './timesheets/timesheets.controller';
@@ -66,6 +67,7 @@ class HealthController {
     CrmController,
     CrmImportController,
     DealsController,
+    ReportsController,
     WaitlistController,
   ],
   providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],

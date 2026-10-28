@@ -226,6 +226,26 @@ How it decides things:
 - [x] Client 360: one page per company with money won, the open pipeline and forecast, hours this month and in total, each project's hours against its budget, people, deals, the activity timeline and recent files.
 - [x] 251 tests
 
+## Sprint 10 status
+
+- [x] Owner dashboard (the home page):
+  - Managers see today's attendance (live), active projects, overdue tasks, the open pipeline, overdue follow-ups and this week's hours by client.
+  - Everyone sees their own day: tasks due and overdue, follow-ups due, and hours this week.
+- [x] Client profitability (owners and admins), per client and month, in the workspace currency:
+  - Revenue is won deals, plus billable hours × rate on hourly projects.
+  - Cost is hours × each person's monthly cost ÷ the monthly working hours.
+  - It warns about missing exchange rates and people without a cost.
+- [x] Team utilisation (managers): billable and total hours against capacity (working days, less holidays and approved leave, × 8 h), per person and team.
+- [x] Sales report (managers): open pipeline and forecast, won value, win rate, average days to win, deals by stage, lead sources (from lead to won), lost reasons, and each salesperson's calls, meetings and wins.
+- [x] Costs and rates (owners and admins): monthly cost per person, monthly working hours, exchange rates, and hourly rates for time-and-materials projects.
+- [x] Every report downloads as CSV that opens in Excel with Urdu names intact and formulas neutralised.
+- [x] 257 tests
+
+How it decides things:
+- **No double counting:** a deal whose project bills by the hour isn't counted as revenue again; that project's hours are.
+- **Currencies:** amounts are converted only with rates you enter. Without a rate, they're left out and the report says so; nothing is guessed.
+- **Privacy:** salaries are visible only to owners and admins, never in other API responses, and the audit log records that a cost changed but not the amount.
+
 The app also now waits for the server when it's starting up (after a deploy, or when the free staging plan wakes from sleep) instead of staying on "Loading your workspace…".
 
 ## Key decisions so far

@@ -1542,3 +1542,102 @@ export interface ClientOverviewDto extends Omit<CompanyPageDto, 'projects'> {
   activities: CrmActivityDto[];
   files: { id: string; fileName: string; sizeBytes: number; url: string; isImage: boolean; projectId: string; projectName: string; createdAt: string }[];
 }
+
+// ---- Sprint 10: reports and the owner dashboard -------------------------------------
+
+/** YYYY-MM. */
+export const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
+
+export const costSettingsSchema = z.object({
+  monthlyHours: z.number().int().min(1).max(744),
+  /** 1 unit of the currency = this many of the workspace currency. */
+  fxRates: z.partialRecord(z.enum(CURRENCIES), z.number().positive().max(1_000_000)),
+});
+export type CostSettingsInput = z.infer<typeof costSettingsSchema>;
+export const memberCostSchema = z.object({ monthlyCost: z.number().min(0).max(1_000_000_000).nullable() });
+export const projectRateSchema = z.object({ hourlyRate: z.number().min(0).max(10_000_000).nullable(), currency: z.enum(CURRENCIES).nullable() });
+
+export interface CostSettingsDto {
+  currency: string;
+  monthlyHours: number;
+  fxRates: Record<string, number>;
+  people: { person: PersonDto; role: Role; monthlyCost: number | null; hourlyCost: number | null }[];
+  projects: { id: string; name: string; client: CompanyDto | null; hourlyRate: number | null; rateCurrency: string | null }[];
+}
+
+export interface ProfitRow {
+  revenue: number;
+  cost: number;
+  profit: number;
+  /** profit ÷ revenue, as a percentage; null without revenue. */
+  margin: number | null;
+  hours: number;
+  billableHours: number;
+}
+
+export interface ProfitabilityDto {
+  /** Everything is in this currency. */
+  currency: string;
+  months: string[];
+  clients: (ProfitRow & { client: CompanyDto | null; byMonth: (ProfitRow & { month: string })[] })[];
+  total: ProfitRow & { byMonth: (ProfitRow & { month: string })[] };
+  /** Currencies with deals or rates but no exchange rate: left out of revenue. */
+  missingRates: string[];
+  /** People who logged time but have no cost set: their hours cost nothing here. */
+  peopleWithoutCost: PersonDto[];
+}
+
+export interface UtilisationRow {
+  hours: number;
+  billableHours: number;
+  /** Working hours in the period (working days, less holidays and approved leave, × 8). */
+  capacityHours: number;
+  /** Billable ÷ capacity, as a percentage. */
+  utilisation: number | null;
+}
+
+export interface UtilisationDto {
+  from: string;
+  to: string;
+  people: (UtilisationRow & { person: PersonDto; team: { id: string; name: string } | null })[];
+  teams: (UtilisationRow & { team: { id: string; name: string } | null; people: number })[];
+  total: UtilisationRow;
+}
+
+export interface SalesReportDto {
+  from: string;
+  to: string;
+  currency: string;
+  /** Open deals now, by currency, and their weighted forecast. */
+  open: MoneyDto[];
+  weighted: MoneyDto[];
+  /** Deals closed in the period. */
+  won: { count: number; value: MoneyDto[] };
+  lost: { count: number };
+  /** Won ÷ (won + lost), as a percentage; null when none closed. */
+  winRate: number | null;
+  avgDaysToWin: number | null;
+  stages: { stage: string; probability: number; count: number; value: MoneyDto[] }[];
+  sources: { source: LeadSource | 'direct'; leads: number; converted: number; won: number; wonValue: MoneyDto[] }[];
+  people: { person: PersonDto; activities: number; calls: number; meetings: number; won: number; wonValue: MoneyDto[]; open: number }[];
+  lostReasons: { reason: string; count: number }[];
+}
+
+export interface DashboardDto {
+  /** Only for managers and above. */
+  team: {
+    attendance: Record<Presence, number>;
+    activeProjects: number;
+    overdueTasks: number;
+    openPipeline: MoneyDto[];
+    hoursThisWeekByClient: { client: CompanyDto | null; hours: number }[];
+    followUpsOverdue: number;
+  } | null;
+  me: {
+    tasksDueToday: number;
+    tasksOverdue: number;
+    followUpsDue: number;
+    hoursThisWeek: number;
+    myOverdue: { id: string; title: string; projectId: string; projectName: string; dueDate: string }[];
+  };
+}

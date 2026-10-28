@@ -1,12 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
-import type { MeResponse, SignInInput, SignUpInput, UserDto, WorkspaceDto } from '@workhub/shared';
+import { TRIAL_DAYS, type MeResponse, type SignInInput, type SignUpInput, type UserDto, type WorkspaceDto } from '@workhub/shared';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { audit } from '../audit/audit';
 import { config } from '../config';
 import { DbService, Tx } from '../db/db.service';
-import { authTokens, memberships, oauthAccounts, sessions, users, workspaces } from '../db/schema';
+import { authTokens, memberships, oauthAccounts, sessions, subscriptions, users, workspaces } from '../db/schema';
 import { EmailService } from '../email/email.service';
 import { resetPasswordMessage, verifyEmailMessage } from '../email/templates';
 
@@ -121,6 +121,8 @@ export class AuthService {
     const slug = slugify(w.name);
     await tx.insert(workspaces).values({ id: w.workspaceId, name: w.name, slug });
     await tx.insert(memberships).values({ workspaceId: w.workspaceId, userId: w.userId, role: 'owner' });
+    // Every new workspace starts with a trial of everything.
+    await tx.insert(subscriptions).values({ workspaceId: w.workspaceId, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) });
     await audit(tx, {
       workspaceId: w.workspaceId,
       actorUserId: w.userId,

@@ -40,6 +40,7 @@ import { inviteMessage } from '../email/templates';
 import { notifyRoles } from '../notifications/notify';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { Track } from '../analytics/track';
+import { assertSeat } from '../billing/plans';
 
 const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
 
@@ -101,6 +102,7 @@ export class InvitationsController {
           .from(memberships)
           .innerJoin(users, eq(users.id, memberships.userId))
           .where(eq(memberships.workspaceId, ws.id));
+        if (body.role !== 'guest') await assertSeat(tx, ws.id);
         const memberEmails = new Set(members.map((m) => m.email.toLowerCase()));
         const skipped = emails.filter((e) => memberEmails.has(e)).map((email) => ({ email, reason: 'Already a member' }));
         const fresh = emails.filter((e) => !memberEmails.has(e));
@@ -175,6 +177,7 @@ export class InvitationsController {
   ): Promise<InviteLinkResponse> {
     const token = newToken();
     const invitation = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      if (body.role !== 'guest') await assertSeat(tx, ws.id);
       const [inv] = await tx
         .insert(invitations)
         .values({
@@ -291,6 +294,7 @@ export class InvitationsController {
 
       if (existing) return { ...w!, role: existing.role };
 
+      if (inv.role !== 'guest') await assertSeat(tx, inv.workspace_id);
       await tx.insert(memberships).values({ workspaceId: inv.workspace_id, userId: auth.userId, role: inv.role });
       await audit(tx, {
         workspaceId: inv.workspace_id,

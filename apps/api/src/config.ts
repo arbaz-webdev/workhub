@@ -103,6 +103,54 @@ export const config = {
   get feedbackTo(): string | undefined {
     return process.env.FEEDBACK_TO || undefined;
   },
+  /** Billing and plan limits. "false" opens everything (the free beta). */
+  get billingEnforced() {
+    return process.env.BILLING_ENFORCED !== 'false';
+  },
+  /**
+   * How invoices are paid online: "none", or "test" (a pretend checkout for development
+   * and staging, refused in production unless ALLOW_TEST_PAYMENTS=true). Real gateways
+   * (Safepay, PayFast) plug in here once a merchant account exists.
+   */
+  get paymentsDriver(): 'none' | 'test' {
+    const value = process.env.PAYMENTS_DRIVER ?? (config.isProduction ? 'none' : 'test');
+    if (value !== 'none' && value !== 'test') throw new Error(`Unknown PAYMENTS_DRIVER ${value}`);
+    if (value === 'test' && config.isProduction && process.env.ALLOW_TEST_PAYMENTS !== 'true') {
+      throw new Error('PAYMENTS_DRIVER=test is not allowed in production; set ALLOW_TEST_PAYMENTS=true only on a staging site.');
+    }
+    return value;
+  },
+  /** Who the invoices are from. */
+  get seller() {
+    return {
+      name: process.env.SELLER_NAME ?? 'WorkHub',
+      ntn: process.env.SELLER_NTN || null,
+      address: process.env.SELLER_ADDRESS || null,
+      email: process.env.SELLER_EMAIL ?? 'billing@workhub.pk',
+    };
+  },
+  /** Bank details for paying by transfer (IBFT); off unless an IBAN is set. */
+  get bankAccount(): { bank: string; accountTitle: string; iban: string } | null {
+    const iban = process.env.BANK_IBAN;
+    if (!iban) return null;
+    return { bank: process.env.BANK_NAME ?? 'Bank', accountTitle: process.env.BANK_ACCOUNT_TITLE ?? config.seller.name, iban };
+  },
+  /** WorkHub staff who review bank transfers, by email (lower-case). */
+  get platformAdmins(): string[] {
+    return (process.env.PLATFORM_ADMINS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  },
+  /**
+   * Sales tax on services by province, as JSON to override the defaults, e.g.
+   * {"punjab": 16, "sindh": 15}. Confirm current rates with a tax adviser before launch.
+   */
+  get salesTaxRates(): Record<string, number> {
+    const defaults: Record<string, number> = { punjab: 16, sindh: 15, kp: 15, balochistan: 15, islamabad: 15, gb: 0, ajk: 0, outside: 0 };
+    if (!process.env.SALES_TAX_RATES) return defaults;
+    return { ...defaults, ...(JSON.parse(process.env.SALES_TAX_RATES) as Record<string, number>) };
+  },
   maxUploadBytes: 25 * 1024 * 1024,
   sessionTtlDays: 30,
 };

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CommandPalette } from '@/components/shell/command-palette';
 import { FeedbackButton } from '@/components/shell/feedback-button';
+import { InstallButton } from '@/components/shell/service-worker';
 import { FirstWorkspace } from '@/components/shell/first-workspace';
 import { NotificationsBell } from '@/components/shell/notifications-bell';
 import { Sidebar } from '@/components/shell/sidebar';
@@ -103,7 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <InboxProvider key={workspace.id}>
         <div className="flex min-h-full">
           {/* Desktop sidebar */}
-          <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:block">
+          <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:block print:hidden">
             <div className="sticky top-0 h-screen overflow-y-auto">
               <Sidebar />
             </div>
@@ -120,7 +121,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="sticky top-0 z-20 border-b border-gray-200 bg-white">
+            <header className="sticky top-0 z-20 border-b border-gray-200 bg-white print:hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 lg:px-8">
                 <button
                   onClick={() => setMenuOpen(true)}
@@ -176,6 +177,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="hidden sm:inline">
                   <TimerChip key={workspace.id} />
                 </span>
+                <InstallButton />
                 <FeedbackButton />
                 <NotificationsBell key={workspace.id} />
 

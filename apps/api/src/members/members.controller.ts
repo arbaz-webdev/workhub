@@ -20,6 +20,7 @@ import { DbService, Tx } from '../db/db.service';
 import { memberships, users, workspaces } from '../db/schema';
 import { notify } from '../notifications/notify';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
+import { assertSeat } from '../billing/plans';
 
 /**
  * Rules for changing someone else's access:
@@ -71,6 +72,8 @@ export class MembersController {
       const target = await this.findMember(tx, ws.id, userId);
       assertCanManage(ws, auth.userId, userId, target.role, body.role);
       if (target.role === body.role) return { role: body.role };
+      // A guest becoming staff takes a seat.
+      if (target.role === 'guest') await assertSeat(tx, ws.id);
 
       await tx
         .update(memberships)

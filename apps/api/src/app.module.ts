@@ -7,6 +7,7 @@ import { AttendanceController } from './attendance/attendance.controller';
 import { CorrectionsController } from './attendance/corrections.controller';
 import { SelfieCleanupService } from './attendance/selfie-cleanup.service';
 import { AuditController } from './audit/audit.controller';
+import { BillingController, PlatformController } from './billing/billing.controller';
 import { AuthModule } from './auth/auth.module';
 import { Public } from './common/request';
 import { CrmController } from './crm/crm.controller';
@@ -22,6 +23,7 @@ import { InvitationsController } from './invitations/invitations.controller';
 import { LeaveController } from './leave/leave.controller';
 import { MembersController } from './members/members.controller';
 import { NotificationsController } from './notifications/notifications.controller';
+import { OnboardingController } from './onboarding/onboarding.controller';
 import { MyWorkController } from './projects/my-work.controller';
 import { ProjectsController } from './projects/projects.controller';
 import { TasksController } from './projects/tasks.controller';
@@ -68,6 +70,9 @@ class HealthController {
     CrmImportController,
     DealsController,
     ReportsController,
+    BillingController,
+    PlatformController,
+    OnboardingController,
     WaitlistController,
   ],
   providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],

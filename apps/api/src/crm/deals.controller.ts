@@ -32,6 +32,7 @@ import { createProject } from '../projects/create';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { assertCompany, assertOwner, canDelete, forbidDelete, likeTerm, loadCompany } from './crm';
 import { activityDtos, dealDtos, endOfStage, ensureDefaultPipeline, loadDeal, loadStage, pipelineDtos, positionAt, resolveStage, writeStages } from './deals';
+import { requireFeature } from '../billing/plans';
 
 const id = z.string().uuid();
 
@@ -82,6 +83,7 @@ export class DealsController {
   async createPipeline(@Body(new ZodPipe(pipelineSchema)) body: PipelineInput, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<PipelineDto> {
     try {
       return await this.db.withContext(this.ctx(auth, ws), async (tx) => {
+        await requireFeature(tx, ws.id, 'pipelines');
         await ensureDefaultPipeline(tx, ws.id);
         const [p] = await tx.insert(pipelines).values({ workspaceId: ws.id, name: body.name, position: 1 }).returning({ id: pipelines.id });
         await writeStages(tx, ws.id, p!.id, body.stages);

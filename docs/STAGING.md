@@ -116,5 +116,9 @@ deploys after CI passes.
   `feedback` table (and, while emails go to the log, the email shows there too).
 - **Product analytics (free PostHog plan):** create an EU project at posthog.com and set
   `POSTHOG_KEY` to its project API key. Nothing is sent until you do.
+- **Billing:**
+  - Staging uses a pretend payment gateway (`PAYMENTS_DRIVER=test`), so plans can be tried without paying.
+  - To try bank transfers, set `BANK_IBAN`, `BANK_NAME` and `BANK_ACCOUNT_TITLE`.
+  - Add your own email to `PLATFORM_ADMINS` (in Render's Environment tab) to confirm transfers at `/app/platform`. That email must be verified in WorkHub.
 - **Chat with several API copies:** live updates go through the API's memory, which is fine for
   one copy. Running two or more needs Redis pub/sub first (Sprint 12).

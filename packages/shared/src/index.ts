@@ -1641,3 +1641,157 @@ export interface DashboardDto {
     myOverdue: { id: string; title: string; projectId: string; projectName: string; dueDate: string }[];
   };
 }
+
+// ---- Sprint 11: plans, billing, onboarding ---------------------------------------------
+
+export const PLANS = ['free', 'starter', 'business'] as const;
+export type PlanKey = (typeof PLANS)[number];
+export type PaidPlan = Exclude<PlanKey, 'free'>;
+
+/** Features beyond the core modules, on Business (and during the trial). */
+export const PLAN_FEATURES = ['profitability', 'custom_fields', 'pipelines'] as const;
+export type PlanFeature = (typeof PLAN_FEATURES)[number];
+
+/** Prices are per person (not guests) per month, in PKR. Change them here. */
+export const PLAN_INFO: Record<PlanKey, { name: string; pricePerUser: number; maxUsers: number | null; features: PlanFeature[]; blurb: string }> = {
+  free: { name: 'Free', pricePerUser: 0, maxUsers: 10, features: [], blurb: 'Everything you need to run a small team, for up to 10 people.' },
+  starter: { name: 'Starter', pricePerUser: 699, maxUsers: null, features: [], blurb: 'No limit on people. Attendance, projects, CRM, chat and reports.' },
+  business: { name: 'Business', pricePerUser: 1299, maxUsers: null, features: ['profitability', 'custom_fields', 'pipelines'], blurb: 'Adds client profitability, custom fields and more sales pipelines.' },
+};
+export const TRIAL_DAYS = 14;
+/** An annual plan costs this many months: two months free. */
+export const ANNUAL_MONTHS_CHARGED = 10;
+
+export const BILLING_CYCLES = ['monthly', 'annual'] as const;
+export type BillingCycle = (typeof BILLING_CYCLES)[number];
+
+export const PROVINCES = ['punjab', 'sindh', 'kp', 'balochistan', 'islamabad', 'gb', 'ajk', 'outside'] as const;
+export type Province = (typeof PROVINCES)[number];
+export const PROVINCE_LABELS: Record<Province, string> = {
+  punjab: 'Punjab',
+  sindh: 'Sindh',
+  kp: 'Khyber Pakhtunkhwa',
+  balochistan: 'Balochistan',
+  islamabad: 'Islamabad Capital Territory',
+  gb: 'Gilgit-Baltistan',
+  ajk: 'Azad Jammu and Kashmir',
+  outside: 'Outside Pakistan',
+};
+
+export const billingDetailsSchema = z.object({
+  billingName: name('the name to bill', 150),
+  billingEmail: email,
+  ntn: z
+    .string()
+    .trim()
+    .max(20)
+    .regex(/^(\d{7}-?\d|\d{13})?$/, 'Enter an NTN like 1234567-8 or a 13-digit CNIC')
+    .nullish()
+    .transform((v) => v || null),
+  province: z.enum(PROVINCES, { message: 'Choose a province' }),
+  address: z.string().trim().max(300).nullish().transform((v) => v || null),
+});
+export type BillingDetailsInput = z.infer<typeof billingDetailsSchema>;
+
+export const checkoutSchema = z.object({
+  plan: z.enum(['starter', 'business']),
+  cycle: z.enum(BILLING_CYCLES),
+});
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+export const bankTransferSchema = z.object({ reference: z.string().trim().min(3, 'Enter the transaction reference').max(100) });
+export const reviewTransferSchema = z.object({ approve: z.boolean(), note: z.string().trim().max(500).optional() });
+
+export type SubscriptionStatus = 'trial' | 'active' | 'grace' | 'free';
+
+export interface SubscriptionDto {
+  /** The plan in force right now (the trial counts as Business). */
+  plan: PlanKey;
+  status: SubscriptionStatus;
+  /** The plan paid for, if any, and until when. */
+  paidPlan: PaidPlan | null;
+  billingCycle: BillingCycle;
+  paidUntil: string | null;
+  trialEndsAt: string | null;
+  seatsUsed: number;
+  seatLimit: number | null;
+  features: PlanFeature[];
+  /** False while billing isn't switched on (the free beta): everything is open. */
+  enforced: boolean;
+  details: { billingName: string | null; billingEmail: string | null; ntn: string | null; province: Province | null; address: string | null };
+  /** How customers can pay right now. */
+  payments: { online: boolean; onlineLabel: string | null; bankTransfer: { bank: string; accountTitle: string; iban: string } | null };
+}
+
+export type InvoiceStatus = 'open' | 'pending_review' | 'paid' | 'void';
+
+export interface InvoiceDto {
+  id: string;
+  number: string;
+  status: InvoiceStatus;
+  plan: PaidPlan;
+  billingCycle: BillingCycle;
+  seats: number;
+  unitPrice: number;
+  months: number;
+  subtotal: number;
+  taxLabel: string | null;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  currency: string;
+  periodStart: string;
+  periodEnd: string;
+  billTo: { name: string; email: string; ntn: string | null; province: Province; address: string | null; workspace: string };
+  seller: { name: string; ntn: string | null; address: string | null; email: string };
+  issuedAt: string;
+  dueAt: string;
+  paidAt: string | null;
+  paymentMethod: 'card' | 'wallet' | 'bank_transfer' | 'test' | null;
+  transferReference: string | null;
+  transferSubmittedAt: string | null;
+  reviewNote: string | null;
+}
+
+/** A bank transfer waiting for WorkHub's review (platform admins only). */
+export interface TransferReviewDto extends InvoiceDto {
+  workspaceId: string;
+  workspaceName: string;
+  proofUrl: string | null;
+}
+
+export const INDUSTRIES = ['software_house', 'agency', 'bpo', 'consultancy', 'other'] as const;
+export type Industry = (typeof INDUSTRIES)[number];
+export const INDUSTRY_LABELS: Record<Industry, string> = {
+  software_house: 'Software house',
+  agency: 'Digital or marketing agency',
+  bpo: 'BPO or call centre',
+  consultancy: 'Consultancy or professional services',
+  other: 'Something else',
+};
+
+export const onboardingSchema = z.object({
+  industry: z.enum(INDUSTRIES),
+  timezone: z.string().trim().min(1).max(64),
+  currency: z.enum(CURRENCIES),
+  workingDays: z.array(z.number().int().min(1).max(7)).min(1).max(7),
+  /** A first shift, e.g. 09:00–18:00 (or a night shift for BPOs); none to skip. */
+  shift: z.object({ name: name('a shift name', 60), startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/) }).nullable(),
+  teams: z.array(name('a team name', 80)).max(12),
+  loadHolidays: z.boolean(),
+  sampleProject: z.boolean(),
+});
+export type OnboardingInput = z.infer<typeof onboardingSchema>;
+
+export interface OnboardingDto {
+  done: boolean;
+  industry: Industry | null;
+  /** What the wizard suggests for each industry. */
+  presets: Record<Industry, { teams: string[]; shift: { name: string; startTime: string; endTime: string }; workingDays: number[]; template: string | null; stages: { name: string; probability: number }[] }>;
+}
+
+export interface OnboardingResultDto {
+  teams: number;
+  holidays: number;
+  projectId: string | null;
+}

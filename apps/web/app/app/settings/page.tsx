@@ -8,6 +8,7 @@ import {
   type WorkspaceSettingsDto,
 } from '@workhub/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { SettingsTabs } from '@/components/settings/tabs';
 import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -67,7 +68,8 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Workspace settings" description="These settings apply to everyone in the workspace." />
+      <PageHeader title="Settings" description="These settings apply to everyone in the workspace." />
+      <SettingsTabs />
       {!settings ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : (

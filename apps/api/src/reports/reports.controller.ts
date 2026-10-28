@@ -22,6 +22,7 @@ import { DbService } from '../db/db.service';
 import { companies, memberships, projects, users, workspaces } from '../db/schema';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { costInfo, dashboard, monthsBetween, profitability, salesReport, utilisation } from './reports';
+import { requireFeature } from '../billing/plans';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -75,7 +76,10 @@ export class ReportsController {
   @MinRole('admin')
   async profitability(@Query('from') from: string | undefined, @Query('to') to: string | undefined, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<ProfitabilityDto> {
     const range = monthRange(from, to, await this.today(ws, auth));
-    return this.db.withContext(this.ctx(auth, ws), (tx) => profitability(tx, ws.id, range.from, range.to));
+    return this.db.withContext(this.ctx(auth, ws), async (tx) => {
+      await requireFeature(tx, ws.id, 'profitability');
+      return profitability(tx, ws.id, range.from, range.to);
+    });
   }
 
   @Get('reports/utilisation')
@@ -98,6 +102,7 @@ export class ReportsController {
   @MinRole('admin')
   async costs(@CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<CostSettingsDto> {
     return this.db.withContext(this.ctx(auth, ws), async (tx) => {
+      await requireFeature(tx, ws.id, 'profitability');
       const info = await costInfo(tx, ws.id);
       const people = await tx
         .select({ id: users.id, name: users.name, email: users.email, role: memberships.role, monthlyCost: memberships.monthlyCost })

@@ -1,7 +1,8 @@
 'use client';
 
-import { hasRole, type DashboardDto, type Presence } from '@workhub/shared';
+import { hasRole, PLAN_INFO, type DashboardDto, type OnboardingDto, type Presence, type SubscriptionDto } from '@workhub/shared';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PRESENCE_LABELS } from '@/components/inbox/bits';
 import { amounts } from '@/components/reports/shared';
@@ -48,6 +49,20 @@ export default function Home() {
   const [data, setData] = useState<DashboardDto>();
   const steps = STEPS.filter((s) => hasRole(workspace.role, s.minRole));
   const staff = hasRole(workspace.role, 'member');
+  const admin = hasRole(workspace.role, 'admin');
+  const router = useRouter();
+  const [plan, setPlan] = useState<SubscriptionDto>();
+
+  // A new workspace starts in the setup wizard; and admins hear about their plan here.
+  useEffect(() => {
+    if (!admin) return;
+    api<OnboardingDto>('/onboarding')
+      .then((o) => !o.done && router.replace('/app/onboarding'))
+      .catch(() => {});
+    api<SubscriptionDto>('/billing/subscription')
+      .then(setPlan)
+      .catch(() => {});
+  }, [api, admin, router]);
 
   useEffect(() => {
     api<DashboardDto>('/dashboard')
@@ -70,6 +85,7 @@ export default function Home() {
   return (
     <>
       <PageHeader title={`${greeting()}, ${me.user.name.split(' ')[0]}`} description={workspace.name} />
+      {plan && <PlanBanner plan={plan} />}
 
       {data && (
         <div className="space-y-6">
@@ -170,5 +186,24 @@ export default function Home() {
         Tip: press <kbd className="rounded border border-gray-200 bg-gray-50 px-1.5 text-xs">Ctrl K</kbd> anywhere to jump to a page or person.
       </p>
     </>
+  );
+}
+
+/** For admins: a trial running out, a lapsed plan, or a full Free plan. */
+function PlanBanner({ plan }: { plan: SubscriptionDto }) {
+  if (!plan.enforced) return null;
+  const days = plan.trialEndsAt ? Math.ceil((new Date(plan.trialEndsAt).getTime() - Date.now()) / 86_400_000) : 0;
+  let text: string | null = null;
+  if (plan.status === 'trial' && days <= 7) text = `Your free trial ends in ${days} day${days === 1 ? '' : 's'}. Choose a plan to keep client profitability, custom fields and more.`;
+  else if (plan.status === 'grace') text = `Your ${PLAN_INFO[plan.plan].name} plan has ended. Renew in the next few days to keep it.`;
+  else if (plan.seatLimit !== null && plan.seatsUsed >= plan.seatLimit) text = `You’ve reached the Free plan’s ${plan.seatLimit} people. Upgrade to add more.`;
+  if (!text) return null;
+  return (
+    <div role="status" className="mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <span className="flex-1">{text}</span>
+      <Link href="/app/settings/billing" className="font-semibold underline">
+        Plans and billing
+      </Link>
+    </div>
   );
 }

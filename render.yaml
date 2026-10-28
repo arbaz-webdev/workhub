@@ -39,6 +39,11 @@ services:
         value: console
       - key: ALLOW_CONSOLE_EMAIL
         value: 'true'
+      # A pretend payment gateway, so plans can be tried without moving money. Staging only.
+      - key: PAYMENTS_DRIVER
+        value: test
+      - key: ALLOW_TEST_PAYMENTS
+        value: 'true'
       - key: STORAGE_DRIVER
         value: s3
       - key: S3_BUCKET

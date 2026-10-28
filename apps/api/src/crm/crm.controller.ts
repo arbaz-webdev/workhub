@@ -62,6 +62,7 @@ import {
   splitName,
 } from './crm';
 import { activityDtos, dealDtos, endOfStage, resolveStage, sumByCurrency } from './deals';
+import { requireFeature } from '../billing/plans';
 
 const PAGE_SIZE = 50;
 const pageOf = (p: string | undefined) => Math.max(1, Math.min(10_000, Number.parseInt(p ?? '1', 10) || 1));
@@ -613,6 +614,7 @@ export class CrmController {
         .slice(0, 32) || 'field';
     try {
       return await this.db.withContext(this.ctx(auth, ws), async (tx) => {
+        await requireFeature(tx, ws.id, 'custom_fields');
         const taken = new Set(
           (await tx.select({ key: customFields.key }).from(customFields).where(and(eq(customFields.workspaceId, ws.id), eq(customFields.entity, body.entity)))).map((r) => r.key),
         );

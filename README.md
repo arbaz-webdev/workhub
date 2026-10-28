@@ -246,6 +246,37 @@ How it decides things:
 - **Currencies:** amounts are converted only with rates you enter. Without a rate, they're left out and the report says so; nothing is guessed.
 - **Privacy:** salaries are visible only to owners and admins, never in other API responses, and the audit log records that a cost changed but not the amount.
 
+## Sprint 11 status
+
+- [x] Plans and limits (prices and rules live in `PLAN_INFO` in `packages/shared`):
+  - Free is everything for up to 10 people; guests don't count.
+  - Starter (PKR 699 per person per month) has no limit on people.
+  - Business (PKR 1,299) adds client profitability, custom fields and extra sales pipelines.
+  - Yearly billing costs 10 months. New workspaces get a 14-day Business trial.
+  - `BILLING_ENFORCED=false` opens everything, for the free beta.
+- [x] PKR invoices:
+  - Numbered WH-YYYY-000001 across all customers.
+  - Billed to the customer's name, NTN or CNIC, and province, with a provincial sales tax line.
+  - Printable, or save as PDF from the browser.
+  - A receipt email and a notification when paid.
+- [x] Online payment through a gateway interface:
+  - On staging, a clearly marked test gateway (`PAYMENTS_DRIVER=test`) lets you try the full flow without moving money.
+  - **Safepay or PayFast need a merchant account in WorkHub's name before they can be connected.**
+- [x] Bank transfer (IBFT) for yearly plans: the customer uploads the receipt and reference, and WorkHub staff (`PLATFORM_ADMINS`) confirm or send it back at `/app/platform`.
+- [x] Setup wizard for new workspaces:
+  - Choose an industry (software house, agency, BPO, consultancy).
+  - Working days and a first shift (BPOs get a night shift).
+  - Teams, Pakistan holidays, the sales pipeline's stages and a sample project.
+  - Then invite the team.
+- [x] Installable app: manifest, icons, "Install app" in the top bar, and a service worker so the installed app opens offline on the attendance page (check-ins queue and sync later).
+- [x] 266 tests
+
+Before charging real customers:
+- Confirm the sales tax rates (`SALES_TAX_RATES`) with a tax adviser.
+- Set `SELLER_NAME`, `SELLER_NTN` and `SELLER_ADDRESS`.
+- Add the bank details (`BANK_*`).
+- Open a Safepay or PayFast merchant account so its driver can be added.
+
 The app also now waits for the server when it's starting up (after a deploy, or when the free staging plan wakes from sleep) instead of staying on "Loading your workspace…".
 
 ## Key decisions so far

@@ -26,7 +26,7 @@ export const NAV: NavItem[] = [
   { href: '/app/reports', label: 'Reports', minRole: 'manager', keywords: 'profitability profit margin utilisation billable sales pipeline win rate dashboard costs salaries' },
   { href: '/app/teams', label: 'Teams', keywords: 'departments groups' },
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },
-  { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days' },
+  { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days plan billing invoice upgrade subscription' },
   { href: '/app/audit-log', label: 'Audit log', minRole: 'admin', keywords: 'history activity security export' },
 ];
 

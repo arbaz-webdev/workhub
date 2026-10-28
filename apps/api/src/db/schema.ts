@@ -89,6 +89,8 @@ export const workspaces = pgTable('workspaces', {
   /** ISO weekday numbers, 1 = Monday … 7 = Sunday. */
   workingDays: smallint('working_days').array().notNull().default([1, 2, 3, 4, 5]),
   attendanceRequireSelfie: boolean('attendance_require_selfie').notNull().default(true),
+  monthlyHours: smallint('monthly_hours').notNull().default(176),
+  fxRates: jsonb('fx_rates').$type<Record<string, number>>().notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -101,6 +103,7 @@ export const memberships = pgTable('memberships', {
   teamId: uuid('team_id'),
   shiftId: uuid('shift_id'),
   attendanceRemote: boolean('attendance_remote').notNull().default(false),
+  monthlyCost: numeric('monthly_cost', { precision: 14, scale: 2, mode: 'number' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -191,6 +194,8 @@ export const projects = pgTable('projects', {
   status: projectStatus('status').notNull().default('active'),
   budgetAlertLevel: smallint('budget_alert_level').notNull().default(0),
   budgetHours: numeric('budget_hours', { precision: 10, scale: 2, mode: 'number' }),
+  hourlyRate: numeric('hourly_rate', { precision: 12, scale: 2, mode: 'number' }),
+  rateCurrency: text('rate_currency'),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

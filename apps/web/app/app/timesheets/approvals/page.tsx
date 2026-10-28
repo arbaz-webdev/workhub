@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import { SheetStatus, TimesheetGrid, TimesheetTabs } from '@/components/timesheets/grid';
 import { Alert, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { addDays, dayLabel, hhmm, mondayOf } from '@/lib/time';
+import { addDays, dayLabel, hhmm, localToday, mondayOf } from '@/lib/time';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 export default function TimesheetApprovalsPage() {
@@ -22,7 +22,7 @@ function Approvals() {
   const api = useWorkspaceApi();
   const router = useRouter();
   const params = useSearchParams();
-  const week = params.get('week') ?? mondayOf(new Date().toISOString().slice(0, 10));
+  const week = params.get('week') ?? mondayOf(localToday());
   const [list, setList] = useState<TimesheetSummaryDto[]>();
   const [open, setOpen] = useState<TimesheetDto | null>(null);
   const [note, setNote] = useState('');

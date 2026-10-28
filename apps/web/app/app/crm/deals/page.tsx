@@ -8,6 +8,7 @@ import { DealDialog, money, moneyList, WinDialog } from '@/components/crm/deals'
 import { CrmTabs } from '@/components/crm/shared';
 import { Alert, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { localToday } from '@/lib/time';
 import { useWorkspaceApi } from '@/lib/workspace';
 import { sumMoney } from '@/components/crm/money';
 
@@ -233,7 +234,7 @@ function Column({ stage, deals, onOpen }: { stage: StageDto; deals: DealDto[]; o
 function DealCard({ deal, onOpen }: { deal: DealDto; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
-  const late = deal.expectedClose && deal.expectedClose < new Date().toISOString().slice(0, 10);
+  const late = deal.expectedClose && deal.expectedClose < localToday();
   const followOverdue = deal.nextActivity && deal.nextActivity.dueAt < new Date().toISOString();
   return (
     <li ref={setNodeRef} style={style} className={isDragging ? 'relative z-10 opacity-80' : ''}>

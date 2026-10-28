@@ -4,6 +4,7 @@ import type { ChannelDto, PersonDto, Presence, TaskRefDto } from '@workhub/share
 import Link from 'next/link';
 import { Fragment } from 'react';
 import { useInbox } from '@/lib/inbox';
+import { localToday } from '@/lib/time';
 
 const AVATAR_COLORS = ['bg-teal-600', 'bg-sky-600', 'bg-violet-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600', 'bg-indigo-600', 'bg-orange-600'];
 
@@ -147,7 +148,7 @@ const PRIORITY_COLORS: Record<TaskRefDto['priority'], string> = {
 
 /** A task mentioned in chat, as it is right now. */
 export function TaskCard({ task }: { task: TaskRefDto }) {
-  const overdue = !task.completed && task.dueDate && task.dueDate < new Date().toISOString().slice(0, 10);
+  const overdue = !task.completed && task.dueDate && task.dueDate < localToday();
   return (
     <Link
       href={`/app/projects/${task.projectId}?task=${task.id}`}

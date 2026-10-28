@@ -23,6 +23,7 @@ export const NAV: NavItem[] = [
   { href: '/app/attendance', label: 'Attendance', minRole: 'member', keywords: 'check in check out clock in selfie shift break late absent correction export payroll' },
   { href: '/app/leave', label: 'Leave', minRole: 'member', keywords: 'leave holiday vacation sick casual annual time off approvals eid' },
   { href: '/app/timesheets', label: 'Timesheets', minRole: 'member', keywords: 'timesheet timer hours week submit approve' },
+  { href: '/app/reports', label: 'Reports', minRole: 'manager', keywords: 'profitability profit margin utilisation billable sales pipeline win rate dashboard costs salaries' },
   { href: '/app/teams', label: 'Teams', keywords: 'departments groups' },
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },
   { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days' },

@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Patch, Post, UseGuards } from '@nestjs/common';
 import {
+  requireTwoFactorSchema,
   createWorkspaceSchema,
   updateWorkspaceSchema,
   type CreateWorkspaceInput,
@@ -7,7 +8,7 @@ import {
   type WorkspaceDto,
   type WorkspaceSettingsDto,
 } from '@workhub/shared';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { audit } from '../audit/audit';
 import { AuthService } from '../auth/auth.service';
 import { RateLimiter } from '../common/rate-limiter';
@@ -22,7 +23,7 @@ const TIME_ZONES = new Set([...Intl.supportedValuesOf('timeZone'), 'UTC']);
 
 @Controller('workspaces')
 export class WorkspacesController {
-  private readonly createLimiter = new RateLimiter(10, 24 * 60 * 60 * 1000);
+  private readonly createLimiter = new RateLimiter('workspaces.create', 10, 24 * 60 * 60 * 1000);
 
   constructor(
     private readonly db: DbService,
@@ -32,12 +33,12 @@ export class WorkspacesController {
   /** Creates a new workspace owned by the caller (e.g. after signing up with Google). */
   @Post()
   @Track('workspace created', (w: { id: string }) => ({ workspaceId: w.id }))
-  create(
+  async create(
     @Body(new ZodPipe(createWorkspaceSchema)) body: CreateWorkspaceInput,
     @CurrentAuth() auth: AuthContext,
     @ClientIp() ip: string | undefined,
   ): Promise<WorkspaceDto> {
-    this.createLimiter.consume(auth.userId);
+    await this.createLimiter.consume(auth.userId);
     return this.auth.createWorkspace(auth.userId, body.name, ip);
   }
 
@@ -45,6 +46,30 @@ export class WorkspacesController {
   @UseGuards(WorkspaceGuard)
   current(@CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<WorkspaceSettingsDto> {
     return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, (tx) => this.settings(tx, ws));
+  }
+
+  /** Requires two-factor sign-in of everyone. Owner only, and only once the owner uses it. */
+  @Post('current/require-two-factor')
+  @UseGuards(WorkspaceGuard)
+  @MinRole('owner')
+  async requireTwoFactor(
+    @Body(new ZodPipe(requireTwoFactorSchema)) body: { required: boolean },
+    @CurrentAuth() auth: AuthContext,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @ClientIp() ip: string | undefined,
+  ): Promise<{ required: boolean; withoutTwoFactor: number }> {
+    if (body.required && !(await this.auth.hasTwoFactor(auth.userId))) {
+      throw new BadRequestException('Turn on two-factor sign-in for yourself first, so you don’t lock yourself out.');
+    }
+    return this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
+      await tx.update(workspaces).set({ requireTwoFactor: body.required }).where(eq(workspaces.id, ws.id));
+      await audit(tx, { workspaceId: ws.id, actorUserId: auth.userId, action: body.required ? 'workspace.two_factor_required' : 'workspace.two_factor_optional', entityType: 'workspace', entityId: ws.id, ip });
+      // Who will be asked to set it up before they can continue.
+      const { rows } = await tx.execute<{ n: number }>(
+        sql`select count(*)::int as n from memberships m where m.workspace_id = ${ws.id}::uuid and not exists (select 1 from user_totp t where t.user_id = m.user_id and t.enabled_at is not null)`,
+      );
+      return { required: body.required, withoutTwoFactor: rows[0]?.n ?? 0 };
+    });
   }
 
   @Patch('current')

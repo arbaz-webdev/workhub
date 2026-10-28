@@ -71,6 +71,8 @@ export interface UserDto {
   name: string;
   email: string;
   emailVerified: boolean;
+  /** Set on /auth/me. */
+  twoFactorEnabled?: boolean;
 }
 
 export interface WorkspaceDto {
@@ -78,6 +80,8 @@ export interface WorkspaceDto {
   name: string;
   slug: string;
   role: Role;
+  /** Everyone must use two-factor sign-in (set on /auth/me). */
+  requireTwoFactor?: boolean;
 }
 
 export interface MeResponse {
@@ -1794,4 +1798,27 @@ export interface OnboardingResultDto {
   teams: number;
   holidays: number;
   projectId: string | null;
+}
+
+// ---- Sprint 12: two-factor sign-in ------------------------------------------------------
+
+const otpCode = z.string().trim().min(6, 'Enter the 6-digit code').max(20);
+export const twoFactorCodeSchema = z.object({ code: otpCode });
+export const verifyTwoFactorSchema = z.object({ challenge: z.string().min(20).max(200), code: otpCode });
+export const requireTwoFactorSchema = z.object({ required: z.boolean() });
+
+/** Sign-in either finishes, or asks for the code from the authenticator app. */
+export type SignInResponse = { user: UserDto; twoFactorRequired?: false } | { twoFactorRequired: true; challenge: string };
+
+export interface TwoFactorStatusDto {
+  enabled: boolean;
+  recoveryCodesLeft: number;
+}
+
+export interface TwoFactorSetupDto {
+  /** For typing in by hand when the QR code can't be scanned. */
+  secret: string;
+  otpauthUrl: string;
+  /** A PNG data URL of the QR code. */
+  qr: string;
 }

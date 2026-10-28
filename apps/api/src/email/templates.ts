@@ -33,6 +33,20 @@ ${button}
   return { to: opts.to, subject: opts.subject, text, html };
 }
 
+/** Security notices: two-factor sign-in turned on or off. */
+export function twoFactorChangedMessage(to: string, name: string, on: boolean, securityUrl: string): EmailMessage {
+  return layout({
+    to,
+    subject: on ? 'Two-factor sign-in is on' : 'Two-factor sign-in was turned off',
+    greeting: `Hi ${name},`,
+    lines: on
+      ? ['Two-factor sign-in is now on for your WorkHub account. Signing in will ask for a code from your authenticator app.', 'Keep your recovery codes somewhere safe. Each works once if you lose your phone.']
+      : ['Two-factor sign-in was just turned off for your WorkHub account.', "If you didn't do this, change your password now and turn it back on."],
+    button: { label: 'Account security', url: securityUrl },
+    footer: 'We send this whenever your sign-in security changes.',
+  });
+}
+
 export function verifyEmailMessage(to: string, name: string, url: string): EmailMessage {
   return layout({
     to,

@@ -1,6 +1,6 @@
 // Drizzle table definitions. The source of truth is the SQL in /migrations;
 // keep these in sync when a migration changes a table.
-import { boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, date, doublePrecision, integer, jsonb, numeric, pgEnum, pgTable, real, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
 import {
   ATTENDANCE_EVENT_TYPES,
   CHANNEL_KINDS,
@@ -53,7 +53,7 @@ export const sessions = pgTable('sessions', {
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const authTokenPurpose = pgEnum('auth_token_purpose', ['email_verification', 'password_reset']);
+export const authTokenPurpose = pgEnum('auth_token_purpose', ['email_verification', 'password_reset', 'two_factor']);
 
 export const authTokens = pgTable('auth_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -100,6 +100,7 @@ export const workspaces = pgTable('workspaces', {
   fxRates: jsonb('fx_rates').$type<Record<string, number>>().notNull().default({}),
   industry: text('industry').$type<Industry>(),
   onboardedAt: timestamp('onboarded_at', { withTimezone: true }),
+  requireTwoFactor: boolean('require_two_factor').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -802,4 +803,22 @@ export const invoices = pgTable('invoices', {
   reviewedBy: text('reviewed_by'),
   reviewNote: text('review_note'),
   createdBy: uuid('created_by'),
+});
+
+// ---- Two-factor sign-in (sprint 12) ----------------------------------------------------
+
+export const userTotp = pgTable('user_totp', {
+  userId: uuid('user_id').primaryKey(),
+  secretEnc: text('secret_enc').notNull(),
+  enabledAt: timestamp('enabled_at', { withTimezone: true }),
+  lastStep: bigint('last_step', { mode: 'number' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const recoveryCodes = pgTable('recovery_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  codeHash: text('code_hash').notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

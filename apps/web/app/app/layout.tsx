@@ -11,7 +11,8 @@ import { NotificationsBell } from '@/components/shell/notifications-bell';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TimerChip } from '@/components/shell/timer-chip';
 import { VerifyBanner } from '@/components/shell/verify-banner';
-import { roleLabel } from '@/components/ui';
+import { btn, roleLabel } from '@/components/ui';
+import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { InboxProvider } from '@/lib/inbox';
 import { readStoredWorkspace, storeWorkspace, WorkspaceContext } from '@/lib/workspace';
@@ -181,9 +182,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FeedbackButton />
                 <NotificationsBell key={workspace.id} />
 
-                <span className="hidden text-sm text-gray-600 md:inline">
+                <Link href="/app/account" title="Account and security" className="hidden rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 md:inline">
                   {me.user.name} · {roleLabel(workspace.role)}
-                </span>
+                </Link>
                 <button onClick={signOut} className="whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 sm:px-3">
                   Sign out
                 </button>
@@ -194,7 +195,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* The inbox uses the whole width and height for its panes. */}
             <main key={workspace.id} className={pathname.startsWith('/app/inbox') ? 'w-full flex-1 px-0 py-0 sm:px-4 sm:py-4 lg:px-6' : 'w-full max-w-5xl flex-1 px-4 py-8 lg:px-8'}>
-              {children}
+              {/* A workspace that requires two-factor sign-in waits until it's on (the API refuses too). */}
+              {workspace.requireTwoFactor && !me.user.twoFactorEnabled && !pathname.startsWith('/app/account') ? (
+                <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+                  <h1 className="text-lg font-semibold">Turn on two-factor sign-in</h1>
+                  <p className="mt-2 text-sm text-gray-600">{workspace.name} asks everyone to sign in with a code from an authenticator app as well as their password. It takes a minute.</p>
+                  <Link href="/app/account" className={`${btn.primary} mt-4`}>
+                    Set it up
+                  </Link>
+                </div>
+              ) : (
+                children
+              )}
             </main>
           </div>
         </div>

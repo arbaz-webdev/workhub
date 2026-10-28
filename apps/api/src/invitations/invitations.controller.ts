@@ -60,8 +60,8 @@ function inviteUrl(token: string) {
 
 @Controller('invitations')
 export class InvitationsController {
-  private readonly acceptLimiter = new RateLimiter(20, 15 * 60 * 1000);
-  private readonly sendLimiter = new RateLimiter(300, 24 * 60 * 60 * 1000);
+  private readonly acceptLimiter = new RateLimiter('invitations.accept', 20, 15 * 60 * 1000);
+  private readonly sendLimiter = new RateLimiter('invitations.send', 300, 24 * 60 * 60 * 1000);
 
   constructor(
     private readonly db: DbService,
@@ -92,7 +92,7 @@ export class InvitationsController {
       throw new ForbiddenException('Only the owner can invite admins');
     }
     const emails = [...new Set(body.emails)];
-    for (let i = 0; i < emails.length; i += 1) this.sendLimiter.consume(ws.id);
+    await this.sendLimiter.consume(ws.id, emails.length);
 
     const { toSend, skipped, workspaceName, inviterName } = await this.db.withContext(
       { workspaceId: ws.id, userId: auth.userId },
@@ -243,7 +243,7 @@ export class InvitationsController {
   @Public()
   @Get('preview')
   async preview(@Query('token') token: string | undefined, @ClientIp() ip: string | undefined): Promise<InvitePreviewDto> {
-    this.acceptLimiter.consume(`preview:${ip ?? 'unknown'}`);
+    await this.acceptLimiter.consume(`preview:${ip ?? 'unknown'}`);
     const inv = token ? await this.byToken(token) : undefined;
     if (!inv) throw new NotFoundException('This invitation is invalid, already used, or has expired.');
     return { workspaceName: inv.workspace_name, inviterName: inv.inviter_name, role: inv.role, email: inv.email };
@@ -257,7 +257,7 @@ export class InvitationsController {
     @CurrentAuth() auth: AuthContext,
     @ClientIp() ip: string | undefined,
   ): Promise<WorkspaceDto> {
-    this.acceptLimiter.consume(`accept:${auth.userId}`);
+    await this.acceptLimiter.consume(`accept:${auth.userId}`);
     const inv = await this.byToken(body.token);
     if (!inv) throw new NotFoundException('This invitation is invalid, already used, or has expired.');
 

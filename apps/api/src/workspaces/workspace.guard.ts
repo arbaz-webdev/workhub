@@ -1,10 +1,10 @@
 import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { hasRole, WORKSPACE_HEADER, type Role } from '@workhub/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { AppRequest, MIN_ROLE } from '../common/request';
 import { DbService } from '../db/db.service';
-import { memberships } from '../db/schema';
+import { memberships, userTotp, workspaces } from '../db/schema';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,8 +34,10 @@ export class WorkspaceGuard implements CanActivate {
     const userId = req.auth.userId;
     const [membership] = await this.db.withContext({ workspaceId, userId }, (tx) =>
       tx
-        .select({ role: memberships.role })
+        .select({ role: memberships.role, requireTwoFactor: workspaces.requireTwoFactor, twoFactor: userTotp.userId })
         .from(memberships)
+        .innerJoin(workspaces, eq(workspaces.id, memberships.workspaceId))
+        .leftJoin(userTotp, and(eq(userTotp.userId, memberships.userId), isNotNull(userTotp.enabledAt)))
         .where(and(eq(memberships.workspaceId, workspaceId), eq(memberships.userId, userId)))
         .limit(1),
     );
@@ -47,6 +49,10 @@ export class WorkspaceGuard implements CanActivate {
       this.reflector.getAllAndOverride<Role>(MIN_ROLE, [ctx.getHandler(), ctx.getClass()]) ?? 'member';
     if (!hasRole(membership.role, required)) {
       throw new ForbiddenException('Your role does not allow this action');
+    }
+
+    if (membership.requireTwoFactor && !membership.twoFactor) {
+      throw new ForbiddenException('This workspace requires two-factor sign-in. Turn it on under Account → Security.');
     }
 
     req.workspace = { id: workspaceId, role: membership.role };

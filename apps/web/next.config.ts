@@ -11,9 +11,21 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${apiUrl}/:path*` }];
   },
-  // The service worker must never be cached, so an update reaches everyone straight away.
   async headers() {
     return [
+      // The Content Security Policy is set per request in proxy.ts.
+      {
+        source: '/((?!api/).*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Check-in uses the camera (selfies) and location; nothing else is needed.
+          { key: 'Permissions-Policy', value: 'camera=(self), geolocation=(self), microphone=(), payment=(), usb=()' },
+          ...(process.env.NODE_ENV === 'production' ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }] : []),
+        ],
+      },
+      // The service worker must never be cached, so an update reaches everyone straight away.
       {
         source: '/sw.js',
         headers: [

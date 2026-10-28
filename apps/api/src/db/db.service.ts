@@ -17,7 +17,7 @@ export interface DbContext {
 
 @Injectable()
 export class DbService implements OnModuleDestroy {
-  readonly pool = new Pool({ connectionString: config.databaseAppUrl, max: 10 });
+  readonly pool = new Pool({ connectionString: config.databaseAppUrl, max: config.databasePoolSize });
   /** Use only for global tables (users, sessions). Tenant data goes through withContext. */
   readonly db: Database = drizzle({ client: this.pool, schema });
 

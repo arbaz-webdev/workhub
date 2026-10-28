@@ -28,6 +28,7 @@ export const NAV: NavItem[] = [
   { href: '/app/people', label: 'People', keywords: 'members invite users roles' },
   { href: '/app/settings', label: 'Settings', minRole: 'admin', keywords: 'workspace timezone currency working days plan billing invoice upgrade subscription' },
   { href: '/app/audit-log', label: 'Audit log', minRole: 'admin', keywords: 'history activity security export' },
+  { href: '/app/account', label: 'Account', keywords: 'profile security two-factor 2fa authenticator recovery codes' },
 ];
 
 /** Modules still to come, shown greyed out. */

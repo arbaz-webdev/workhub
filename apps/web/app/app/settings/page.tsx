@@ -9,6 +9,7 @@ import {
 } from '@workhub/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { SettingsTabs } from '@/components/settings/tabs';
+import { TwoFactorRule } from '@/components/settings/two-factor-rule';
 import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -134,6 +135,7 @@ export default function SettingsPage() {
           </form>
         </Card>
       )}
+      {workspace.role === 'owner' && <TwoFactorRule />}
     </>
   );
 }

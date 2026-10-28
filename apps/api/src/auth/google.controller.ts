@@ -128,9 +128,14 @@ export class GoogleAuthController {
       return fail((err as Error).message);
     }
 
-    const { token } = await this.auth.signInWithGoogle(profile, { ip: req.ip, userAgent: req.headers['user-agent'] });
+    const result = await this.auth.signInWithGoogle(profile, { ip: req.ip, userAgent: req.headers['user-agent'] });
     res.clearCookie(OAUTH_COOKIE, { path: '/' });
-    setSessionCookie(res, token);
+    if (result.token === undefined) {
+      // Google proved the email; the authenticator app proves the person.
+      res.redirect(302, `${config.appUrl}/sign-in?twofactor=${encodeURIComponent(result.challenge)}`);
+      return;
+    }
+    setSessionCookie(res, result.token);
     res.redirect(302, `${config.appUrl}/app`);
   }
 }

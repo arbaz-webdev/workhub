@@ -10,7 +10,7 @@ import { waitlistWelcomeMessage } from '../email/templates';
 
 @Controller('waitlist')
 export class WaitlistController {
-  private readonly limiter = new RateLimiter(10, 60 * 60 * 1000);
+  private readonly limiter = new RateLimiter('waitlist.join', 10, 60 * 60 * 1000);
 
   constructor(
     private readonly db: DbService,
@@ -25,7 +25,7 @@ export class WaitlistController {
   @Post()
   @HttpCode(202)
   async join(@Body(new ZodPipe(waitlistSchema)) body: WaitlistInput, @ClientIp() ip: string | undefined) {
-    this.limiter.consume(ip ?? 'unknown');
+    await this.limiter.consume(ip ?? 'unknown');
     const inserted = await this.db.db
       .insert(waitlist)
       .values({ ...body, ip })

@@ -26,6 +26,10 @@ services:
       # The restricted app user (RLS always applies) is created with this password.
       - key: APP_DB_PASSWORD
         generateValue: true
+      # Encrypts two-factor secrets. Generated once; changing it turns off everyone's 2FA.
+      - key: TOTP_ENCRYPTION_KEY
+        generateValue: true
+      # No REDIS_URL: the single API copy keeps rate limits and live updates in memory.
       # This site's own address; change both if Render gives a different one.
       - key: WEB_ORIGIN
         value: https://workhub-staging.onrender.com

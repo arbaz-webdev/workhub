@@ -53,6 +53,12 @@ export const config = {
   get databaseAppUrl() {
     return appDatabaseUrl();
   },
+  /** Connections each API copy keeps to Postgres. Keep copies × size under the database's limit. */
+  get databasePoolSize(): number {
+    const value = Number(process.env.DATABASE_POOL_SIZE ?? 10);
+    if (!Number.isInteger(value) || value < 1) throw new Error('DATABASE_POOL_SIZE must be a whole number of connections');
+    return value;
+  },
   /** Public URL of the web app, used in email links and OAuth redirects. */
   get appUrl() {
     return (process.env.APP_URL ?? config.webOrigins[0] ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -150,6 +156,20 @@ export const config = {
     const defaults: Record<string, number> = { punjab: 16, sindh: 15, kp: 15, balochistan: 15, islamabad: 15, gb: 0, ajk: 0, outside: 0 };
     if (!process.env.SALES_TAX_RATES) return defaults;
     return { ...defaults, ...(JSON.parse(process.env.SALES_TAX_RATES) as Record<string, number>) };
+  },
+  /**
+   * Encrypts two-factor secrets at rest. Required in production; changing it turns off
+   * everyone's two-factor sign-in (they set it up again).
+   */
+  get totpEncryptionKey(): string {
+    const value = process.env.TOTP_ENCRYPTION_KEY;
+    if (value) return value;
+    if (config.isProduction) throw new Error('Missing required environment variable TOTP_ENCRYPTION_KEY (see apps/api/.env.example)');
+    return 'development-only-totp-key';
+  },
+  /** Shares rate limits and live updates between API copies. Unset: kept in memory (one copy). */
+  get redisUrl(): string | undefined {
+    return process.env.REDIS_URL || undefined;
   },
   maxUploadBytes: 25 * 1024 * 1024,
   sessionTtlDays: 30,

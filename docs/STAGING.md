@@ -66,7 +66,8 @@ That's fine for showing your partner. See "Always on" below for the paid layout.
    | `S3_SECRET_ACCESS_KEY` | from R2 |
 
    Everything else is in `render.yaml`. The R2 endpoint is already filled in, and Render
-   generates the password for the API's restricted database user. On every start the site
+   generates the password for the API's restricted database user and the key that encrypts
+   two-factor secrets (`TOTP_ENCRYPTION_KEY`). On every start the site
    applies new database migrations and creates or updates that user.
 4. **Deploy Blueprint**. The first build takes about 10 minutes.
 
@@ -108,6 +109,8 @@ deploys after CI passes.
 - **Always on, no sleeping (about $14/month):** run the website and the API as two Render services
   (`deploy/web.Dockerfile`, and a private service from `deploy/api.Dockerfile`). Then set
   `API_URL` on the website to the API's private `host:port`.
+- **More than one API copy:** add a Render Key Value (Redis) instance and set `REDIS_URL` on the
+  API, so rate limits are shared and live chat and board updates reach every copy.
 - **Real emails:** buy the domain and add it to Resend. Then set `EMAIL_TRANSPORT=resend`,
   `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`, and delete `ALLOW_CONSOLE_EMAIL`.
 - **Your own address:** point `staging.yourdomain.com` at the site in Render's **Custom domains**,

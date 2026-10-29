@@ -77,7 +77,7 @@ export class MembersController {
 
       await tx
         .update(memberships)
-        .set({ role: body.role })
+        .set({ role: body.role, ...(body.role === 'guest' ? {} : { clientCompanyId: null }) }) // only guests are client contacts
         .where(and(eq(memberships.workspaceId, ws.id), eq(memberships.userId, userId)));
       await audit(tx, {
         workspaceId: ws.id,

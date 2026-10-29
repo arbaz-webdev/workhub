@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityPanel } from '@/components/crm/activities';
 import { DealDialog, money, moneyList } from '@/components/crm/deals';
 import { CompanyDialog, ContactDialog } from '@/components/crm/dialogs';
+import { ClientPortalCard } from '@/components/crm/portal-card';
 import { errorText, useFields } from '@/components/crm/shared';
 import { Alert, btn, timeAgo } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -150,6 +151,7 @@ export default function CompanyPage() {
             {c.notes && <p className="mt-4 whitespace-pre-wrap border-t border-gray-100 pt-3 text-sm text-gray-700">{c.notes}</p>}
           </section>
 
+          {hasRole(workspace.role, 'manager') && <ClientPortalCard companyId={c.id} companyName={c.name} />}
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold">People ({data.contacts.length})</h2>

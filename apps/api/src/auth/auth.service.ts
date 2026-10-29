@@ -258,7 +258,7 @@ export class AuthService {
 
     const rows = await this.db.withContext({ userId }, (tx) =>
       tx
-        .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, role: memberships.role, requireTwoFactor: workspaces.requireTwoFactor })
+        .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, role: memberships.role, requireTwoFactor: workspaces.requireTwoFactor, clientCompanyId: memberships.clientCompanyId })
         .from(memberships)
         .innerJoin(workspaces, eq(workspaces.id, memberships.workspaceId))
         .where(eq(memberships.userId, userId))

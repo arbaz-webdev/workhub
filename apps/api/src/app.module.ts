@@ -30,6 +30,7 @@ import { TasksController } from './projects/tasks.controller';
 import { RealtimeService } from './realtime/realtime.service';
 import { StatusController } from './status/status.controller';
 import { ClientDocsController } from './client-billing/client-docs.controller';
+import { PortalController } from './client-billing/portal.controller';
 import { StatusService } from './status/status.service';
 import { ReportsController } from './reports/reports.controller';
 import { StorageService } from './storage/storage.service';
@@ -77,6 +78,7 @@ class HealthController {
     PlatformController,
     StatusController,
     ClientDocsController,
+    PortalController,
     OnboardingController,
     WaitlistController,
   ],

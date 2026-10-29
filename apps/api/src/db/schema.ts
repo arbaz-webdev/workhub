@@ -119,6 +119,8 @@ export const memberships = pgTable('memberships', {
   shiftId: uuid('shift_id'),
   attendanceRemote: boolean('attendance_remote').notNull().default(false),
   monthlyCost: numeric('monthly_cost', { precision: 14, scale: 2, mode: 'number' }),
+  /** For a guest who is a client's contact: that client (sees its portal). */
+  clientCompanyId: uuid('client_company_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -159,6 +161,7 @@ export const invitations = pgTable('invitations', {
   acceptedAt: timestamp('accepted_at', { withTimezone: true }),
   acceptedBy: uuid('accepted_by'),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  clientCompanyId: uuid('client_company_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -211,6 +214,7 @@ export const projects = pgTable('projects', {
   budgetHours: numeric('budget_hours', { precision: 10, scale: 2, mode: 'number' }),
   hourlyRate: numeric('hourly_rate', { precision: 12, scale: 2, mode: 'number' }),
   rateCurrency: text('rate_currency'),
+  portalVisible: boolean('portal_visible').notNull().default(false),
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

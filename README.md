@@ -325,7 +325,9 @@ Still to do, and yours:
 - [x] 297 tests, plus 2 that run against Redis in CI
 - [ ] Urdu interface (#91): **parked**. Two parts were built and then taken out again; the work is kept in draft PR #121, which explains how to bring it back. The app is English only, left to right. Staging's `users` table still has an unused `locale` column from that work.
 
-Next, buildable without paid accounts: Terms of service and Privacy policy pages (for a lawyer to fill in). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+- [x] Terms of service (`/terms`) and Privacy policy (`/privacy`), as **drafts** for a lawyer: accurate facts about the product and its data, with "For the lawyer" notes where a legal decision is needed. Both say they're drafts and stay out of search results and the sitemap while `LEGAL_DRAFT` in `apps/web/lib/legal.ts` is true. Linked from the site footer.
+
+Next, buildable without paid accounts: Phase 3 groundwork, such as the public API and webhooks (#96). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

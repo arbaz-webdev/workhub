@@ -61,6 +61,12 @@ export function SiteFooter() {
           <Link href="/sign-in" className="hover:text-gray-800">
             Sign in
           </Link>
+          <Link href="/terms" className="hover:text-gray-800">
+            Terms
+          </Link>
+          <Link href="/privacy" className="hover:text-gray-800">
+            Privacy
+          </Link>
         </nav>
         <p>© {new Date().getFullYear()} WorkHub · Made in Pakistan</p>
       </div>

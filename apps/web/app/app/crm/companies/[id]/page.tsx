@@ -214,7 +214,7 @@ export default function CompanyPage() {
                       {d.title}
                     </button>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEAL_STATUS[d.status]}`}>{d.status === 'open' ? d.stageName : d.status === 'won' ? 'Won' : 'Lost'}</span>
-                    <span className="ml-auto tabular-nums text-gray-700">{d.value !== null ? money(d.value, d.currency) : '—'}</span>
+                    <span className="ms-auto tabular-nums text-gray-700">{d.value !== null ? money(d.value, d.currency) : '—'}</span>
                   </li>
                 ))}
               </ul>
@@ -236,7 +236,7 @@ export default function CompanyPage() {
                           {p.name}
                         </Link>
                         <span className="text-xs text-gray-500">{PROJECT_STATUS[p.status]}</span>
-                        <span className="ml-auto tabular-nums text-gray-700">
+                        <span className="ms-auto tabular-nums text-gray-700">
                           {p.hours} h{p.budgetHours ? ` of ${p.budgetHours} h` : ''}
                           {p.hours > 0 && p.billableHours !== p.hours && <span className="text-xs text-gray-500"> ({p.billableHours} billable)</span>}
                         </span>

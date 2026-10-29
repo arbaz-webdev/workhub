@@ -91,12 +91,12 @@ function Approvals() {
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
+          <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
             <tr>
               <th className="px-3 py-2">Person</th>
               <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2 text-right">Hours</th>
-              <th className="px-3 py-2 text-right">Billable</th>
+              <th className="px-3 py-2 text-end">Hours</th>
+              <th className="px-3 py-2 text-end">Billable</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -107,9 +107,9 @@ function Approvals() {
                 <td className="px-3 py-2">
                   <SheetStatus status={s.status} />
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{hhmm(s.total)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-gray-600">{hhmm(s.billable)}</td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-end tabular-nums">{hhmm(s.total)}</td>
+                <td className="px-3 py-2 text-end tabular-nums text-gray-600">{hhmm(s.billable)}</td>
+                <td className="px-3 py-2 text-end">
                   <button type="button" className={btn.ghost} onClick={() => view(s.user.id)}>
                     View
                   </button>
@@ -127,7 +127,7 @@ function Approvals() {
             <SheetStatus status={open.status} />
             {open.status === 'submitted' &&
               (mayDecide(open.user.id) ? (
-                <span className="ml-auto flex flex-wrap items-center gap-2">
+                <span className="ms-auto flex flex-wrap items-center gap-2">
                   <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" aria-label="Note" maxLength={500} className={`${input} !w-56 !py-1.5`} />
                   <button type="button" className={`${btn.primary} !py-1.5`} onClick={() => decide('approve')}>
                     Approve
@@ -137,7 +137,7 @@ function Approvals() {
                   </button>
                 </span>
               ) : (
-                <span className="ml-auto text-xs text-gray-500">Your own: someone else approves it</span>
+                <span className="ms-auto text-xs text-gray-500">Your own: someone else approves it</span>
               ))}
           </div>
           <TimesheetGrid sheet={open} />

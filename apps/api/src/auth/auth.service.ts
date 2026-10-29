@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import QRCode from 'qrcode';
 import { hash, verify } from '@node-rs/argon2';
-import { TRIAL_DAYS, type MeResponse, type SignInInput, type SignUpInput, type UserDto, type WorkspaceDto } from '@workhub/shared';
+import { TRIAL_DAYS, type Locale, type MeResponse, type SignInInput, type SignUpInput, type UserDto, type WorkspaceDto } from '@workhub/shared';
 import { and, count, eq, gt, isNotNull, isNull, sql } from 'drizzle-orm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { audit } from '../audit/audit';
@@ -95,7 +95,7 @@ export class AuthService {
 
     await this.sendVerificationEmail(userId, input.email, input.name);
     const token = await this.createSession(userId, meta);
-    const user: UserDto = { id: userId, name: input.name, email: input.email, emailVerified: false };
+    const user: UserDto = { id: userId, name: input.name, email: input.email, emailVerified: false, locale: 'en' };
     return { token, user, workspace };
   }
 
@@ -381,8 +381,12 @@ export class AuthService {
 
   // ---- Internals ----------------------------------------------------------
 
+  async setLocale(userId: string, locale: Locale): Promise<void> {
+    await this.db.db.update(users).set({ locale }).where(eq(users.id, userId));
+  }
+
   private toDto(user: typeof users.$inferSelect): UserDto {
-    return { id: user.id, name: user.name, email: user.email, emailVerified: !!user.emailVerifiedAt };
+    return { id: user.id, name: user.name, email: user.email, emailVerified: !!user.emailVerifiedAt, locale: user.locale };
   }
 
   private async linkGoogle(tx: Tx, userId: string, sub: string) {

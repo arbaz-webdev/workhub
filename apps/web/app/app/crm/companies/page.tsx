@@ -53,7 +53,7 @@ export default function CompaniesPage() {
           }}
           placeholder="Search name, website, city, industry"
         />
-        {data && <span className="ml-auto text-sm text-gray-500">{data.total.toLocaleString()} companies</span>}
+        {data && <span className="ms-auto text-sm text-gray-500">{data.total.toLocaleString()} companies</span>}
       </div>
       {!data ? (
         <p className="text-sm text-gray-500">Loading…</p>
@@ -65,12 +65,12 @@ export default function CompaniesPage() {
         <>
           <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[600px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">City</th>
-                  <th className="px-3 py-2 text-right">Contacts</th>
-                  <th className="px-3 py-2 text-right">Projects</th>
+                  <th className="px-3 py-2 text-end">Contacts</th>
+                  <th className="px-3 py-2 text-end">Projects</th>
                   <th className="px-3 py-2">Owner</th>
                 </tr>
               </thead>
@@ -84,8 +84,8 @@ export default function CompaniesPage() {
                       {(c.industry || c.website) && <span className="block truncate text-xs text-gray-500">{c.industry ?? c.website?.replace(/^https?:\/\//, '')}</span>}
                     </td>
                     <td className="px-3 py-2 text-gray-700">{c.city ?? '—'}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{c.contactCount}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{c.projectCount}</td>
+                    <td className="px-3 py-2 text-end tabular-nums">{c.contactCount}</td>
+                    <td className="px-3 py-2 text-end tabular-nums">{c.projectCount}</td>
                     <td className="px-3 py-2 text-gray-700">{c.owner?.name ?? '—'}</td>
                   </tr>
                 ))}

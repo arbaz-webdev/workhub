@@ -72,9 +72,9 @@ export function ChannelIcon({ channel }: { channel: ChannelDto }) {
     return (
       <span className="relative">
         <Avatar person={first ?? null} size="sm" />
-        {channel.people.length === 1 && first && <PresenceDot userId={first.id} className="absolute -bottom-0.5 -right-0.5 ring-2 ring-white" />}
+        {channel.people.length === 1 && first && <PresenceDot userId={first.id} className="absolute -bottom-0.5 -end-0.5 ring-2 ring-white" />}
         {channel.people.length > 1 && (
-          <span className="absolute -bottom-1 -right-1 rounded-full bg-gray-700 px-1 text-[9px] font-semibold leading-4 text-white ring-2 ring-white">{channel.people.length}</span>
+          <span className="absolute -bottom-1 -end-1 rounded-full bg-gray-700 px-1 text-[9px] font-semibold leading-4 text-white ring-2 ring-white">{channel.people.length}</span>
         )}
       </span>
     );

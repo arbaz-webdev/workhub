@@ -129,7 +129,7 @@ export default function ImportPage() {
                   if (f) void read(f);
                   e.target.value = '';
                 }}
-                className="mt-1 block text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-medium file:text-brand-700"
+                className="mt-1 block text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-medium file:text-brand-700"
               />
             </label>
             {busy && !preview && <span className="pb-2 text-sm text-gray-500">Reading…</span>}
@@ -141,18 +141,18 @@ export default function ImportPage() {
           <Card title={`2. Match the columns (${preview.total.toLocaleString()} rows in ${file.name})`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
-                <thead className="text-left text-xs font-medium text-gray-500">
+                <thead className="text-start text-xs font-medium text-gray-500">
                   <tr>
-                    <th className="py-2 pr-3">Column in the file</th>
-                    <th className="py-2 pr-3">Example</th>
+                    <th className="py-2 pe-3">Column in the file</th>
+                    <th className="py-2 pe-3">Example</th>
                     <th className="py-2">Goes into</th>
                   </tr>
                 </thead>
                 <tbody>
                   {preview.headers.map((h, i) => (
                     <tr key={h} className="border-t border-gray-100">
-                      <td className="py-2 pr-3 font-medium">{h}</td>
-                      <td className="max-w-48 truncate py-2 pr-3 text-gray-500">{preview.sample.map((r) => r[i]).find((v) => v?.trim()) ?? '—'}</td>
+                      <td className="py-2 pe-3 font-medium">{h}</td>
+                      <td className="max-w-48 truncate py-2 pe-3 text-gray-500">{preview.sample.map((r) => r[i]).find((v) => v?.trim()) ?? '—'}</td>
                       <td className="py-2">
                         <select value={mapping[h] ?? ''} onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })} aria-label={`Field for ${h}`} className={`${input} !w-52`}>
                           <option value="">Don’t import</option>

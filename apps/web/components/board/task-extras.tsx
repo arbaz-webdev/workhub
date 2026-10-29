@@ -73,7 +73,7 @@ export function Attachments({
         </h3>
         {canEdit && (
           <>
-            <button type="button" className={`${btn.ghost} ml-auto !py-1`} disabled={!!uploading} onClick={() => picker.current?.click()}>
+            <button type="button" className={`${btn.ghost} ms-auto !py-1`} disabled={!!uploading} onClick={() => picker.current?.click()}>
               {uploading ? `Uploading ${uploading}…` : 'Attach file'}
             </button>
             <input ref={picker} type="file" multiple hidden onChange={(e) => e.target.files && upload(e.target.files)} />
@@ -166,7 +166,7 @@ export function TimeLog({
           {task.estimateHours !== null && <span className="font-normal text-gray-500"> of {hoursText(task.estimateHours)}</span>}
         </h3>
         {canEdit && !open && (
-          <span className="ml-auto flex items-center gap-1">
+          <span className="ms-auto flex items-center gap-1">
             <TimerButton taskId={task.id} />
             <button type="button" className={`${btn.ghost} !py-1`} onClick={() => setOpen(true)}>
               Log time

@@ -192,7 +192,7 @@ export function Composer({
       }}
     >
       {suggest && hits > 0 && (
-        <ul role="listbox" aria-label={suggest.kind === 'person' ? 'Mention someone' : 'Link a task'} className="absolute bottom-full left-0 z-20 mb-1 w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+        <ul role="listbox" aria-label={suggest.kind === 'person' ? 'Mention someone' : 'Link a task'} className="absolute bottom-full start-0 z-20 mb-1 w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
           {suggest.kind === 'person'
             ? personHits.map((p, i) => (
                 <li key={p.id} role="option" aria-selected={i === active}>
@@ -200,12 +200,12 @@ export function Composer({
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pickPerson(p)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm ${i === active ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-sm ${i === active ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
                   >
                     <Avatar person={p} size="sm" />
                     <span className="truncate font-medium">{p.name}</span>
                     <PresenceDot userId={p.id} />
-                    <span className="ml-auto truncate text-xs text-gray-400">{p.email}</span>
+                    <span className="ms-auto truncate text-xs text-gray-400">{p.email}</span>
                   </button>
                 </li>
               ))
@@ -215,7 +215,7 @@ export function Composer({
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pickTask(t)}
-                    className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm ${i === active ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
+                    className={`block w-full rounded-lg px-2 py-1.5 text-start text-sm ${i === active ? 'bg-brand-50' : 'hover:bg-gray-50'}`}
                   >
                     <span className={`block truncate font-medium ${t.completed ? 'text-gray-500 line-through' : ''}`}>{t.title}</span>
                     <span className="block truncate text-xs text-gray-500">
@@ -231,7 +231,7 @@ export function Composer({
         {files.length > 0 && (
           <ul className="flex flex-wrap gap-2 px-3 pt-2" aria-label="Files to send">
             {files.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="flex max-w-56 items-center gap-1.5 rounded-lg bg-gray-100 py-1 pl-2 pr-1 text-xs">
+              <li key={`${f.name}-${i}`} className="flex max-w-56 items-center gap-1.5 rounded-lg bg-gray-100 py-1 ps-2 pe-1 text-xs">
                 <span className="truncate">{f.name}</span>
                 <span className="shrink-0 text-gray-500">{fileSize(f.size)}</span>
                 <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))} className="grid h-5 w-5 place-items-center rounded text-gray-500 hover:bg-gray-200">
@@ -271,7 +271,7 @@ export function Composer({
             </>
           )}
           <span className="hidden text-xs text-gray-400 sm:inline">@ to mention · # to link a task</span>
-          <span className="ml-auto flex items-center gap-1">
+          <span className="ms-auto flex items-center gap-1">
             {onCancel && (
               <button type="button" onClick={onCancel} className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
                 Cancel

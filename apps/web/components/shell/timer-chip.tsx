@@ -74,7 +74,7 @@ export function TimerChip() {
   }
 
   return (
-    <span className="flex items-center gap-1 rounded-full bg-brand-50 py-1 pl-3 pr-1 text-sm text-brand-800">
+    <span className="flex items-center gap-1 rounded-full bg-brand-50 py-1 ps-3 pe-1 text-sm text-brand-800">
       <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-brand-500" />
       <Link href={`/app/projects/${timer.projectId}?task=${timer.taskId}`} className="max-w-40 truncate hover:underline" title={`${timer.projectName}: ${timer.taskTitle}`}>
         {timer.taskTitle}
@@ -86,7 +86,7 @@ export function TimerChip() {
         Stop
       </button>
       {error && (
-        <span role="alert" className="ml-1 max-w-56 truncate text-xs text-red-700" title={error}>
+        <span role="alert" className="ms-1 max-w-56 truncate text-xs text-red-700" title={error}>
           {error}
         </span>
       )}

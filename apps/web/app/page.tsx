@@ -75,18 +75,18 @@ function ProfitabilityMock() {
       </div>
       <table className="mt-4 w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-gray-500">
+          <tr className="text-start text-xs text-gray-500">
             <th className="pb-2 font-medium">Client</th>
-            <th className="pb-2 text-right font-medium">Hours</th>
-            <th className="pb-2 pl-4 font-medium">Margin</th>
+            <th className="pb-2 text-end font-medium">Hours</th>
+            <th className="pb-2 ps-4 font-medium">Margin</th>
           </tr>
         </thead>
         <tbody>
           {PROFIT_ROWS.map((r) => (
             <tr key={r.client} className="border-t border-gray-100">
               <td className="py-2.5">{r.client}</td>
-              <td className="py-2.5 text-right tabular-nums text-gray-600">{r.hours}</td>
-              <td className="py-2.5 pl-4">
+              <td className="py-2.5 text-end tabular-nums text-gray-600">{r.hours}</td>
+              <td className="py-2.5 ps-4">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-20 overflow-hidden rounded-full bg-gray-100">
                     <div

@@ -283,7 +283,7 @@ function Inbox() {
   return (
     <div className="flex h-[calc(100dvh-3.6rem)] min-h-[26rem] overflow-hidden border-gray-200 bg-white sm:h-[calc(100dvh-5.6rem)] sm:rounded-2xl sm:border">
       {/* Conversations */}
-      <nav aria-label="Conversations" className={`${openId ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-r border-gray-200 md:w-64 lg:w-72`}>
+      <nav aria-label="Conversations" className={`${openId ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-e border-gray-200 md:w-64 lg:w-72`}>
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <h1 className="flex items-center gap-2 text-base font-semibold">
             Inbox
@@ -307,7 +307,7 @@ function Inbox() {
                 ))}
                 {staff && (
                   <li>
-                    <button type="button" onClick={() => setDialog('channel')} className="w-full rounded-lg px-2 py-1.5 text-left text-sm text-gray-500 hover:bg-gray-50">
+                    <button type="button" onClick={() => setDialog('channel')} className="w-full rounded-lg px-2 py-1.5 text-start text-sm text-gray-500 hover:bg-gray-50">
                       + Add a channel
                     </button>
                   </li>
@@ -335,12 +335,12 @@ function Inbox() {
                 </svg>
               </button>
               {current && (
-                <button type="button" onClick={() => setDialog('details')} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-gray-50">
+                <button type="button" onClick={() => setDialog('details')} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-start hover:bg-gray-50">
                   <ChannelIcon channel={current} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold">
                       {channelTitle(current)}
-                      {current.muted && <span className="ml-1.5 text-xs font-normal text-gray-400">muted</span>}
+                      {current.muted && <span className="ms-1.5 text-xs font-normal text-gray-400">muted</span>}
                     </span>
                     <span className="block truncate text-xs text-gray-500">
                       {soloPresence ? PRESENCE_LABELS[soloPresence.presence] : current.topic || (current.kind === 'dm' ? 'Direct message' : `${current.memberCount} ${current.memberCount === 1 ? 'member' : 'members'}`)}
@@ -395,7 +395,7 @@ function Inbox() {
 
       {/* A thread */}
       {threadId && current && (
-        <aside aria-label="Thread" className="flex min-w-0 flex-1 flex-col border-l border-gray-200 xl:w-96 xl:flex-none">
+        <aside aria-label="Thread" className="flex min-w-0 flex-1 flex-col border-s border-gray-200 xl:w-96 xl:flex-none">
           <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <h2 className="text-sm font-semibold">
               Thread <span className="font-normal text-gray-500">in {channelTitle(current)}</span>
@@ -509,7 +509,7 @@ function ChannelRow({ channel, active, onClick }: { channel: ChannelDto; active:
         type="button"
         onClick={onClick}
         aria-current={active ? 'page' : undefined}
-        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm ${active ? 'bg-brand-50 text-brand-700' : 'text-gray-700 hover:bg-gray-50'}`}
+        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start text-sm ${active ? 'bg-brand-50 text-brand-700' : 'text-gray-700 hover:bg-gray-50'}`}
       >
         <ChannelIcon channel={channel} />
         <span className={`min-w-0 flex-1 truncate ${unread || channel.mentions ? 'font-semibold text-gray-900' : ''} ${channel.muted ? 'text-gray-400' : ''}`}>

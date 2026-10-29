@@ -58,7 +58,7 @@ export default function LeaveCalendarPage() {
             <table className="text-xs">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 min-w-40 bg-white px-3 py-2 text-left font-medium text-gray-500">Person</th>
+                  <th className="sticky start-0 z-10 min-w-40 bg-white px-3 py-2 text-start font-medium text-gray-500">Person</th>
                   {dates.map((d) => (
                     <th
                       key={d}
@@ -75,7 +75,7 @@ export default function LeaveCalendarPage() {
                   const byDate = new Map(p.entries.map((e) => [e.date, e]));
                   return (
                     <tr key={p.userId} className="border-t border-gray-100">
-                      <td className="sticky left-0 z-10 bg-white px-3 py-1.5 text-sm text-gray-800">{p.name}</td>
+                      <td className="sticky start-0 z-10 bg-white px-3 py-1.5 text-sm text-gray-800">{p.name}</td>
                       {dates.map((d) => {
                         const e = byDate.get(d);
                         return (

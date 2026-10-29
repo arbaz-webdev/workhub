@@ -114,7 +114,7 @@ export default function AnnouncementsPage() {
                   </button>
                 )}
                 {mayChange(a) && (
-                  <span className="ml-auto flex gap-1">
+                  <span className="ms-auto flex gap-1">
                     <button type="button" className={btn.ghost} onClick={() => setEditing(a)}>
                       Edit
                     </button>

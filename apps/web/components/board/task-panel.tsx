@@ -144,7 +144,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
               {task.completed ? 'Completed' : 'Mark complete'}
             </label>
           )}
-          <div className="ml-auto flex gap-1">
+          <div className="ms-auto flex gap-1">
             {canEdit && task && (
               <button onClick={remove} className={btn.danger}>
                 Delete
@@ -304,7 +304,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                       <button
                         onClick={() => call(`/tasks/${taskId}/checklist/${item.id}`, 'DELETE')}
                         aria-label={`Remove ${item.text}`}
-                        className="ml-auto text-gray-300 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100"
+                        className="ms-auto text-gray-300 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100"
                       >
                         ✕
                       </button>
@@ -441,11 +441,11 @@ function Assignees({ people, value, disabled, onChange }: { people: PersonDto[];
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex min-h-[2rem] flex-wrap items-center gap-1 rounded-lg px-1 py-0.5 text-left hover:bg-gray-50 disabled:hover:bg-transparent"
+        className="flex min-h-[2rem] flex-wrap items-center gap-1 rounded-lg px-1 py-0.5 text-start hover:bg-gray-50 disabled:hover:bg-transparent"
       >
         {selected.length === 0 && <span className="text-gray-400">{disabled ? 'Nobody' : 'Assign someone'}</span>}
         {selected.map((p) => (
-          <span key={p.id} className="flex items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2 text-xs">
+          <span key={p.id} className="flex items-center gap-1 rounded-full bg-gray-100 py-0.5 ps-0.5 pe-2 text-xs">
             <span className="grid h-5 w-5 place-items-center rounded-full bg-brand-100 text-[10px] font-semibold text-brand-700">{initials(p.name)}</span>
             {p.name}
           </span>
@@ -604,7 +604,7 @@ function Comments({
               <p className="text-xs text-gray-500">
                 <span className="font-medium text-gray-800">{c.author?.name ?? 'Deleted user'}</span> · {timeAgo(c.createdAt)}
                 {c.author?.id === meId && (
-                  <button onClick={() => onDelete(c.id)} className="ml-2 text-gray-400 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100">
+                  <button onClick={() => onDelete(c.id)} className="ms-2 text-gray-400 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100">
                     Delete
                   </button>
                 )}
@@ -636,7 +636,7 @@ function Comments({
           <ul role="listbox" aria-label="Mention someone" className="absolute bottom-full z-20 mb-1 w-64 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
             {suggestions.map((p) => (
               <li key={p.id} role="option" aria-selected="false">
-                <button type="button" onClick={() => pick(p)} className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-gray-50">
+                <button type="button" onClick={() => pick(p)} className="w-full rounded-lg px-2 py-1.5 text-start text-sm hover:bg-gray-50">
                   {p.name} <span className="text-xs text-gray-400">{p.email}</span>
                 </button>
               </li>

@@ -40,7 +40,7 @@ export function MessageItem({
     >
       <div className="w-9 shrink-0">
         {grouped ? (
-          <span className="invisible block pt-0.5 text-right text-[10px] text-gray-400 group-hover:visible">{clockTime(message.createdAt)}</span>
+          <span className="invisible block pt-0.5 text-end text-[10px] text-gray-400 group-hover:visible">{clockTime(message.createdAt)}</span>
         ) : (
           <Avatar person={message.author} />
         )}
@@ -77,7 +77,7 @@ export function MessageItem({
             {message.body && (
               <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-800">
                 <MessageText body={message.body} mentions={message.mentions} people={people} meId={meId} />
-                {message.editedAt && <span className="ml-1 text-xs text-gray-400">(edited)</span>}
+                {message.editedAt && <span className="ms-1 text-xs text-gray-400">(edited)</span>}
               </p>
             )}
             {message.files.length > 0 && (
@@ -120,14 +120,14 @@ export function MessageItem({
         {onReply && message.replyCount > 0 && (
           <button type="button" onClick={onReply} className="mt-1 text-xs font-semibold text-brand-700 hover:underline">
             {message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}
-            {message.lastReplyAt && <span className="ml-1.5 font-normal text-gray-400">last {clockTime(message.lastReplyAt)}</span>}
+            {message.lastReplyAt && <span className="ms-1.5 font-normal text-gray-400">last {clockTime(message.lastReplyAt)}</span>}
           </button>
         )}
       </div>
 
       {!message.deleted && !editing && (
         // Shown on hover, or once the message is tapped or tabbed to (phones have no hover).
-        <div className="invisible absolute -top-3 right-2 flex rounded-lg border border-gray-200 bg-white shadow-sm group-hover:visible group-focus-within:visible">
+        <div className="invisible absolute -top-3 end-2 flex rounded-lg border border-gray-200 bg-white shadow-sm group-hover:visible group-focus-within:visible">
           {onReply && (
             <IconButton label="Reply in thread" onClick={onReply}>
               <path d="M9 17 4 12l5-5" />
@@ -161,7 +161,7 @@ export function MessageItem({
 
 function IconButton({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={`grid h-7 w-7 place-items-center first:rounded-l-lg last:rounded-r-lg ${danger ? 'text-gray-500 hover:bg-red-50 hover:text-red-600' : 'text-gray-500 hover:bg-gray-100'}`}>
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={`grid h-7 w-7 place-items-center first:rounded-s-lg last:rounded-e-lg ${danger ? 'text-gray-500 hover:bg-red-50 hover:text-red-600' : 'text-gray-500 hover:bg-gray-100'}`}>
       <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         {children}
       </svg>

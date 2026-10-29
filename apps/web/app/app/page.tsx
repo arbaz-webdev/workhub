@@ -110,7 +110,7 @@ export default function Home() {
                       {t.title}
                     </Link>
                     <span className="text-gray-500">{t.projectName}</span>
-                    <span className="ml-auto text-xs font-medium text-red-600">Due {new Date(`${t.dueDate}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
+                    <span className="ms-auto text-xs font-medium text-red-600">Due {new Date(`${t.dueDate}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
                   </li>
                 ))}
               </ul>
@@ -163,7 +163,7 @@ export default function Home() {
                         <span className="h-2 rounded-full bg-gray-100">
                           <span className="block h-full rounded-full bg-brand-500" style={{ width: `${(c.hours / maxHours) * 100}%` }} />
                         </span>
-                        <span className="w-14 text-right tabular-nums text-gray-700">{c.hours} h</span>
+                        <span className="w-14 text-end tabular-nums text-gray-700">{c.hours} h</span>
                       </li>
                     ))}
                   </ul>

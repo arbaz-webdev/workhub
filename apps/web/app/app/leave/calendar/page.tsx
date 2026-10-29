@@ -2,10 +2,8 @@
 
 import type { LeaveCalendarDto } from '@workhub/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { prettyDate } from '@/components/attendance/labels';
 import { LEAVE_COLOR, LeaveTabs } from '@/components/leave/tabs';
 import { Alert, PageHeader, btn } from '@/components/ui';
-import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 function shiftMonth(month: string, by: number) {
@@ -16,8 +14,6 @@ function shiftMonth(month: string, by: number) {
 
 export default function LeaveCalendarPage() {
   const api = useWorkspaceApi();
-  const t = useT();
-  const locale = useLocale();
   const [month, setMonth] = useState<string>();
   const [data, setData] = useState<LeaveCalendarDto>();
   const [error, setError] = useState<string>();
@@ -28,8 +24,8 @@ export default function LeaveCalendarPage() {
         setData(d);
         setMonth((m) => m ?? d.month);
       })
-      .catch(() => setError(t('leave.calendar.loadError')));
-  }, [api, month, t]);
+      .catch(() => setError('Could not load the calendar.'));
+  }, [api, month]);
 
   const dates = useMemo(() => {
     if (!data) return [];
@@ -42,20 +38,18 @@ export default function LeaveCalendarPage() {
 
   return (
     <>
-      <PageHeader title={t('leave.title')} description={t('leave.calendar.description')} />
+      <PageHeader title="Leave" description="Who’s away, and the holidays." />
       <LeaveTabs />
       {error && <Alert>{error}</Alert>}
       <div className="mb-4 flex items-center gap-2">
-        <button type="button" className={btn.ghost} aria-label={t('leave.calendar.prev')} onClick={() => month && setMonth(shiftMonth(month, -1))}>
-          <span className="inline-block rtl:rotate-180" aria-hidden="true">
-            ←
-          </span>
+        <button type="button" className={btn.ghost} aria-label="Previous month" onClick={() => month && setMonth(shiftMonth(month, -1))}>
+          ←
         </button>
-        <span className="min-w-36 text-center font-medium">{data && prettyDate(`${data.month}-01`, { month: 'long', year: 'numeric' }, locale)}</span>
-        <button type="button" className={btn.ghost} aria-label={t('leave.calendar.next')} onClick={() => month && setMonth(shiftMonth(month, 1))}>
-          <span className="inline-block rtl:rotate-180" aria-hidden="true">
-            →
-          </span>
+        <span className="min-w-36 text-center font-medium">
+          {data && new Date(`${data.month}-01T00:00:00Z`).toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' })}
+        </span>
+        <button type="button" className={btn.ghost} aria-label="Next month" onClick={() => month && setMonth(shiftMonth(month, 1))}>
+          →
         </button>
       </div>
       {data && (
@@ -64,7 +58,7 @@ export default function LeaveCalendarPage() {
             <table className="text-xs">
               <thead>
                 <tr>
-                  <th className="sticky start-0 z-10 min-w-40 bg-white px-3 py-2 text-start font-medium text-gray-500">{t('leave.calendar.person')}</th>
+                  <th className="sticky start-0 z-10 min-w-40 bg-white px-3 py-2 text-start font-medium text-gray-500">Person</th>
                   {dates.map((d) => (
                     <th
                       key={d}
@@ -88,7 +82,7 @@ export default function LeaveCalendarPage() {
                           <td key={d} className={`h-8 p-0.5 ${holidays.has(d) ? 'bg-rose-50' : weekend(d) ? 'bg-gray-50' : ''}`}>
                             {e && (
                               <span
-                                title={`${e.typeName}${e.fraction < 1 ? t('leave.calendar.halfDay') : ''}${e.status === 'pending' ? t('leave.calendar.pending') : ''}`}
+                                title={`${e.typeName}${e.fraction < 1 ? ' (half day)' : ''}${e.status === 'pending' ? ' — waiting for approval' : ''}`}
                                 className={`block h-full rounded ${LEAVE_COLOR[e.color]?.split(' ')[0]} ${e.status === 'pending' ? 'opacity-50 [background-image:repeating-linear-gradient(45deg,transparent_0,transparent_3px,rgba(255,255,255,.7)_3px,rgba(255,255,255,.7)_6px)]' : ''} ${e.fraction < 1 ? 'w-1/2' : ''}`}
                               />
                             )}
@@ -101,13 +95,13 @@ export default function LeaveCalendarPage() {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-xs text-gray-500">{t('leave.calendar.legend')}</p>
+          <p className="mt-3 text-xs text-gray-500">Striped: waiting for approval. Half-width: a half day. Pink columns are holidays; grey are weekends.</p>
           {data.holidays.length > 0 && (
             <ul className="mt-4 flex flex-wrap gap-2 text-xs">
               {data.holidays.map((h) => (
                 <li key={h.id} className="rounded-full bg-rose-50 px-2.5 py-1 text-rose-700">
                   {Number(h.date.slice(8))} · {h.name}
-                  {h.estimated && t('leave.calendar.estimated')}
+                  {h.estimated && ' (estimated)'}
                 </li>
               ))}
             </ul>

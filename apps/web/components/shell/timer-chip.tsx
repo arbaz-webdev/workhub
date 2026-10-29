@@ -4,7 +4,6 @@ import type { TimerDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
-import { useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 /** Fired whenever a timer starts or stops anywhere in the app, so every view refreshes. */
@@ -19,7 +18,6 @@ function elapsed(startedAt: string, now: number) {
 /** The running timer in the top bar, with a stop button. Hidden when nothing is running. */
 export function TimerChip() {
   const api = useWorkspaceApi();
-  const t = useT();
   const [timer, setTimer] = useState<TimerDto | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
@@ -30,7 +28,7 @@ export function TimerChip() {
   const load = useCallback(() => {
     // An empty object means no timer.
     api<TimerDto | Record<string, never>>('/timer')
-      .then((r) => setTimer('taskId' in r ? (r as TimerDto) : null))
+      .then((t) => setTimer('taskId' in t ? (t as TimerDto) : null))
       .catch(() => setTimer(null));
   }, [api]);
 
@@ -48,8 +46,8 @@ export function TimerChip() {
 
   useEffect(() => {
     if (!flash) return;
-    const timeout = setTimeout(() => setFlash(undefined), 5000);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setFlash(undefined), 5000);
+    return () => clearTimeout(t);
   }, [flash]);
 
   if (!timer) {
@@ -66,9 +64,9 @@ export function TimerChip() {
     try {
       const r = await api<{ loggedMinutes: number } | Record<string, never>>('/timer/stop', { method: 'POST' });
       const minutes = 'loggedMinutes' in r ? r.loggedMinutes : 0;
-      setFlash(minutes > 0 ? t('timer.logged', { time: `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`, task: timer!.taskTitle }) : t('timer.underMinute'));
+      setFlash(minutes > 0 ? `Logged ${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')} on ${timer!.taskTitle}` : 'Under a minute: nothing logged');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('timer.stopFailed'));
+      setError(err instanceof ApiError ? err.message : 'Could not stop the timer.');
     } finally {
       setBusy(false);
       announceTimer();
@@ -81,11 +79,11 @@ export function TimerChip() {
       <Link href={`/app/projects/${timer.projectId}?task=${timer.taskId}`} className="max-w-40 truncate hover:underline" title={`${timer.projectName}: ${timer.taskTitle}`}>
         {timer.taskTitle}
       </Link>
-      <span className="tabular-nums" role="timer" aria-label={t('timer.label')}>
+      <span className="tabular-nums" role="timer" aria-label="Time on this task">
         {elapsed(timer.startedAt, now)}
       </span>
       <button type="button" onClick={stop} disabled={busy} className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-brand-700 hover:bg-brand-100">
-        {t('timer.stop')}
+        Stop
       </button>
       {error && (
         <span role="alert" className="ms-1 max-w-56 truncate text-xs text-red-700" title={error}>

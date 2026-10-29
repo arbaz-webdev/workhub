@@ -1,4 +1,4 @@
-import type { LabelColor, Locale, Priority } from '@workhub/shared';
+import type { LabelColor, Priority } from '@workhub/shared';
 
 export const LABEL_STYLES: Record<LabelColor, string> = {
   gray: 'bg-gray-100 text-gray-700',
@@ -37,9 +37,9 @@ export function localToday() {
 }
 
 /** 1.5 → "1.5h", 0.25 → "15m", 2 → "2h". */
-export function hoursText(hours: number, locale: Locale = 'en') {
-  if (hours > 0 && hours < 1) return locale === 'ur' ? `${Math.round(hours * 60)} منٹ` : `${Math.round(hours * 60)}m`;
-  return locale === 'ur' ? `${Math.round(hours * 10) / 10} گھنٹے` : `${Math.round(hours * 10) / 10}h`;
+export function hoursText(hours: number) {
+  if (hours > 0 && hours < 1) return `${Math.round(hours * 60)}m`;
+  return `${Math.round(hours * 10) / 10}h`;
 }
 
 /** "Today", "Tomorrow", "Overdue · 3 Oct" or "12 Nov". Dates are YYYY-MM-DD in the workspace's calendar. */

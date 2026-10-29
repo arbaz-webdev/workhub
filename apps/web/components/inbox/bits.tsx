@@ -1,14 +1,10 @@
 'use client';
 
-import type { ChannelDto, Locale, PersonDto, Presence, TaskRefDto } from '@workhub/shared';
+import type { ChannelDto, PersonDto, Presence, TaskRefDto } from '@workhub/shared';
 import Link from 'next/link';
 import { Fragment } from 'react';
-import { intlLocale, translate, useLocale, useT } from '@/lib/i18n';
 import { useInbox } from '@/lib/inbox';
 import { localToday } from '@/lib/time';
-
-/** For dates and times: the browser's own format in English (as before), Urdu's otherwise. */
-const dateLocale = (locale: Locale) => (locale === 'en' ? undefined : intlLocale(locale));
 
 const AVATAR_COLORS = ['bg-teal-600', 'bg-sky-600', 'bg-violet-600', 'bg-amber-600', 'bg-rose-600', 'bg-emerald-600', 'bg-indigo-600', 'bg-orange-600'];
 
@@ -51,29 +47,23 @@ const PRESENCE_DOT: Record<Presence, string> = {
 /** Where someone is today, from attendance. Nothing for guests, who don't see presence. */
 export function PresenceDot({ userId, className = '' }: { userId: string; className?: string }) {
   const p = useInbox().presence.get(userId);
-  const t = useT();
   if (!p) return null;
   return (
-    <span title={t(`presence.${p.presence}`)} className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${PRESENCE_DOT[p.presence]} ${className}`}>
-      <span className="sr-only">{t(`presence.${p.presence}`)}</span>
+    <span title={PRESENCE_LABELS[p.presence]} className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${PRESENCE_DOT[p.presence]} ${className}`}>
+      <span className="sr-only">{PRESENCE_LABELS[p.presence]}</span>
     </span>
   );
 }
 
 /** "Ali", "Ali and Sara", "Ali, Sara and 2 others". */
-export function peopleTitle(people: PersonDto[], locale: Locale = 'en') {
+export function peopleTitle(people: PersonDto[]) {
   const names = people.map((p) => p.name);
-  if (names.length === 0) return translate(locale, 'inbox.justYou');
-  if (names.length === 1) return names[0]!;
-  if (names.length === 2) return translate(locale, 'inbox.peopleTwo', { a: names[0]!, b: names[1]! });
-  const first = names.slice(0, 2).join(translate(locale, 'inbox.listSeparator'));
-  return names.length === 3
-    ? translate(locale, 'inbox.peopleMore.one', { names: first })
-    : translate(locale, 'inbox.peopleMore.many', { names: first, n: names.length - 2 });
+  if (names.length <= 2) return names.join(' and ') || 'Just you';
+  return `${names.slice(0, 2).join(', ')} and ${names.length - 2} other${names.length === 3 ? '' : 's'}`;
 }
 
-export function channelTitle(c: ChannelDto, locale: Locale = 'en') {
-  return c.kind === 'dm' ? peopleTitle(c.people, locale) : `#${c.name}`;
+export function channelTitle(c: ChannelDto) {
+  return c.kind === 'dm' ? peopleTitle(c.people) : `#${c.name}`;
 }
 
 export function ChannelIcon({ channel }: { channel: ChannelDto }) {
@@ -158,8 +148,6 @@ const PRIORITY_COLORS: Record<TaskRefDto['priority'], string> = {
 
 /** A task mentioned in chat, as it is right now. */
 export function TaskCard({ task }: { task: TaskRefDto }) {
-  const t = useT();
-  const locale = useLocale();
   const overdue = !task.completed && task.dueDate && task.dueDate < localToday();
   return (
     <Link
@@ -179,10 +167,10 @@ export function TaskCard({ task }: { task: TaskRefDto }) {
           <span className="truncate">{task.projectName}</span>
           <span aria-hidden="true">·</span>
           <span>{task.columnName}</span>
-          {task.priority !== 'none' && <span className={`rounded px-1.5 py-px font-medium ${PRIORITY_COLORS[task.priority]}`}>{t(`priority.${task.priority}`)}</span>}
+          {task.priority !== 'none' && <span className={`rounded px-1.5 py-px font-medium capitalize ${PRIORITY_COLORS[task.priority]}`}>{task.priority}</span>}
           {task.dueDate && (
             <span className={overdue ? 'font-medium text-red-600' : ''}>
-              {t('inbox.due', { date: new Date(`${task.dueDate}T00:00:00`).toLocaleDateString(dateLocale(locale), { day: 'numeric', month: 'short' }) })}
+              Due {new Date(`${task.dueDate}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
             </span>
           )}
         </span>
@@ -206,15 +194,15 @@ export function fileSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function clockTime(iso: string, locale: Locale = 'en') {
-  return new Date(iso).toLocaleTimeString(dateLocale(locale), { hour: 'numeric', minute: '2-digit' });
+export function clockTime(iso: string) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-export function dayHeading(iso: string, locale: Locale = 'en') {
+export function dayHeading(iso: string) {
   const d = new Date(iso);
   const today = new Date();
   const yesterday = new Date(Date.now() - 86_400_000);
-  if (d.toDateString() === today.toDateString()) return translate(locale, 'time.today');
-  if (d.toDateString() === yesterday.toDateString()) return translate(locale, 'time.yesterday');
-  return d.toLocaleDateString(dateLocale(locale), { weekday: 'long', day: 'numeric', month: 'long', ...(d.getFullYear() === today.getFullYear() ? {} : { year: 'numeric' }) });
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', ...(d.getFullYear() === today.getFullYear() ? {} : { year: 'numeric' }) });
 }

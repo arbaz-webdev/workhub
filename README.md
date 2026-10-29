@@ -328,14 +328,9 @@ Still to do, and yours:
   - Translated so far: the menu and top bar, roles, sign-in, sign-up and two-factor sign-in, the language setting, and the check-in page with its history, statuses and flags (dates and durations in Urdu too). Other screens show in English until translated, and messages from the server are still in English.
   - **The Urdu needs checking by a native speaker before launch.**
   - To translate more: add keys to `apps/web/lib/messages/en.ts`, use `const t = useT()` and `t('key')` in the component, and add the Urdu to `ur.ts` (a missing key shows the English).
-- [x] Urdu interface, second part (#91):
-  - Translated: **Leave** (my leave, team calendar, approvals, leave types and holidays), **My work**, the **Inbox** (conversations, threads, the message box, new channel and message dialogs, channel details), the notifications bell, timer, **Feedback** form, install button and search palette, the two-factor section of **Account**, and the selfie camera and correction dialog.
-  - Dates, times, "5 minutes ago" and day headings use Urdu names; month arrows and the Inbox back button point the right way in right to left.
-  - Shared helpers take the language as an optional last argument (`roleLabel`, `timeAgo`, `rangeLabel`, `channelTitle`, `clockTime`, `dayHeading`, `hoursText`, `dayLabel`); without it they stay English, so untranslated screens don't change.
-  - Help article: **Use WorkHub in Urdu**.
 - [x] 299 tests, plus 2 that run against Redis in CI
 
-Next: translate the remaining screens into Urdu (#91): projects and boards, CRM, timesheets, reports, people, teams, settings and billing, announcements and the dashboard. Then send stable error codes from the API so its messages can be translated too. These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+Next: translate the remaining screens into Urdu (#91). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

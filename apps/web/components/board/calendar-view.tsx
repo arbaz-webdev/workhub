@@ -3,6 +3,7 @@
 import type { BoardDto, TaskCardDto } from '@workhub/shared';
 import { useState } from 'react';
 import { btn } from '@/components/ui';
+import { useLocale, useT } from '@/lib/i18n';
 import { addDays, addMonths, daysBetween, dayMonth, monthGrid, monthTitle, weekdayShort } from './dates';
 import { localToday, PRIORITY_STYLE } from './style';
 
@@ -20,6 +21,8 @@ const dayOf = (t: TaskCardDto) => t.dueDate ?? t.startDate;
 /** A month of tasks by due date. Drag a task to another day to move it (its length stays the same). */
 export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
   const today = localToday();
+  const tr = useT();
+  const locale = useLocale();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -67,24 +70,28 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
   return (
     <div className="pe-4 lg:pe-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="me-auto text-lg font-semibold">{monthTitle(month)}</h2>
-        <button type="button" className={btn.secondary} onClick={() => setMonth(addMonths(month, -1))} aria-label="Previous month">
-          ‹
+        <h2 className="me-auto text-lg font-semibold">{monthTitle(month, locale)}</h2>
+        <button type="button" className={btn.secondary} onClick={() => setMonth(addMonths(month, -1))} aria-label={tr('leave.calendar.prev')}>
+          <span className="inline-block rtl:rotate-180" aria-hidden="true">
+            ‹
+          </span>
         </button>
         <button type="button" className={btn.secondary} onClick={() => setMonth(today.slice(0, 7))}>
-          Today
+          {tr('time.today')}
         </button>
-        <button type="button" className={btn.secondary} onClick={() => setMonth(addMonths(month, 1))} aria-label="Next month">
-          ›
+        <button type="button" className={btn.secondary} onClick={() => setMonth(addMonths(month, 1))} aria-label={tr('leave.calendar.next')}>
+          <span className="inline-block rtl:rotate-180" aria-hidden="true">
+            ›
+          </span>
         </button>
       </div>
 
       {/* The month grid on wider screens. */}
-      <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white sm:block" role="grid" aria-label={monthTitle(month)}>
+      <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white sm:block" role="grid" aria-label={monthTitle(month, locale)}>
         <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-center text-xs font-medium text-gray-500" role="row">
           {weeks[0]!.map((d) => (
             <div key={d} className="py-2" role="columnheader">
-              {weekdayShort(d)}
+              {weekdayShort(d, locale)}
             </div>
           ))}
         </div>
@@ -97,7 +104,7 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
                 <div
                   key={day}
                   role="gridcell"
-                  aria-label={`${dayMonth(day)}, ${items.length} ${items.length === 1 ? 'task' : 'tasks'}`}
+                  aria-label={`${dayMonth(day, locale)}, ${items.length === 1 ? tr('board.tasks.one') : tr('board.tasks.many', { n: items.length })}`}
                   onDragOver={(e) => {
                     if (!dragging) return;
                     e.preventDefault();
@@ -113,7 +120,7 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
                   <p className={`mb-1 text-xs ${day === today ? 'inline-grid h-5 w-5 place-items-center rounded-full bg-brand-600 font-semibold text-white' : outside ? 'text-gray-400' : 'text-gray-600'}`}>{Number(day.slice(8))}</p>
                   <div className="space-y-0.5">
                     {items.slice(0, 4).map(chip)}
-                    {items.length > 4 && <p className="px-1.5 text-[11px] text-gray-500">+{items.length - 4} more</p>}
+                    {items.length > 4 && <p className="px-1.5 text-[11px] text-gray-500">{tr('board.more', { n: items.length - 4 })}</p>}
                   </div>
                 </div>
               );
@@ -124,13 +131,13 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
 
       {/* Phones: the month as a list of days with tasks. */}
       <ul className="space-y-3 sm:hidden">
-        {inMonth.filter((d) => byDay.has(d)).length === 0 && <li className="text-sm text-gray-500">Nothing due this month.</li>}
+        {inMonth.filter((d) => byDay.has(d)).length === 0 && <li className="text-sm text-gray-500">{tr('board.nothingThisMonth')}</li>}
         {inMonth
           .filter((d) => byDay.has(d))
           .map((d) => (
             <li key={d}>
               <p className={`text-xs font-semibold ${d === today ? 'text-brand-700' : 'text-gray-500'}`}>
-                {weekdayShort(d)} {dayMonth(d)}
+                {weekdayShort(d, locale)} {dayMonth(d, locale)}
               </p>
               <div className="mt-1 space-y-1">{byDay.get(d)!.map(chip)}</div>
             </li>
@@ -139,10 +146,10 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
 
       {unscheduled.length > 0 && (
         <p className="mt-3 text-sm text-gray-500">
-          {unscheduled.length} open {unscheduled.length === 1 ? 'task has' : 'tasks have'} no dates. Open a task to give it a start or due date.
+          {unscheduled.length === 1 ? tr('board.undated.one') : tr('board.undated.many', { n: unscheduled.length })}
         </p>
       )}
-      {board.canEdit && <p className="mt-1 hidden text-xs text-gray-400 sm:block">Drag a task to another day to move it.</p>}
+      {board.canEdit && <p className="mt-1 hidden text-xs text-gray-400 sm:block">{tr('board.calendarHint')}</p>}
     </div>
   );
 }

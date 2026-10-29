@@ -1,5 +1,8 @@
 // Calendar arithmetic on YYYY-MM-DD strings, done in UTC so no time zone can shift a day.
 
+import type { Locale } from '@workhub/shared';
+import { intlLocale } from '@/lib/i18n';
+
 const toDate = (d: string) => new Date(`${d}T00:00:00Z`);
 const toStr = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -31,9 +34,10 @@ export function monthGrid(month: string): string[][] {
   return Array.from({ length: 6 }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d)));
 }
 
-export const monthTitle = (month: string) => toDate(`${month}-01`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-export const dayMonth = (date: string) => toDate(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-export const weekdayShort = (date: string) => toDate(date).toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' });
+export const monthTitle = (month: string, locale: Locale = 'en') =>
+  toDate(`${month}-01`).toLocaleDateString(intlLocale(locale), { month: 'long', year: 'numeric', timeZone: 'UTC' });
+export const dayMonth = (date: string, locale: Locale = 'en') => toDate(date).toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'short', timeZone: 'UTC' });
+export const weekdayShort = (date: string, locale: Locale = 'en') => toDate(date).toLocaleDateString(intlLocale(locale), { weekday: 'short', timeZone: 'UTC' });
 
 /** A task's span on a timeline: start to due, or one day when only one is set. */
 export function span(t: { startDate: string | null; dueDate: string | null }): { from: string; to: string } | null {

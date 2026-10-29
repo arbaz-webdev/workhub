@@ -3,7 +3,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { LabelDto, PersonDto, TaskCardDto } from '@workhub/shared';
-import { dueLabel, hoursText, initials, LABEL_STYLES, PRIORITY_LABEL, PRIORITY_STYLE } from './style';
+import { useLocale, useT } from '@/lib/i18n';
+import { dueLabel, hoursText, initials, LABEL_STYLES, PRIORITY_STYLE } from './style';
 
 interface Props {
   task: TaskCardDto;
@@ -14,7 +15,9 @@ interface Props {
 }
 
 export function CardBody({ task, labels, people }: Omit<Props, 'onOpen' | 'draggable'>) {
-  const due = task.dueDate ? dueLabel(task.dueDate, task.completed) : null;
+  const t = useT();
+  const locale = useLocale();
+  const due = task.dueDate ? dueLabel(task.dueDate, task.completed, locale) : null;
   const cardLabels = task.labelIds.map((id) => labels.get(id)).filter((l): l is LabelDto => !!l);
   return (
     <>
@@ -30,27 +33,31 @@ export function CardBody({ task, labels, people }: Omit<Props, 'onOpen' | 'dragg
       <p className={`text-sm ${task.completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</p>
       <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-gray-500">
         {PRIORITY_STYLE[task.priority] && (
-          <span className={`rounded px-1.5 py-0.5 font-medium ${PRIORITY_STYLE[task.priority]}`}>{PRIORITY_LABEL[task.priority]}</span>
+          <span className={`rounded px-1.5 py-0.5 font-medium ${PRIORITY_STYLE[task.priority]}`}>{t(`priority.${task.priority}`)}</span>
         )}
         {due && <span className={due.overdue ? 'font-medium text-red-600' : ''}>{due.text}</span>}
         {task.checklistTotal > 0 && (
-          <span aria-label={`Checklist ${task.checklistDone} of ${task.checklistTotal}`}>
+          <span aria-label={t('board.checklistOf', { done: task.checklistDone, total: task.checklistTotal })}>
             ☑ {task.checklistDone}/{task.checklistTotal}
           </span>
         )}
         {task.subtasksTotal > 0 && (
-          <span aria-label={`Subtasks ${task.subtasksDone} of ${task.subtasksTotal}`}>
+          <span aria-label={t('board.subtasksOf', { done: task.subtasksDone, total: task.subtasksTotal })}>
             ↳ {task.subtasksDone}/{task.subtasksTotal}
           </span>
         )}
-        {task.commentCount > 0 && <span aria-label={`${task.commentCount} comments`}>💬 {task.commentCount}</span>}
+        {task.commentCount > 0 && <span aria-label={task.commentCount === 1 ? t('board.comments.one') : t('board.comments.many', { n: task.commentCount })}>💬 {task.commentCount}</span>}
         {(task.actualHours > 0 || task.estimateHours !== null) && (
           <span
             className={task.estimateHours !== null && task.actualHours > task.estimateHours ? 'font-medium text-red-600' : ''}
-            aria-label={`${hoursText(task.actualHours)} logged${task.estimateHours !== null ? ` of ${hoursText(task.estimateHours)} estimated` : ''}`}
+            aria-label={
+              task.estimateHours !== null
+                ? t('board.loggedOf', { hours: hoursText(task.actualHours, locale), estimate: hoursText(task.estimateHours, locale) })
+                : t('projects.logged', { hours: hoursText(task.actualHours, locale) })
+            }
           >
-            ⏱ {task.actualHours > 0 ? hoursText(task.actualHours) : '0h'}
-            {task.estimateHours !== null && `/${hoursText(task.estimateHours)}`}
+            ⏱ {task.actualHours > 0 ? hoursText(task.actualHours, locale) : hoursText(0, locale)}
+            {task.estimateHours !== null && `/${hoursText(task.estimateHours, locale)}`}
           </span>
         )}
         {task.assigneeIds.length > 0 && (
@@ -76,6 +83,7 @@ export function CardBody({ task, labels, people }: Omit<Props, 'onOpen' | 'dragg
 
 /** A board card. Click (or Enter) opens it; drag (or Space then arrows) moves it. */
 export function TaskCard({ task, labels, people, onOpen, draggable }: Props) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     disabled: !draggable,
@@ -87,7 +95,7 @@ export function TaskCard({ task, labels, people, onOpen, draggable }: Props) {
       {...attributes}
       {...listeners}
       role="button"
-      aria-roledescription={draggable ? 'draggable task' : undefined}
+      aria-roledescription={draggable ? t('board.draggable') : undefined}
       aria-label={task.title}
       tabIndex={0}
       onClick={() => onOpen(task.id)}

@@ -4,20 +4,17 @@ import { createProjectSchema, hasRole, type CompanyDto, type ProjectSummaryDto, 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { hoursText } from '@/components/board/style';
 import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
-
-const STATUS_LABEL: Record<ProjectSummaryDto['status'], string> = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-};
 
 export default function ProjectsPage() {
   const { workspace } = useWorkspace();
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const canCreate = hasRole(workspace.role, 'manager');
   const [projects, setProjects] = useState<ProjectSummaryDto[]>();
   const [creating, setCreating] = useState(false);
@@ -26,20 +23,20 @@ export default function ProjectsPage() {
   const load = useCallback(() => {
     api<ProjectSummaryDto[]>('/projects')
       .then(setProjects)
-      .catch(() => setError('Could not load projects.'));
-  }, [api]);
+      .catch(() => setError(t('projects.loadError')));
+  }, [api, t]);
 
   useEffect(load, [load]);
 
   return (
     <>
       <PageHeader
-        title="Projects"
-        description="Every project belongs to a client, so hours roll up to client profitability."
+        title={t('nav.projects')}
+        description={t('projects.description')}
         action={
           canCreate && !creating ? (
             <button onClick={() => setCreating(true)} className={btn.primary}>
-              New project
+              {t('projects.new')}
             </button>
           ) : undefined
         }
@@ -48,11 +45,12 @@ export default function ProjectsPage() {
       {creating && <NewProject onClose={() => setCreating(false)} />}
 
       {!projects ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : projects.length === 0 ? (
         <Card>
           <p className="text-sm text-gray-500">
-            No projects yet.{canCreate ? ' Create one to get a board with To do, In progress, Review and Done.' : ''}
+            {t('projects.none')}
+            {canCreate ? ` ${t('projects.noneHint')}` : ''}
           </p>
         </Card>
       ) : (
@@ -69,18 +67,18 @@ export default function ProjectsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold">{p.name}</p>
                   {p.status !== 'active' && (
-                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{STATUS_LABEL[p.status]}</span>
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t(`project.status.${p.status}`)}</span>
                   )}
                 </div>
-                <p className="mt-0.5 text-sm text-gray-500">{p.client?.name ?? 'No client'}</p>
+                <p className="mt-0.5 text-sm text-gray-500">{p.client?.name ?? t('projects.noClient')}</p>
                 <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
                   <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  {p.doneTasks} of {total} tasks done
-                  {p.actualHours > 0 && ` · ${Math.round(p.actualHours * 10) / 10}h logged`}
+                  {t('projects.tasksDone', { done: p.doneTasks, total })}
+                  {p.actualHours > 0 && ` · ${t('projects.logged', { hours: hoursText(p.actualHours, locale) })}`}
                   {p.budgetHours ? (
-                    <span className={p.actualHours > p.budgetHours ? 'font-medium text-red-600' : ''}> of {p.budgetHours}h budget</span>
+                    <span className={p.actualHours > p.budgetHours ? 'font-medium text-red-600' : ''}> {t('projects.ofBudget', { hours: hoursText(p.budgetHours, locale) })}</span>
                   ) : null}
                 </p>
               </Link>
@@ -96,9 +94,11 @@ function NewProject({ onClose }: { onClose: () => void }) {
   const api = useWorkspaceApi();
   const router = useRouter();
   const { workspace } = useWorkspace();
+  const t = useT();
+  const locale = useLocale();
   const [templates, setTemplates] = useState<TemplateDto[]>([]);
   const [templateId, setTemplateId] = useState('');
-  const template = templates.find((t) => t.id === templateId);
+  const template = templates.find((x) => x.id === templateId);
   const [clients, setClients] = useState<CompanyDto[]>([]);
   const [clientMode, setClientMode] = useState<'existing' | 'new'>('existing');
   const [pending, setPending] = useState(false);
@@ -116,14 +116,14 @@ function NewProject({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   }, [api]);
 
-  async function deleteTemplate(t: TemplateDto) {
-    if (!window.confirm(`Delete the template "${t.name}"? Projects made from it stay as they are.`)) return;
+  async function deleteTemplate(tpl: TemplateDto) {
+    if (!window.confirm(t('projects.confirmDeleteTemplate', { name: tpl.name }))) return;
     try {
-      await api(`/project-templates/${t.id}`, { method: 'DELETE' });
-      setTemplates((cur) => cur.filter((x) => x.id !== t.id));
+      await api(`/project-templates/${tpl.id}`, { method: 'DELETE' });
+      setTemplates((cur) => cur.filter((x) => x.id !== tpl.id));
       setTemplateId('');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete the template.');
+      setError(err instanceof ApiError ? err.message : t('projects.deleteTemplateFailed'));
     }
   }
 
@@ -153,25 +153,25 @@ function NewProject({ onClose }: { onClose: () => void }) {
       const project = await api<ProjectSummaryDto>('/projects', { method: 'POST', body: parsed.data });
       router.push(`/app/projects/${project.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not create the project.');
+      setError(err instanceof ApiError ? err.message : t('projects.createFailed'));
       setPending(false);
     }
   }
 
   return (
     <div className="mb-6">
-      <Card title="New project">
+      <Card title={t('projects.new')}>
         <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-gray-700">Project name</span>
-            <input name="name" autoFocus placeholder="e.g. Website rebuild" className={`mt-1 ${input}`} />
+            <span className="text-sm font-medium text-gray-700">{t('projects.name')}</span>
+            <input name="name" autoFocus placeholder={t('projects.namePlaceholder')} className={`mt-1 ${input}`} />
           </label>
           <div>
-            <span className="text-sm font-medium text-gray-700">Client</span>
+            <span className="text-sm font-medium text-gray-700">{t('projects.client')}</span>
             {clientMode === 'existing' ? (
               <div className="mt-1 flex gap-2">
                 <select name="clientId" defaultValue="" className={input}>
-                  <option value="">No client (internal)</option>
+                  <option value="">{t('projects.internal')}</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -179,15 +179,15 @@ function NewProject({ onClose }: { onClose: () => void }) {
                   ))}
                 </select>
                 <button type="button" onClick={() => setClientMode('new')} className={`${btn.ghost} shrink-0`}>
-                  + New
+                  {t('projects.newClient')}
                 </button>
               </div>
             ) : (
               <div className="mt-1 flex gap-2">
-                <input name="newClient" placeholder="Client name" aria-label="New client name" className={input} />
+                <input name="newClient" placeholder={t('projects.clientName')} aria-label={t('projects.newClientName')} className={input} />
                 {clients.length > 0 && (
                   <button type="button" onClick={() => setClientMode('existing')} className={`${btn.ghost} shrink-0`}>
-                    Pick existing
+                    {t('projects.pickExisting')}
                   </button>
                 )}
               </div>
@@ -195,21 +195,21 @@ function NewProject({ onClose }: { onClose: () => void }) {
           </div>
           <div className="sm:col-span-2">
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Start from</span>
+              <span className="text-sm font-medium text-gray-700">{t('projects.startFrom')}</span>
               <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className={`mt-1 ${input}`}>
-                <option value="">Blank board (To do, In progress, Review, Done)</option>
-                <optgroup label="Templates">
-                  {templates.filter((t) => t.builtin).map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
+                <option value="">{t('projects.blank')}</option>
+                <optgroup label={t('projects.templates')}>
+                  {templates.filter((x) => x.builtin).map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
                     </option>
                   ))}
                 </optgroup>
-                {templates.some((t) => !t.builtin) && (
-                  <optgroup label="Saved by your team">
-                    {templates.filter((t) => !t.builtin).map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
+                {templates.some((x) => !x.builtin) && (
+                  <optgroup label={t('projects.savedByTeam')}>
+                    {templates.filter((x) => !x.builtin).map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
                       </option>
                     ))}
                   </optgroup>
@@ -220,18 +220,19 @@ function NewProject({ onClose }: { onClose: () => void }) {
               <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                 {template.description && <span>{template.description.replace(/\.?$/, '.')}</span>}
                 <span>
-                  Columns: {template.columns.join(' → ')} · {template.taskCount} starter task{template.taskCount === 1 ? '' : 's'}
+                  {t('projects.columns', { columns: template.columns.join(locale === 'ur' ? ' ← ' : ' → ') })} ·{' '}
+                  {template.taskCount === 1 ? t('projects.starterTasks.one') : t('projects.starterTasks.many', { n: template.taskCount })}
                 </span>
                 {!template.builtin && hasRole(workspace.role, 'manager') && (
                   <button type="button" className="text-red-600 hover:underline" onClick={() => deleteTemplate(template)}>
-                    Delete template
+                    {t('projects.deleteTemplate')}
                   </button>
                 )}
               </p>
             )}
           </div>
           <label className="block">
-            <span className="text-sm font-medium text-gray-700">Budget (hours, optional)</span>
+            <span className="text-sm font-medium text-gray-700">{t('projects.budget')}</span>
             <input name="budgetHours" type="number" min="0" step="0.5" className={`mt-1 ${input}`} />
           </label>
           {error && (
@@ -241,10 +242,10 @@ function NewProject({ onClose }: { onClose: () => void }) {
           )}
           <div className="flex gap-2 sm:col-span-2">
             <button type="submit" disabled={pending} className={btn.primary}>
-              {pending ? 'Creating…' : 'Create project'}
+              {pending ? t('inbox.creating') : t('projects.create')}
             </button>
             <button type="button" onClick={onClose} className={btn.ghost}>
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </form>

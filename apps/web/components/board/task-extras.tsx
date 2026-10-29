@@ -4,6 +4,7 @@ import { MAX_UPLOAD_MB, type TaskDetailDto, type TimerDto } from '@workhub/share
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { announceTimer, TIMER_EVENT } from '@/components/shell/timer-chip';
 import { ApiError } from '@/lib/api';
+import { intlLocale, useLocale, useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
 import { btn, input, timeAgo } from '@/components/ui';
 import { hoursText, localToday } from './style';
@@ -32,6 +33,8 @@ export function Attachments({
   call: Call;
   onError: (message: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const picker = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string>();
   const [dragging, setDragging] = useState(false);
@@ -39,7 +42,7 @@ export function Attachments({
   async function upload(files: FileList | File[]) {
     for (const file of Array.from(files)) {
       if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        onError(`${file.name} is larger than ${MAX_UPLOAD_MB} MB.`);
+        onError(t('composer.tooBig', { name: file.name, n: MAX_UPLOAD_MB }));
         continue;
       }
       setUploading(file.name);
@@ -69,19 +72,19 @@ export function Attachments({
     >
       <div className="mb-1.5 flex items-center gap-2">
         <h3 className="text-sm font-semibold">
-          Files {task.attachments.length > 0 && <span className="font-normal text-gray-500">{task.attachments.length}</span>}
+          {t('extras.files')} {task.attachments.length > 0 && <span className="font-normal text-gray-500">{task.attachments.length}</span>}
         </h3>
         {canEdit && (
           <>
             <button type="button" className={`${btn.ghost} ms-auto !py-1`} disabled={!!uploading} onClick={() => picker.current?.click()}>
-              {uploading ? `Uploading ${uploading}…` : 'Attach file'}
+              {uploading ? t('extras.uploading', { name: uploading }) : t('extras.attach')}
             </button>
             <input ref={picker} type="file" multiple hidden onChange={(e) => e.target.files && upload(e.target.files)} />
           </>
         )}
       </div>
       {task.attachments.length === 0 ? (
-        canEdit && <p className="text-xs text-gray-500">Drop files here or use Attach file. Up to {MAX_UPLOAD_MB} MB each.</p>
+        canEdit && <p className="text-xs text-gray-500">{t('extras.dropHint', { n: MAX_UPLOAD_MB })}</p>
       ) : (
         <ul className="space-y-1.5">
           {task.attachments.map((a) => (
@@ -92,7 +95,7 @@ export function Attachments({
                 </a>
               ) : (
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded bg-gray-100 text-[10px] font-semibold uppercase text-gray-500">
-                  {a.fileName.includes('.') ? a.fileName.split('.').pop()!.slice(0, 4) : 'file'}
+                  {a.fileName.includes('.') ? a.fileName.split('.').pop()!.slice(0, 4) : t('extras.file')}
                 </span>
               )}
               <div className="min-w-0 flex-1">
@@ -100,15 +103,15 @@ export function Attachments({
                   {a.fileName}
                 </a>
                 <p className="text-xs text-gray-500">
-                  {sizeText(a.sizeBytes)} · {a.uploadedByName ?? 'Someone'} · {timeAgo(a.createdAt)}
+                  {sizeText(a.sizeBytes)} · {a.uploadedByName ?? t('common.someone')} · {timeAgo(a.createdAt, locale)}
                 </p>
               </div>
               {(canRemoveAny || (canEdit && a.uploadedById === meId)) && (
                 <button
                   type="button"
-                  aria-label={`Remove ${a.fileName}`}
+                  aria-label={t('composer.removeFile', { name: a.fileName })}
                   className="text-gray-300 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100"
-                  onClick={() => window.confirm(`Remove ${a.fileName}?`) && call(`/tasks/${task.id}/attachments/${a.id}`, 'DELETE')}
+                  onClick={() => window.confirm(t('leave.holidays.confirmRemove', { name: a.fileName })) && call(`/tasks/${task.id}/attachments/${a.id}`, 'DELETE')}
                 >
                   ✕
                 </button>
@@ -135,6 +138,8 @@ export function TimeLog({
   meId: string;
   call: Call;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -162,14 +167,14 @@ export function TimeLog({
     <section>
       <div className="mb-1.5 flex items-center gap-2">
         <h3 className="text-sm font-semibold">
-          Time {total > 0 && <span className="font-normal text-gray-500">{hoursText(total / 60)} logged</span>}
-          {task.estimateHours !== null && <span className="font-normal text-gray-500"> of {hoursText(task.estimateHours)}</span>}
+          {t('extras.time')} {total > 0 && <span className="font-normal text-gray-500">{t('projects.logged', { hours: hoursText(total / 60, locale) })}</span>}
+          {task.estimateHours !== null && <span className="font-normal text-gray-500"> {t('extras.of', { hours: hoursText(task.estimateHours, locale) })}</span>}
         </h3>
         {canEdit && !open && (
           <span className="ms-auto flex items-center gap-1">
             <TimerButton taskId={task.id} />
             <button type="button" className={`${btn.ghost} !py-1`} onClick={() => setOpen(true)}>
-              Log time
+              {t('extras.logTime')}
             </button>
           </span>
         )}
@@ -178,25 +183,25 @@ export function TimeLog({
         <form onSubmit={submit} className="mb-2 space-y-2 rounded-lg border border-gray-200 p-3">
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-xs text-gray-600">
-              Hours
+              {t('extras.hours')}
               <input type="number" min={0} max={24} step={1} value={hours} onChange={(e) => setHours(e.target.value)} className={`${input} mt-1 w-20`} autoFocus />
             </label>
             <label className="text-xs text-gray-600">
-              Minutes
+              {t('extras.minutes')}
               <input type="number" min={0} max={59} step={5} value={minutes} onChange={(e) => setMinutes(e.target.value)} className={`${input} mt-1 w-20`} />
             </label>
             <label className="text-xs text-gray-600">
-              Date
+              {t('leave.holidays.date')}
               <input type="date" value={date} max={localToday()} onChange={(e) => setDate(e.target.value)} className={`${input} mt-1`} required />
             </label>
           </div>
-          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What did you work on? (optional)" maxLength={500} className={input} aria-label="Note" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('extras.notePlaceholder')} maxLength={500} className={input} aria-label={t('leave.approvals.note')} />
           <div className="flex gap-2">
             <button type="submit" className={`${btn.primary} !py-1.5`} disabled={saving || entered < 1 || entered > 24 * 60}>
-              {saving ? 'Saving…' : 'Log time'}
+              {saving ? t('composer.saving') : t('extras.logTime')}
             </button>
             <button type="button" className={btn.ghost} onClick={() => setOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -205,15 +210,15 @@ export function TimeLog({
         <ul className="space-y-1 text-sm">
           {task.timeEntries.map((e) => (
             <li key={e.id} className="group flex items-baseline gap-2">
-              <span className="w-14 shrink-0 font-medium tabular-nums">{hoursText(e.minutes / 60)}</span>
+              <span className="w-14 shrink-0 font-medium tabular-nums">{hoursText(e.minutes / 60, locale)}</span>
               <span className="min-w-0 flex-1 truncate text-gray-600">
-                {e.user?.name ?? 'Someone'} · {new Date(`${e.workDate}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                {e.user?.name ?? t('common.someone')} · {new Date(`${e.workDate}T00:00:00`).toLocaleDateString(locale === 'en' ? undefined : intlLocale(locale), { day: 'numeric', month: 'short' })}
                 {e.note && <span className="text-gray-500"> — {e.note}</span>}
               </span>
               {(canRemoveAny || e.user?.id === meId) && canEdit && (
                 <button
                   type="button"
-                  aria-label="Remove time entry"
+                  aria-label={t('extras.removeTime')}
                   className="text-gray-300 opacity-0 hover:text-red-600 group-hover:opacity-100 focus:opacity-100"
                   onClick={() => call(`/tasks/${task.id}/time/${e.id}`, 'DELETE')}
                 >
@@ -231,13 +236,14 @@ export function TimeLog({
 /** Start or stop timing this task. Starting stops (and logs) a timer on another task. */
 function TimerButton({ taskId }: { taskId: string }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const [running, setRunning] = useState<TimerDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
   const load = useCallback(() => {
     api<TimerDto | Record<string, never>>('/timer')
-      .then((t) => setRunning('taskId' in t ? (t as TimerDto) : null))
+      .then((r) => setRunning('taskId' in r ? (r as TimerDto) : null))
       .catch(() => setRunning(null));
   }, [api]);
 
@@ -255,7 +261,7 @@ function TimerButton({ taskId }: { taskId: string }) {
       if (here) await api('/timer/stop', { method: 'POST' });
       else await api(`/tasks/${taskId}/timer/start`, { method: 'POST' });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not change the timer.');
+      setError(err instanceof ApiError ? err.message : t('extras.timerFailed'));
     } finally {
       setBusy(false);
       announceTimer();
@@ -264,8 +270,8 @@ function TimerButton({ taskId }: { taskId: string }) {
 
   return (
     <>
-      <button type="button" onClick={toggle} disabled={busy} className={`${btn.ghost} !py-1 ${here ? 'text-red-600' : ''}`} title={running && !here ? `Stops the timer on ${running.taskTitle}` : undefined}>
-        {here ? '■ Stop timer' : '▶ Start timer'}
+      <button type="button" onClick={toggle} disabled={busy} className={`${btn.ghost} !py-1 ${here ? 'text-red-600' : ''}`} title={running && !here ? t('extras.stopsOther', { task: running.taskTitle }) : undefined}>
+        {here ? `■ ${t('extras.stopTimer')}` : `▶ ${t('extras.startTimer')}`}
       </button>
       {error && (
         <span role="alert" className="text-xs text-red-600">

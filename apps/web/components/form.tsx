@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useT } from '@/lib/i18n';
 
 export function AuthCard({
   title,
@@ -74,14 +77,15 @@ export function Field({
   );
 }
 
-export function SubmitButton({ pending, children, pendingLabel = 'Please wait…' }: { pending: boolean; children: React.ReactNode; pendingLabel?: string }) {
+export function SubmitButton({ pending, children, pendingLabel }: { pending: boolean; children: React.ReactNode; pendingLabel?: string }) {
+  const t = useT();
   return (
     <button
       type="submit"
       disabled={pending}
       className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
     >
-      {pending ? pendingLabel : children}
+      {pending ? (pendingLabel ?? t('auth.wait')) : children}
     </button>
   );
 }

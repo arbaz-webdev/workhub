@@ -7,10 +7,13 @@ import { useEffect, useState } from 'react';
 import { AuthCard, FormError, SubmitButton } from '@/components/form';
 import { roleLabel } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { storeWorkspace } from '@/lib/workspace';
 
 export function AcceptInvite({ token }: { token: string }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [preview, setPreview] = useState<InvitePreviewDto | null>();
   const [me, setMe] = useState<MeResponse | null>();
   const [pending, setPending] = useState(false);
@@ -34,31 +37,31 @@ export function AcceptInvite({ token }: { token: string }) {
       storeWorkspace(ws.id);
       router.push('/app');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the server. Please try again.');
+      setError(err instanceof ApiError ? err.message : t('auth.network'));
       setPending(false);
     }
   }
 
   if (preview === undefined || me === undefined) {
-    return <AuthCard title="Opening your invitation…" subtitle="This takes a second." footer={null} />;
+    return <AuthCard title={t('invite.opening')} subtitle={t('common.aSecond')} footer={null} />;
   }
 
   if (preview === null) {
     return (
       <AuthCard
-        title="Invitation not valid"
-        subtitle="This invitation was already used, cancelled, or has expired. Ask the person who invited you to send a new one."
+        title={t('invite.invalid')}
+        subtitle={t('invite.invalidHint')}
         footer={
           <Link href="/app" className="font-medium text-brand-700 hover:underline">
-            Go to WorkHub
+            {t('invite.goToWorkHub')}
           </Link>
         }
       />
     );
   }
 
-  const title = `Join ${preview.workspaceName}`;
-  const subtitle = `${preview.inviterName ?? 'Someone'} invited you as ${roleLabel(preview.role).toLowerCase()}.`;
+  const title = t('invite.join', { workspace: preview.workspaceName });
+  const subtitle = t('invite.invitedAs', { name: preview.inviterName ?? t('common.someone'), role: roleLabel(preview.role, locale).toLowerCase() });
   const wrongAccount = me && preview.email && me.user.email.toLowerCase() !== preview.email.toLowerCase();
 
   if (!me) {
@@ -71,27 +74,27 @@ export function AcceptInvite({ token }: { token: string }) {
             href={`/sign-up?${qs}`}
             className="block w-full rounded-lg bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-700"
           >
-            Create an account and join
+            {t('invite.createAndJoin')}
           </Link>
           <Link
             href={`/sign-in?${qs}`}
             className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-semibold text-gray-800 hover:bg-gray-50"
           >
-            I already have an account
+            {t('invite.haveAccount')}
           </Link>
-          {preview.email && <p className="text-center text-xs text-gray-500">Use {preview.email}, the address the invitation was sent to.</p>}
+          {preview.email && <p className="text-center text-xs text-gray-500">{t('invite.useEmail', { email: preview.email })}</p>}
         </div>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title={title} subtitle={subtitle} footer={<span>Signed in as {me.user.email}</span>}>
+    <AuthCard title={title} subtitle={subtitle} footer={<span>{t('invite.signedInAs', { email: me.user.email })}</span>}>
       <div className="space-y-4">
         <FormError message={error} />
         {wrongAccount ? (
           <>
-            <FormError message={`This invitation is for ${preview.email}. Sign out and sign in with that address to accept it.`} />
+            <FormError message={t('invite.wrongAccount', { email: preview.email! })} />
             <button
               onClick={async () => {
                 await api('/auth/sign-out', { method: 'POST' }).catch(() => {});
@@ -99,7 +102,7 @@ export function AcceptInvite({ token }: { token: string }) {
               }}
               className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
             >
-              Sign out and switch account
+              {t('invite.switch')}
             </button>
           </>
         ) : (

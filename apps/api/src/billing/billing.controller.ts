@@ -3,7 +3,6 @@ import {
   Body,
   ConflictException,
   Controller,
-  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -34,11 +33,12 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { audit } from '../audit/audit';
 import { addDays, zonedParts } from '../attendance/zoned';
+import { platformAdmin } from '../common/platform-admin';
 import { config } from '../config';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
-import { invoices, subscriptions, users, workspaces } from '../db/schema';
+import { invoices, subscriptions, workspaces } from '../db/schema';
 import { EmailService } from '../email/email.service';
 import { escapeHtml } from '../email/templates';
 import { notifyRoles } from '../notifications/notify';
@@ -118,7 +118,7 @@ export class BillingController {
       const renewing = effectivePlan(sub).status === 'active' && sub.plan === body.plan && sub.billingCycle === body.cycle && sub.paidUntil;
       const start = renewing ? addDays(sub.paidUntil!, 1) : today;
       const seats = Math.max(1, await seatsUsed(tx, ws.id));
-      const price = priceFor(body.plan, body.cycle, seats, sub.province, start);
+      const price = priceFor(body.plan, body.cycle, seats, sub.province, start, sub.discountPercent);
       const { rows } = await tx.execute<{ n: string }>(sql`select nextval('invoice_number_seq') as n`);
       const [row] = await tx
         .insert(invoices)
@@ -131,6 +131,9 @@ export class BillingController {
           unitPrice: price.unitPrice,
           months: price.months,
           subtotal: price.subtotal,
+          discountLabel: price.discountAmount > 0 ? sub.discountLabel : null,
+          discountPercent: price.discountPercent,
+          discountAmount: price.discountAmount,
           taxLabel: price.taxLabel,
           taxRate: price.taxRate,
           taxAmount: price.taxAmount,
@@ -261,10 +264,8 @@ export class PlatformController {
     private readonly email: EmailService,
   ) {}
 
-  private async admin(auth: AuthContext): Promise<string> {
-    const [u] = await this.db.db.select({ email: users.email, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, auth.userId));
-    if (!u || !u.verified || !config.platformAdmins.includes(u.email.toLowerCase())) throw new ForbiddenException();
-    return u.email;
+  private admin(auth: AuthContext): Promise<string> {
+    return platformAdmin(this.db, auth);
   }
 
   @Get('transfers')

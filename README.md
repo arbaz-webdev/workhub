@@ -297,6 +297,19 @@ Still to do, and yours:
 - Run the backup drill on Neon itself (needs your Neon login).
 - Fix the top beta issues (#75) once beta feedback comes in.
 
+## Sprint 13 status
+
+- [x] Founding-customer offer: workspaces created before the paid launch (3 May 2027, `FOUNDING_OFFER_ENDS`) keep 40% off every invoice for life. Existing beta workspaces get it now. It shows on the billing page and as its own line on invoices, with sales tax on the discounted amount.
+- [x] Public status page at `/status`: each part (website and API, database, files, live updates) checked every minute, 90 days of uptime, and incidents. WorkHub staff post incidents and updates from `/app/platform`.
+- [x] Marketing site: the landing page's pricing now comes from the real plans, and a new `/pricing` page has a price calculator (team size, monthly or yearly, founding price) and a plan comparison. Shared header and footer, `sitemap.xml` and `robots.txt`.
+- [x] Help centre at `/help`: 10 articles with search, from setting up a workspace to two-factor sign-in.
+- [x] 285 tests, plus 2 that run against Redis in CI
+
+Still to do, and yours:
+- The 5 short help videos (#77) need recording.
+- Paid launch (#80): open a Safepay or PayFast merchant account (#66), set `BILLING_ENFORCED`, real emails (Resend), the seller and bank details, and have a lawyer write the terms of service and privacy policy.
+- An outside uptime monitor for alerts (see `docs/STAGING.md`).
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

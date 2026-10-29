@@ -18,6 +18,8 @@ import {
   type Industry,
   type ImportMode,
   type ImportProblem,
+  type IncidentImpact,
+  type IncidentStatus,
   type InvoiceDto,
   type InvoiceStatus,
   type LeadSource,
@@ -769,6 +771,8 @@ export const subscriptions = pgTable('subscriptions', {
   ntn: text('ntn'),
   province: text('province').$type<Province>(),
   address: text('address'),
+  discountPercent: smallint('discount_percent').notNull().default(0),
+  discountLabel: text('discount_label'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -784,6 +788,9 @@ export const invoices = pgTable('invoices', {
   unitPrice: numeric('unit_price', { precision: 12, scale: 2, mode: 'number' }).notNull(),
   months: integer('months').notNull(),
   subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+  discountLabel: text('discount_label'),
+  discountPercent: smallint('discount_percent').notNull().default(0),
+  discountAmount: numeric('discount_amount', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
   taxLabel: text('tax_label'),
   taxRate: numeric('tax_rate', { precision: 5, scale: 2, mode: 'number' }).notNull().default(0),
   taxAmount: numeric('tax_amount', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
@@ -821,4 +828,32 @@ export const recoveryCodes = pgTable('recovery_codes', {
   codeHash: text('code_hash').notNull(),
   usedAt: timestamp('used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---- Status page (sprint 13) -----------------------------------------------------------
+
+export const statusDays = pgTable('status_days', {
+  component: text('component').notNull(),
+  day: date('day', { mode: 'string' }).notNull(),
+  checks: integer('checks').notNull().default(0),
+  failures: integer('failures').notNull().default(0),
+});
+
+export const statusIncidents = pgTable('status_incidents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  impact: text('impact').$type<IncidentImpact>().notNull(),
+  components: text('components').array().notNull().default([]),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdBy: uuid('created_by'),
+});
+
+export const statusUpdates = pgTable('status_updates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  incidentId: uuid('incident_id').notNull(),
+  status: text('status').$type<IncidentStatus>().notNull(),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: uuid('created_by'),
 });

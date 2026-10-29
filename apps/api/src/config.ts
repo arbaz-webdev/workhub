@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { LAUNCH_DATE } from '@workhub/shared';
 
 // Load apps/api/.env when present (works from both src/ and dist/).
 const envFile = join(__dirname, '..', '.env');
@@ -166,6 +167,12 @@ export const config = {
     if (value) return value;
     if (config.isProduction) throw new Error('Missing required environment variable TOTP_ENCRYPTION_KEY (see apps/api/.env.example)');
     return 'development-only-totp-key';
+  },
+  /** Workspaces created before this day (YYYY-MM-DD) get the founding-customer discount for life. */
+  get foundingOfferEnds(): string {
+    const value = process.env.FOUNDING_OFFER_ENDS ?? LAUNCH_DATE;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('FOUNDING_OFFER_ENDS must be a date like 2027-05-03');
+    return value;
   },
   /** Shares rate limits and live updates between API copies. Unset: kept in memory (one copy). */
   get redisUrl(): string | undefined {

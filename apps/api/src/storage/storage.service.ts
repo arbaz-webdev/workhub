@@ -1,8 +1,8 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { createReadStream, existsSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import type { Readable } from 'node:stream';
 import type { Response } from 'express';
@@ -68,6 +68,20 @@ export class StorageService implements OnModuleInit {
     const path = this.localPath(key);
     if (!existsSync(path)) throw new Error('File missing from storage');
     return { kind: 'stream', stream: createReadStream(path) };
+  }
+
+  /** Throws unless the store answers: asks for a file that isn't there, so "not found" is healthy. */
+  async check(): Promise<void> {
+    if (this.s3) {
+      try {
+        await this.s3.send(new HeadObjectCommand({ Bucket: config.storage.bucket, Key: 'status-check/none' }), { abortSignal: AbortSignal.timeout(5000) });
+      } catch (err) {
+        if ((err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode !== 404) throw err;
+      }
+      return;
+    }
+    await mkdir(config.storage.localDir, { recursive: true });
+    await stat(config.storage.localDir);
   }
 
   async delete(key: string): Promise<void> {

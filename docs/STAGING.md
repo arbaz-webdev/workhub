@@ -109,6 +109,9 @@ deploys after CI passes.
 - **Always on, no sleeping (about $14/month):** run the website and the API as two Render services
   (`deploy/web.Dockerfile`, and a private service from `deploy/api.Dockerfile`). Then set
   `API_URL` on the website to the API's private `host:port`.
+- **Outage alerts (free):** the status page at `/status` is served by the site itself, so it can't
+  report the site being down. Add a free monitor (e.g. UptimeRobot) on `/api/health` that emails or
+  messages you, and post incidents from **/app/platform**.
 - **More than one API copy:** add a Render Key Value (Redis) instance and set `REDIS_URL` on the
   API, so rate limits are shared and live chat and board updates reach every copy.
 - **Real emails:** buy the domain and add it to Resend. Then set `EMAIL_TRANSPORT=resend`,

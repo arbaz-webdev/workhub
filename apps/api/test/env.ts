@@ -9,3 +9,5 @@ process.env.STORAGE_DRIVER = 'local';
 process.env.LOCAL_STORAGE_DIR = join(__dirname, '..', '..', '..', '.data', 'test-uploads');
 // Rate limits and live updates stay in memory unless a test sets it.
 delete process.env.REDIS_URL;
+// Billing tests expect list prices; test/sprint13.spec.ts switches the founding offer on.
+process.env.FOUNDING_OFFER_ENDS = '2000-01-01';

@@ -323,8 +323,9 @@ Still to do, and yours:
   - Export layouts: three built in (full summary, payable days, hours), plus your own (choose, order and rename columns). Employee codes for payroll software.
   - ZKTeco import from attlog.dat or a ZKTime/ZKBio CSV. Device users are matched to people (remembered next time); each workday's first and last punch become check-in and check-out, using the shift rules. Days recorded in the app are kept, and re-importing changes nothing.
 - [x] 297 tests, plus 2 that run against Redis in CI
+- [ ] Urdu interface (#91): **parked**. Two parts were built and then taken out again; the work is kept in draft PR #121, which explains how to bring it back. The app is English only, left to right. Staging's `users` table still has an unused `locale` column from that work.
 
-Next, buildable without paid accounts: Urdu (#91). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+Next, buildable without paid accounts: Terms of service and Privacy policy pages (for a lawyer to fill in). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

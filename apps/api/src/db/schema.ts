@@ -18,6 +18,9 @@ import {
   type Industry,
   type ImportMode,
   type ImportProblem,
+  type ClientDocKind,
+  type ClientDocStatus,
+  type Currency,
   type IncidentImpact,
   type IncidentStatus,
   type InvoiceDto,
@@ -317,6 +320,8 @@ export const timeEntries = pgTable('time_entries', {
   billable: boolean('billable').notNull().default(true),
   source: text('source').$type<'manual' | 'timer'>().notNull().default('manual'),
   startedAt: timestamp('started_at', { withTimezone: true }),
+  /** The client invoice these hours were billed on. */
+  invoiceId: uuid('invoice_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -856,4 +861,48 @@ export const statusUpdates = pgTable('status_updates', {
   body: text('body').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   createdBy: uuid('created_by'),
+});
+
+// ---- Quotes and invoices to clients (phase 2) --------------------------------------------
+
+export const clientDocuments = pgTable('client_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  kind: text('kind').$type<ClientDocKind>().notNull(),
+  number: text('number').notNull(),
+  companyId: uuid('company_id').notNull(),
+  status: text('status').$type<ClientDocStatus>().notNull().default('draft'),
+  currency: text('currency').$type<Currency>().notNull(),
+  issueDate: date('issue_date', { mode: 'string' }).notNull(),
+  dueDate: date('due_date', { mode: 'string' }),
+  notes: text('notes'),
+  taxLabel: text('tax_label'),
+  taxRate: numeric('tax_rate', { precision: 5, scale: 2, mode: 'number' }).notNull().default(0),
+  subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
+  taxAmount: numeric('tax_amount', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
+  total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
+  quoteId: uuid('quote_id'),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const clientDocumentLines = pgTable('client_document_lines', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  documentId: uuid('document_id').notNull(),
+  position: smallint('position').notNull(),
+  description: text('description').notNull(),
+  quantity: numeric('quantity', { precision: 10, scale: 2, mode: 'number' }).notNull(),
+  unitPrice: numeric('unit_price', { precision: 12, scale: 2, mode: 'number' }).notNull(),
+  amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+  projectId: uuid('project_id'),
+});
+
+export const clientDocumentCounters = pgTable('client_document_counters', {
+  workspaceId: uuid('workspace_id').notNull(),
+  kind: text('kind').$type<ClientDocKind>().notNull(),
+  lastNumber: integer('last_number').notNull().default(0),
 });

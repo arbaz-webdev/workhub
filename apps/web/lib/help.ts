@@ -181,6 +181,33 @@ Open a company to see everything about that client in one place: contacts, deals
 > Custom fields and more than one pipeline are part of the Business plan.`,
   },
   {
+    slug: 'quotes-and-invoices',
+    title: 'Quotes and invoices to your clients',
+    summary: 'Send a quote, turn it into an invoice when it’s accepted, and bill approved timesheet hours.',
+    category: 'Projects and clients',
+    keywords: 'quote estimate proposal invoice bill client hours timesheet rate dollar usd paid overdue void pdf print',
+    body: `Managers, admins and the owner can send clients quotes and invoices from **CRM → Quotes & invoices**. Numbers count up on their own: Q-0001 for quotes, INV-0001 for invoices.
+
+## Quotes
+
+1. Choose **New quote**, pick the client and currency, and add lines (description, quantity, price). Add a tax line if you charge one.
+2. Save it as a draft, then **Print or save PDF** and send it to your client.
+3. Mark it **sent**. When the client agrees, mark it **accepted** and choose **Make the invoice**: a draft invoice with the same lines.
+
+## Billing hours
+
+**Bill hours** invoices a client for time your team recorded on that client's projects:
+
+- Only **approved** hours count (the person's weekly timesheet was approved), and only billable ones.
+- Each project becomes one line, at its hourly rate from **Reports → Costs**. Projects without a rate are shown so you can set one.
+- One invoice has one currency. Projects billed in another currency go on their own invoice.
+- Hours go on one invoice only. If you void or delete that invoice, they can be billed again.
+
+## Getting paid
+
+Mark an invoice **sent** when it goes out, and **paid** when the money arrives. Sent invoices past their due date show as **overdue**, and the list shows how much is waiting to be paid. Only drafts can be edited; move one back to draft to change it.`,
+  },
+  {
     slug: 'inbox-and-announcements',
     title: 'Team chat and announcements',
     summary: 'Channels, direct messages, mentions and company announcements with read receipts.',

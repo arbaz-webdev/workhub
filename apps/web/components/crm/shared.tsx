@@ -14,6 +14,7 @@ const TABS: { href: string; label: string; minRole: Role }[] = [
   { href: '/app/crm/leads', label: 'Leads', minRole: 'member' },
   { href: '/app/crm/contacts', label: 'Contacts', minRole: 'member' },
   { href: '/app/crm/companies', label: 'Companies', minRole: 'member' },
+  { href: '/app/crm/invoices', label: 'Quotes & invoices', minRole: 'manager' },
   { href: '/app/crm/import', label: 'Import', minRole: 'manager' },
   { href: '/app/crm/pipelines', label: 'Pipelines', minRole: 'manager' },
   { href: '/app/crm/fields', label: 'Custom fields', minRole: 'manager' },

@@ -1,5 +1,16 @@
 import { Controller, Get } from '@nestjs/common';
-import { API_RATE_LIMIT_PER_MINUTE, CLIENT_INVOICE_STATUSES, LEAD_STATUSES, PROJECT_STATUSES, REQUEST_STATUSES, ROLES, STAGE_KINDS } from '@workhub/shared';
+import {
+  ACTIVITY_KINDS,
+  API_RATE_LIMIT_PER_MINUTE,
+  CLIENT_INVOICE_STATUSES,
+  LEAD_SOURCES,
+  LEAD_STATUSES,
+  PRIORITIES,
+  PROJECT_STATUSES,
+  REQUEST_STATUSES,
+  ROLES,
+  STAGE_KINDS,
+} from '@workhub/shared';
 import { Public } from '../common/request';
 import { config } from '../config';
 import { MAX_PAGE } from './paging';
@@ -202,6 +213,91 @@ const schemas: Record<string, Schema> = {
     createdAt: dateTime,
   }),
   InvoiceLine: obj({ description: str(), quantity: num, unitPrice: num, amount: num, projectId: nullable(id) }),
+  Activity: obj({
+    id,
+    kind: oneOf(ACTIVITY_KINDS),
+    subject: str(),
+    body: nullable(str()),
+    dueAt: nullable(dateTime),
+    done: bool,
+    doneAt: nullable(dateTime),
+    ownerId: nullable(id),
+    dealId: nullable(id),
+    companyId: nullable(id),
+    contactId: nullable(id),
+    leadId: nullable(id),
+    createdBy: nullable(id),
+    createdAt: dateTime,
+    updatedAt: dateTime,
+  }),
+  // What the write endpoints accept. Fields left out stay as they are.
+  TaskFields: {
+    type: 'object',
+    properties: {
+      description: nullable(str()),
+      priority: oneOf(PRIORITIES),
+      startDate: nullable(day),
+      dueDate: nullable(day),
+      estimateHours: nullable(num),
+      assigneeIds: { type: 'array', items: id, description: 'Replaces the assignees. Each must be able to see the project.' },
+      completed: bool,
+    },
+  },
+  NewTask: {
+    allOf: [
+      { type: 'object', required: ['projectId', 'title'], properties: { projectId: id, title: str(), columnId: { ...id, description: 'Defaults to the first column.' }, parentTaskId: { ...id, description: 'Makes it a subtask.' } } },
+      ref('TaskFields'),
+    ],
+  },
+  TaskChanges: { allOf: [{ type: 'object', properties: { title: str(), columnId: { ...id, description: 'Moves it to the bottom of this column.' } } }, ref('TaskFields')] },
+  LeadFields: {
+    type: 'object',
+    properties: {
+      name: str(),
+      companyName: nullable(str()),
+      email: nullable(str()),
+      phone: nullable(str()),
+      source: oneOf(LEAD_SOURCES),
+      sourceDetail: nullable(str()),
+      status: oneOf(LEAD_STATUSES.filter((s) => s !== 'converted')),
+      value: nullable(num),
+      currency: str(),
+      notes: nullable(str()),
+      ownerId: nullable(id),
+      custom,
+    },
+  },
+  ContactFields: {
+    type: 'object',
+    properties: {
+      firstName: str(),
+      lastName: nullable(str()),
+      email: nullable(str()),
+      phone: nullable(str()),
+      title: nullable(str()),
+      companyId: nullable(id),
+      notes: nullable(str()),
+      ownerId: nullable(id),
+      custom,
+    },
+  },
+  NewActivity: {
+    type: 'object',
+    required: ['kind', 'subject'],
+    description: 'Link it to at least one of a deal, company, contact or lead. With dueAt it is a follow-up and its owner is reminded; without, it is logged as done.',
+    properties: {
+      kind: oneOf(ACTIVITY_KINDS),
+      subject: str(),
+      body: nullable(str()),
+      dueAt: nullable(dateTime),
+      done: bool,
+      dealId: nullable(id),
+      companyId: nullable(id),
+      contactId: nullable(id),
+      leadId: nullable(id),
+      ownerId: nullable(id),
+    },
+  },
   Error: { type: 'object', properties: { statusCode: int, message: str() } },
 };
 schemas.InvoiceWithLines = { allOf: [ref('Invoice'), obj({ lines: { type: 'array', items: ref('InvoiceLine') } })] };
@@ -230,6 +326,24 @@ function list(summary: string, item: string, parameters: unknown[]) {
   return { get: { summary, parameters: [...parameters, ...paging], responses: { '200': pageOf(item), ...errors } } };
 }
 
+const notFound = { '404': { description: 'Not found in this workspace.', content: { 'application/json': { schema: ref('Error') } } } };
+const body = (name: string, required: string[] = []) => ({
+  required: true,
+  content: { 'application/json': { schema: required.length ? { allOf: [ref(name), { type: 'object', required }] } : ref(name) } },
+});
+/** POST needs a "read and write" key. */
+const create = (summary: string, input: string, output: string, required: string[] = []) => ({
+  summary: `${summary} (read and write keys)`,
+  requestBody: body(input, required),
+  responses: { '201': { ...json(ref(output)), description: 'Created' }, ...errors, ...notFound },
+});
+const change = (summary: string, input: string, output: string) => ({
+  summary: `${summary} (read and write keys)`,
+  parameters: [{ name: 'id', in: 'path', required: true, schema: id }],
+  requestBody: body(input),
+  responses: { '200': json(ref(output)), ...errors, ...notFound },
+});
+
 export function openApiDocument() {
   return {
     openapi: '3.1.0',
@@ -237,7 +351,8 @@ export function openApiDocument() {
       title: 'WorkHub API',
       version: '1',
       description:
-        `Read a WorkHub workspace's data from your own software. Create a key in Settings → API and send it as "Authorization: Bearer whk_…". ` +
+        `Read and change a WorkHub workspace's data from your own software. Create a key in Settings → API and send it as "Authorization: Bearer whk_…". ` +
+        `Read-only keys can only GET; "read and write" keys can also create and change tasks, leads, contacts and activities, under the same rules as the app. ` +
         `A key acts as the admin who created it and stops working if they leave or stop being an admin. Each key can make ${API_RATE_LIMIT_PER_MINUTE} requests a minute. ` +
         `Lists are returned oldest first, a page at a time: pass "nextCursor" back as "cursor" until it is null.`,
     },
@@ -267,15 +382,34 @@ export function openApiDocument() {
         q('approved', oneOf(['true', 'false']), 'Only time whose week was (or was not) approved.'),
       ]),
       '/v1/projects': list('Projects', 'Project', [q('status', oneOf(PROJECT_STATUSES), 'Only this status.')]),
-      '/v1/tasks': list('Tasks, including subtasks', 'Task', [
-        q('projectId', id, 'Only this project.'),
-        q('completed', oneOf(['true', 'false']), 'Only completed (or open) tasks.'),
-        since,
-      ]),
+      '/v1/tasks': {
+        ...list('Tasks, including subtasks', 'Task', [
+          q('projectId', id, 'Only this project.'),
+          q('completed', oneOf(['true', 'false']), 'Only completed (or open) tasks.'),
+          since,
+        ]),
+        post: create('Create a task or subtask', 'NewTask', 'Task'),
+      },
+      '/v1/tasks/{id}': { patch: change('Change a task, or move it to another column', 'TaskChanges', 'Task') },
       '/v1/companies': list('CRM companies (clients)', 'Company', [since]),
-      '/v1/contacts': list('CRM contacts', 'Contact', [since]),
-      '/v1/leads': list('CRM leads', 'Lead', [q('status', oneOf(LEAD_STATUSES), 'Only this status.'), since]),
+      '/v1/contacts': { ...list('CRM contacts', 'Contact', [since]), post: create('Create a contact', 'ContactFields', 'Contact', ['firstName']) },
+      '/v1/contacts/{id}': { patch: change('Change a contact', 'ContactFields', 'Contact') },
+      '/v1/leads': {
+        ...list('CRM leads', 'Lead', [q('status', oneOf(LEAD_STATUSES), 'Only this status.'), since]),
+        post: create('Create a lead', 'LeadFields', 'Lead', ['name']),
+      },
+      '/v1/leads/{id}': { patch: change('Change a lead', 'LeadFields', 'Lead') },
       '/v1/deals': list('CRM deals', 'Deal', [q('status', oneOf(STAGE_KINDS), 'Only open, won or lost deals.'), since]),
+      '/v1/activities': {
+        ...list('CRM activities: calls, meetings, notes and follow-ups', 'Activity', [
+          q('dealId', id, 'Only on this deal.'),
+          q('companyId', id, 'Only on this company.'),
+          q('contactId', id, 'Only on this contact.'),
+          q('leadId', id, 'Only on this lead.'),
+          since,
+        ]),
+        post: create('Log an activity or add a follow-up', 'NewActivity', 'Activity'),
+      },
       '/v1/invoices': list('Invoices to clients', 'Invoice', [q('status', oneOf(CLIENT_INVOICE_STATUSES), 'Only this status.'), q('companyId', id, 'Only this client.')]),
       '/v1/invoices/{id}': {
         get: {

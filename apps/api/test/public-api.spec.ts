@@ -179,7 +179,85 @@ describe('reading data', () => {
 
     const doc = (await request(app.getHttpServer()).get('/v1/openapi.json').expect(200)).body;
     expect(doc.openapi).toBe('3.1.0');
-    expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/v1/me', '/v1/people', '/v1/attendance', '/v1/invoices/{id}']));
+    expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/v1/me', '/v1/people', '/v1/attendance', '/v1/invoices/{id}', '/v1/tasks/{id}', '/v1/activities']));
+    expect(Object.keys(doc.paths['/v1/leads'])).toEqual(['get', 'post']);
+  });
+});
+
+describe('writing data', () => {
+  const send = (method: 'post' | 'patch', path: string, key: string, body: object) =>
+    request(app.getHttpServer())[method](`/v1${path}`).set('Authorization', `Bearer ${key}`).send(body);
+
+  it('a read-only key cannot change data', async () => {
+    const { key } = await createKey(alice, 'read');
+    const res = await send('post', '/leads', key, { name: 'Nope' }).expect(403);
+    expect(res.body.message).toMatch(/read-only/);
+  });
+
+  it('creates and updates tasks, as the app does', async () => {
+    const owner = await signUp(app, 'writer', 'Writer Co');
+    const ws = owner.workspace.id;
+    const project = (await owner.agent.post('/projects').set(WORKSPACE_HEADER, ws).send({ name: 'App' }).expect(201)).body;
+    const board = (await owner.agent.get(`/projects/${project.id}`).set(WORKSPACE_HEADER, ws).expect(200)).body;
+    const { key } = await createKey(owner, 'write');
+
+    const task = (
+      await send('post', '/tasks', key, { projectId: project.id, title: 'Login page', priority: 'high', dueDate: '2030-01-15', assigneeIds: [owner.user.id] }).expect(201)
+    ).body;
+    expect(task).toMatchObject({ title: 'Login page', priority: 'high', dueDate: '2030-01-15', assigneeIds: [owner.user.id], column: board.columns[0].name, completed: false });
+
+    // It's on the board, with the app's own activity history.
+    const detail = (await owner.agent.get(`/tasks/${task.id}`).set(WORKSPACE_HEADER, ws).expect(200)).body;
+    expect(detail.activity.map((a: { type: string }) => a.type)).toEqual(expect.arrayContaining(['task.created', 'task.updated']));
+
+    const last = board.columns.at(-1);
+    const moved = (await send('patch', `/tasks/${task.id}`, key, { completed: true, columnId: last.id }).expect(200)).body;
+    expect(moved).toMatchObject({ id: task.id, completed: true, column: last.name });
+
+    const sub = (await send('post', '/tasks', key, { projectId: project.id, title: 'Password reset', parentTaskId: task.id }).expect(201)).body;
+    expect(sub).toMatchObject({ parentTaskId: task.id });
+
+    await send('post', '/tasks', key, { projectId: project.id }).expect(400);
+    await send('patch', `/tasks/${task.id}`, key, { startDate: '2030-02-01', dueDate: '2030-01-01' }).expect(400);
+  });
+
+  it('creates and updates leads and contacts, and logs activities', async () => {
+    const owner = await signUp(app, 'seller', 'Seller Co');
+    const { key } = await createKey(owner, 'write');
+
+    const lead = (await send('post', '/leads', key, { name: 'Zara Khan', companyName: 'Zara Textiles', email: 'zara@example.com', source: 'website' }).expect(201)).body;
+    expect(lead).toMatchObject({ name: 'Zara Khan', status: 'new', source: 'website' });
+    expect((await send('patch', `/leads/${lead.id}`, key, { status: 'qualified' }).expect(200)).body).toMatchObject({ id: lead.id, status: 'qualified' });
+
+    const contact = (await send('post', '/contacts', key, { firstName: 'Omar', lastName: 'Ali', email: 'omar@example.com' }).expect(201)).body;
+    expect(contact).toMatchObject({ firstName: 'Omar', lastName: 'Ali' });
+    expect((await send('patch', `/contacts/${contact.id}`, key, { title: 'CTO' }).expect(200)).body).toMatchObject({ id: contact.id, title: 'CTO', firstName: 'Omar' });
+
+    // As in the app: a call logged without a due time happened already; a follow-up is open.
+    const call = (await send('post', '/activities', key, { kind: 'call', subject: 'Intro call', leadId: lead.id }).expect(201)).body;
+    expect(call).toMatchObject({ kind: 'call', subject: 'Intro call', leadId: lead.id, done: true });
+    const followUp = (await send('post', '/activities', key, { kind: 'task', subject: 'Send proposal', leadId: lead.id, dueAt: '2030-01-10T09:00:00Z' }).expect(201)).body;
+    expect(followUp).toMatchObject({ done: false, dueAt: '2030-01-10T09:00:00.000Z' });
+    const listed = (await v1(`/activities?leadId=${lead.id}`, key).expect(200)).body.data;
+    expect(listed.map((a: { id: string }) => a.id)).toEqual([call.id, followUp.id]);
+
+    await send('post', '/activities', key, { kind: 'call', subject: 'Linked to nothing' }).expect(400);
+  });
+
+  it("one company's key can't write into another company's data", async () => {
+    const lead = (await alice.agent.post('/crm/leads').set(WORKSPACE_HEADER, alice.workspace.id).send({ name: 'Private lead' }).expect(201)).body;
+    const project = (await alice.agent.post('/projects').set(WORKSPACE_HEADER, alice.workspace.id).send({ name: 'Private project' }).expect(201)).body;
+    const { key } = await createKey(bob, 'write');
+
+    await send('patch', `/leads/${lead.id}`, key, { status: 'qualified' }).expect(404);
+    await send('post', '/tasks', key, { projectId: project.id, title: 'Sneaky' }).expect(404);
+    // Linking to a record from another workspace is refused as not valid here.
+    await send('post', '/activities', key, { kind: 'note', subject: 'Sneaky', leadId: lead.id }).expect(400);
+
+    const still = (await alice.agent.get(`/crm/leads/${lead.id}`).set(WORKSPACE_HEADER, alice.workspace.id).expect(200)).body;
+    expect(still.status).toBe('new');
+    const sneaky = await withAdmin(async (db) => (await db.query("select count(*)::int as n from tasks where title = 'Sneaky' union all select count(*)::int from activities where subject = 'Sneaky'")).rows.map((r) => r.n));
+    expect(sneaky).toEqual([0, 0]);
   });
 });
 

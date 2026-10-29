@@ -8,6 +8,7 @@ import { AuthContext, CurrentAuth, CurrentWorkspace, Public, WorkspaceContext } 
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import {
+  activities,
   boardColumns,
   clientDocumentLines,
   clientDocuments,
@@ -42,6 +43,7 @@ const tasksQuery = pageQuery.extend({ projectId: z.uuid().optional(), completed:
 const syncQuery = pageQuery.extend({ updatedSince });
 const leadsQuery = syncQuery.extend({ status: z.enum(LEAD_STATUSES).optional() });
 const dealsQuery = syncQuery.extend({ status: z.enum(STAGE_KINDS).optional() });
+const activitiesQuery = syncQuery.extend({ dealId: z.uuid().optional(), companyId: z.uuid().optional(), contactId: z.uuid().optional(), leadId: z.uuid().optional() });
 const invoicesQuery = pageQuery.extend({ status: z.enum(CLIENT_INVOICE_STATUSES).optional(), companyId: z.uuid().optional() });
 
 /** Time entries may be asked for a year at a time. */
@@ -283,23 +285,7 @@ export class PublicApiV1Controller {
       return toPage(
         rows.map((r) => ({ ...r, id: r.task.id, createdAt: r.task.createdAt })),
         q.limit,
-        ({ task: t, column }) => ({
-          id: t.id,
-          projectId: t.projectId,
-          parentTaskId: t.parentTaskId,
-          column,
-          title: t.title,
-          description: t.description,
-          priority: t.priority,
-          startDate: t.startDate,
-          dueDate: t.dueDate,
-          estimateHours: t.estimateHours,
-          assigneeIds: assignees.get(t.id) ?? [],
-          completed: t.completedAt !== null,
-          completedAt: iso(t.completedAt),
-          createdAt: t.createdAt.toISOString(),
-          updatedAt: t.updatedAt.toISOString(),
-        }),
+        ({ task, column }) => taskOut(task, column, assignees.get(task.id) ?? []),
       );
     });
   }
@@ -347,21 +333,7 @@ export class PublicApiV1Controller {
         )
         .orderBy(...page.order)
         .limit(q.limit + 1);
-      return toPage(rows, q.limit, (c) => ({
-        id: c.id,
-        companyId: c.companyId,
-        firstName: c.firstName,
-        lastName: c.lastName,
-        email: c.email,
-        phone: c.phone,
-        title: c.title,
-        notes: c.notes,
-        ownerId: c.ownerId,
-        leadId: c.leadId,
-        custom: c.custom,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-      }));
+      return toPage(rows, q.limit, contactOut);
     });
   }
 
@@ -383,26 +355,7 @@ export class PublicApiV1Controller {
         )
         .orderBy(...page.order)
         .limit(q.limit + 1);
-      return toPage(rows, q.limit, (l) => ({
-        id: l.id,
-        name: l.name,
-        companyName: l.companyName,
-        email: l.email,
-        phone: l.phone,
-        source: l.source,
-        sourceDetail: l.sourceDetail,
-        status: l.status,
-        value: l.value,
-        currency: l.currency,
-        notes: l.notes,
-        ownerId: l.ownerId,
-        custom: l.custom,
-        convertedContactId: l.convertedContactId,
-        convertedCompanyId: l.convertedCompanyId,
-        convertedAt: iso(l.convertedAt),
-        createdAt: l.createdAt.toISOString(),
-        updatedAt: l.updatedAt.toISOString(),
-      }));
+      return toPage(rows, q.limit, leadOut);
     });
   }
 
@@ -454,6 +407,31 @@ export class PublicApiV1Controller {
     });
   }
 
+  /** CRM activities: calls, meetings, notes and follow-ups, on a deal, company, contact or lead. */
+  @Get('activities')
+  activities(@Query(new ZodPipe(activitiesQuery)) q: z.infer<typeof activitiesQuery>, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext) {
+    return this.run(auth, ws, async (tx) => {
+      const page = keyset(activities.createdAt, activities.id, q.cursor);
+      const rows = await tx
+        .select()
+        .from(activities)
+        .where(
+          where(
+            eq(activities.workspaceId, ws.id),
+            q.dealId ? eq(activities.dealId, q.dealId) : undefined,
+            q.companyId ? eq(activities.companyId, q.companyId) : undefined,
+            q.contactId ? eq(activities.contactId, q.contactId) : undefined,
+            q.leadId ? eq(activities.leadId, q.leadId) : undefined,
+            q.updatedSince ? gte(activities.updatedAt, new Date(q.updatedSince)) : undefined,
+            page.after,
+          ),
+        )
+        .orderBy(...page.order)
+        .limit(q.limit + 1);
+      return toPage(rows, q.limit, activityOut);
+    });
+  }
+
   /** Invoices to clients (not WorkHub's own bills to the workspace). */
   @Get('invoices')
   invoices(@Query(new ZodPipe(invoicesQuery)) q: z.infer<typeof invoicesQuery>, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext): Promise<Page<InvoiceDto>> {
@@ -496,6 +474,100 @@ export class PublicApiV1Controller {
       };
     });
   }
+}
+
+// Record shapes shared by the read and write endpoints.
+
+export function taskOut(t: typeof tasks.$inferSelect, column: string, assigneeIds: string[]) {
+  return {
+    id: t.id,
+    projectId: t.projectId,
+    parentTaskId: t.parentTaskId,
+    column,
+    title: t.title,
+    description: t.description,
+    priority: t.priority,
+    startDate: t.startDate,
+    dueDate: t.dueDate,
+    estimateHours: t.estimateHours,
+    assigneeIds,
+    completed: t.completedAt !== null,
+    completedAt: iso(t.completedAt),
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  };
+}
+
+export function contactOut(c: typeof contacts.$inferSelect) {
+  return {
+    id: c.id,
+    companyId: c.companyId,
+    firstName: c.firstName,
+    lastName: c.lastName,
+    email: c.email,
+    phone: c.phone,
+    title: c.title,
+    notes: c.notes,
+    ownerId: c.ownerId,
+    leadId: c.leadId,
+    custom: c.custom,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
+
+export function leadOut(l: typeof leads.$inferSelect) {
+  return {
+    id: l.id,
+    name: l.name,
+    companyName: l.companyName,
+    email: l.email,
+    phone: l.phone,
+    source: l.source,
+    sourceDetail: l.sourceDetail,
+    status: l.status,
+    value: l.value,
+    currency: l.currency,
+    notes: l.notes,
+    ownerId: l.ownerId,
+    custom: l.custom,
+    convertedContactId: l.convertedContactId,
+    convertedCompanyId: l.convertedCompanyId,
+    convertedAt: iso(l.convertedAt),
+    createdAt: l.createdAt.toISOString(),
+    updatedAt: l.updatedAt.toISOString(),
+  };
+}
+
+export function activityOut(a: typeof activities.$inferSelect) {
+  return {
+    id: a.id,
+    kind: a.kind,
+    subject: a.subject,
+    body: a.body,
+    dueAt: iso(a.dueAt),
+    done: a.doneAt !== null,
+    doneAt: iso(a.doneAt),
+    ownerId: a.ownerId,
+    dealId: a.dealId,
+    companyId: a.companyId,
+    contactId: a.contactId,
+    leadId: a.leadId,
+    createdBy: a.createdBy,
+    createdAt: a.createdAt.toISOString(),
+    updatedAt: a.updatedAt.toISOString(),
+  };
+}
+
+/** One task in the shape the API returns, or 404. */
+export async function loadTaskOut(tx: Tx, workspaceId: string, id: string) {
+  const [row] = await tx
+    .select({ task: tasks, column: boardColumns.name })
+    .from(tasks)
+    .innerJoin(boardColumns, eq(boardColumns.id, tasks.columnId))
+    .where(and(eq(tasks.id, id), eq(tasks.workspaceId, workspaceId), isNull(tasks.deletedAt)));
+  if (!row) throw new NotFoundException('Task not found');
+  return taskOut(row.task, row.column, (await assigneesOf(tx, [id])).get(id) ?? []);
 }
 
 type InvoiceDto = ReturnType<typeof invoiceDto>;

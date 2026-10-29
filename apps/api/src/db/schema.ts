@@ -18,6 +18,7 @@ import {
   type Industry,
   type ImportMode,
   type ImportProblem,
+  type PayrollColumn,
   type ClientDocKind,
   type ClientDocStatus,
   type Currency,
@@ -121,6 +122,10 @@ export const memberships = pgTable('memberships', {
   monthlyCost: numeric('monthly_cost', { precision: 14, scale: 2, mode: 'number' }),
   /** For a guest who is a client's contact: that client (sees its portal). */
   clientCompanyId: uuid('client_company_id'),
+  /** The number payroll software knows them by. */
+  employeeCode: text('employee_code'),
+  /** Their user number on the fingerprint device. */
+  deviceUserId: text('device_user_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -910,4 +915,16 @@ export const clientDocumentCounters = pgTable('client_document_counters', {
   workspaceId: uuid('workspace_id').notNull(),
   kind: text('kind').$type<ClientDocKind>().notNull(),
   lastNumber: integer('last_number').notNull().default(0),
+});
+
+// ---- Payroll export templates (phase 2) ----------------------------------------------------
+
+export const payrollTemplates = pgTable('payroll_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  name: text('name').notNull(),
+  columns: jsonb('columns').$type<PayrollColumn[]>().notNull(),
+  createdBy: uuid('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

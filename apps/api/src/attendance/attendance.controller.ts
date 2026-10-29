@@ -60,6 +60,7 @@ import {
   workspaceInfo,
 } from './attendance';
 import { monthReport, toCsv, toXlsx } from './export';
+import { exportColumns } from './payroll.controller';
 import { checkZone, normalizeIp } from './location';
 import { breaksOn, punchState, resolveWorkday } from './rules';
 import { addDays, zonedParts } from './zoned';
@@ -297,6 +298,7 @@ export class AttendanceController {
   async export(
     @Query('month') month: string | undefined,
     @Query('format') format: string | undefined,
+    @Query('template') template: string | undefined,
     @CurrentAuth() auth: AuthContext,
     @CurrentWorkspace() ws: WorkspaceContext,
     @Res() res: Response,
@@ -306,7 +308,8 @@ export class AttendanceController {
     const file = await this.db.withContext({ workspaceId: ws.id, userId: auth.userId }, async (tx) => {
       const info = await workspaceInfo(tx, ws.id);
       const report = await monthReport(tx, info, month);
-      return csv ? toCsv(report) : toXlsx(report, info);
+      const columns = await exportColumns(tx, ws.id, template);
+      return csv ? toCsv(report, columns) : toXlsx(report, info, columns);
     });
     res.setHeader('content-type', csv ? 'text/csv; charset=utf-8' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('content-disposition', `attachment; filename="attendance-${month}.${csv ? 'csv' : 'xlsx'}"`);

@@ -319,9 +319,12 @@ Still to do, and yours:
   - Managers and up only; isolated per workspace (tested).
 - [x] Client portal (#88): contacts at a client (free guests, invited from the client's page) see the projects shared with them (progress, open work by column, what's due), approved hours by month, and the quotes and invoices sent to them. Staff choose what's shared and can preview it.
 - [x] Calendar and timeline views (#87): tasks get an optional start date; a project's **Calendar** shows a month by due date (drag to another day), and **Timeline** is a Gantt chart by column (drag a bar to move it, or its ends to change the dates).
-- [x] 293 tests, plus 2 that run against Redis in CI
+- [x] Payroll exports and fingerprint devices (#90), in **Attendance → Payroll and devices**:
+  - Export layouts: three built in (full summary, payable days, hours), plus your own (choose, order and rename columns). Employee codes for payroll software.
+  - ZKTeco import from attlog.dat or a ZKTime/ZKBio CSV. Device users are matched to people (remembered next time); each workday's first and last punch become check-in and check-out, using the shift rules. Days recorded in the app are kept, and re-importing changes nothing.
+- [x] 297 tests, plus 2 that run against Redis in CI
 
-Next, buildable without paid accounts: payroll exports and ZKTeco import (#90), Urdu (#91). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+Next, buildable without paid accounts: Urdu (#91). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

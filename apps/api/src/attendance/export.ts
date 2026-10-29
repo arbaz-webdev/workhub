@@ -1,6 +1,6 @@
 // Monthly attendance for payroll: a Summary row per person and a Daily sheet, as
 // .xlsx, or the summary as CSV (with a BOM so Excel reads Urdu names correctly).
-import type { AttendanceDayDto } from '@workhub/shared';
+import { BUILT_IN_PAYROLL_TEMPLATES, type AttendanceDayDto, type PayrollColumn, type PayrollField } from '@workhub/shared';
 import { and, asc, eq, gte, inArray, lte, ne } from 'drizzle-orm';
 import type { Tx } from '../db/db.service';
 import { attendanceDays, memberships, teams, users } from '../db/schema';
@@ -14,6 +14,7 @@ const writeXlsxFile = require('write-excel-file/node') as typeof import('write-e
 
 export interface PersonMonth {
   userId: string;
+  employeeCode: string | null;
   name: string;
   email: string;
   team: string | null;
@@ -43,7 +44,7 @@ export async function monthReport(tx: Tx, ws: WorkspaceInfo, month: string, now 
   const today = zonedParts(now, ws.timezone).date;
   const to = lastOfMonth < today ? lastOfMonth : today;
   const people = await tx
-    .select({ userId: users.id, name: users.name, email: users.email, team: teams.name })
+    .select({ userId: users.id, employeeCode: memberships.employeeCode, name: users.name, email: users.email, team: teams.name })
     .from(memberships)
     .innerJoin(users, eq(users.id, memberships.userId))
     .leftJoin(teams, eq(teams.id, memberships.teamId))
@@ -135,28 +136,18 @@ export function summarize(days: AttendanceDayDto[]): MonthSummary {
   return s;
 }
 
-const SUMMARY_HEADERS = [
-  'Employee',
-  'Email',
-  'Team',
-  'Days counted',
-  'Present',
-  'Late',
-  'Half days',
-  'Absent',
-  'Paid leave',
-  'Unpaid leave',
-  'Holidays',
-  'Days off',
-  'Worked days off',
-  'Hours worked',
-  'Late minutes',
-  'Payable days',
-];
+/** The full summary, used when no template is chosen. */
+export const STANDARD_COLUMNS: PayrollColumn[] = BUILT_IN_PAYROLL_TEMPLATES.find((t) => t.key === 'standard')!.columns;
 
-function summaryRow(p: PersonMonth): (string | number)[] {
+/** One person's month as every payroll field. */
+function summaryValues(p: PersonMonth): Record<PayrollField, string | number> {
   const s = summarize(p.days);
-  return [p.name, p.email, p.team ?? '', s.counted, s.present, s.late, s.halfDays, s.absent, s.paidLeave, s.unpaidLeave, s.holidays, s.daysOff, s.workedDaysOff, s.workedHours, s.lateMinutes, s.payableDays];
+  return { employeeCode: p.employeeCode ?? '', name: p.name, email: p.email, team: p.team ?? '', ...s };
+}
+
+function summaryRow(p: PersonMonth, columns: PayrollColumn[]): (string | number)[] {
+  const values = summaryValues(p);
+  return columns.map((c) => values[c.field]);
 }
 
 const STATUS_TEXT: Record<AttendanceDayDto['status'], string> = {
@@ -175,9 +166,9 @@ function clock(iso: string | null, timeZone: string) {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone });
 }
 
-export async function toXlsx(report: Awaited<ReturnType<typeof monthReport>>, ws: WorkspaceInfo): Promise<Buffer> {
+export async function toXlsx(report: Awaited<ReturnType<typeof monthReport>>, ws: WorkspaceInfo, columns: PayrollColumn[] = STANDARD_COLUMNS): Promise<Buffer> {
   const bold = (value: string) => ({ value, fontWeight: 'bold' as const });
-  const summary = [SUMMARY_HEADERS.map(bold), ...report.people.map((p) => summaryRow(p).map((value) => ({ value })))];
+  const summary = [columns.map((c) => bold(c.header)), ...report.people.map((p) => summaryRow(p, columns).map((value) => ({ value })))];
   const daily = [
     ['Date', 'Employee', 'Status', 'Leave', 'Holiday', 'Shift', 'In', 'Out', 'Hours worked', 'Late minutes', 'Notes'].map(bold),
     ...report.people.flatMap((p) =>
@@ -199,7 +190,7 @@ export async function toXlsx(report: Awaited<ReturnType<typeof monthReport>>, ws
     ),
   ];
   const result = writeXlsxFile([
-    { data: summary, sheet: 'Summary', stickyRowsCount: 1, columns: [{ width: 24 }, { width: 28 }, { width: 16 }, ...Array(13).fill({ width: 12 })] },
+    { data: summary, sheet: 'Summary', stickyRowsCount: 1, columns: columns.map((c) => ({ width: c.field === 'email' ? 28 : c.field === 'name' ? 24 : c.field === 'team' ? 16 : Math.max(12, Math.min(24, c.header.length + 2)) })) },
     { data: daily, sheet: 'Daily', stickyRowsCount: 1, columns: [{ width: 12 }, { width: 24 }, { width: 12 }, { width: 16 }, { width: 20 }, { width: 16 }, { width: 8 }, { width: 8 }, { width: 12 }, { width: 12 }, { width: 30 }] },
   ]);
   return Buffer.from(await result.toBuffer());
@@ -212,8 +203,8 @@ function csvCell(v: string | number) {
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-export function toCsv(report: Awaited<ReturnType<typeof monthReport>>): Buffer {
-  const lines = [SUMMARY_HEADERS, ...report.people.map(summaryRow)].map((r) => r.map(csvCell).join(','));
+export function toCsv(report: Awaited<ReturnType<typeof monthReport>>, columns: PayrollColumn[] = STANDARD_COLUMNS): Buffer {
+  const lines = [columns.map((c) => c.header), ...report.people.map((p) => summaryRow(p, columns))].map((r) => r.map(csvCell).join(','));
   // A byte-order mark tells Excel the file is UTF-8 (otherwise Urdu names come out garbled).
   return Buffer.from(String.fromCharCode(0xfeff) + lines.join(String.fromCharCode(13, 10)) + String.fromCharCode(13, 10), 'utf8');
 }

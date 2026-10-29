@@ -34,10 +34,11 @@ export const FLAG_LABEL: Record<AttendanceFlag, string> = {
   offline: 'Synced later',
   half_day_leave: 'Half day leave',
   corrected: 'Corrected',
+  device: 'From the device',
 };
 
 /** Flags that are just information, not something to look into. */
-export const INFO_FLAGS = new Set<AttendanceFlag>(['day_off', 'offline', 'half_day_leave', 'corrected']);
+export const INFO_FLAGS = new Set<AttendanceFlag>(['day_off', 'offline', 'half_day_leave', 'corrected', 'device']);
 
 export const EVENT_LABEL: Record<AttendanceEventType, string> = {
   check_in: 'Checked in',

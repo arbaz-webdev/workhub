@@ -106,6 +106,37 @@ In **Attendance → Settings**:
 - **Offices**: places people can check in from. Use **Use where I am now** while standing in the office.`,
   },
   {
+    slug: 'payroll-and-fingerprint-devices',
+    title: 'Payroll exports and fingerprint devices',
+    summary: 'Export the month in the layout your payroll needs, and bring in attendance from a ZKTeco machine.',
+    category: 'Attendance and time',
+    keywords: 'payroll salary export excel csv payable days employee code zkteco biometric fingerprint face machine attlog zktime zkbio import',
+    body: `Both are in **Attendance → Payroll and devices**.
+
+## Exporting for payroll
+
+Choose the month and a layout, then **Excel** or **CSV**. Each person gets a row with their payable days (days counted, less absences, half days and unpaid leave), leave, lateness and hours. The Excel file also has a sheet of every day.
+
+Ready-made layouts:
+
+- **Full summary**: every count.
+- **Payable days**: what most payroll software needs for salaried staff.
+- **Hours**: for people paid by the hour.
+
+Admins can make their own layout under **Export layouts**: choose the columns, put them in order and rename the headings to match your payroll software. Give people an **employee code** under **Employee codes** so the export carries the number payroll knows them by.
+
+## Fingerprint and face machines (ZKTeco)
+
+1. On the machine, download the attendance log to a USB stick (it saves **attlog.dat**), or export a CSV from ZKTime or ZKBio.
+2. In **Import from a fingerprint device**, choose the file.
+3. WorkHub lists each user number on the machine. Match each to a person (or **Skip** it). People whose employee code or device number matches are filled in for you, and your matches are remembered.
+4. Choose **Import**.
+
+Each workday's first punch becomes the check-in and the last the check-out; punches in between are ignored. Night shifts are handled as they are for check-ins in the app. Days already recorded in WorkHub (checked in on a phone, or corrected) are kept as they are, and importing the same file again changes nothing. Imported days are marked **From the device**.
+
+> If dates come out wrong, check the machine's clock and date format: WorkHub reads year-first dates and day-first dates (as written in Pakistan).`,
+  },
+  {
     slug: 'leave-and-holidays',
     title: 'Leave and holidays',
     summary: 'Ask for leave, approve it, and keep public holidays out of attendance.',

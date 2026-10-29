@@ -701,6 +701,7 @@ export const ATTENDANCE_FLAGS = [
   'offline',
   'half_day_leave',
   'corrected',
+  'device',
 ] as const;
 export type AttendanceFlag = (typeof ATTENDANCE_FLAGS)[number];
 
@@ -2060,3 +2061,134 @@ export interface CompanyPortalDto {
 export const portalInviteSchema = z.object({ email: z.string().trim().toLowerCase().email('Enter an email address').max(254) });
 export type PortalInviteInput = z.infer<typeof portalInviteSchema>;
 export const portalVisibilitySchema = z.object({ visible: z.boolean() });
+
+// ---- Payroll export templates and device import (phase 2) ---------------------------------
+
+/** Columns a payroll export can have, from each person's month summary. */
+export const PAYROLL_FIELDS = {
+  employeeCode: 'Employee code',
+  name: 'Employee',
+  email: 'Email',
+  team: 'Team',
+  counted: 'Days counted',
+  present: 'Present',
+  late: 'Late',
+  halfDays: 'Half days',
+  absent: 'Absent',
+  paidLeave: 'Paid leave',
+  unpaidLeave: 'Unpaid leave',
+  holidays: 'Holidays',
+  daysOff: 'Days off',
+  workedDaysOff: 'Worked days off',
+  workedHours: 'Hours worked',
+  lateMinutes: 'Late minutes',
+  payableDays: 'Payable days',
+} as const;
+export type PayrollField = keyof typeof PAYROLL_FIELDS;
+const PAYROLL_FIELD_KEYS = Object.keys(PAYROLL_FIELDS) as [PayrollField, ...PayrollField[]];
+
+export interface PayrollColumn {
+  field: PayrollField;
+  header: string;
+}
+
+const col = (field: PayrollField, header: string = PAYROLL_FIELDS[field]): PayrollColumn => ({ field, header });
+
+/** Ready-made layouts. "standard" is the full summary the export always had. */
+export const BUILT_IN_PAYROLL_TEMPLATES: { key: string; name: string; description: string; columns: PayrollColumn[] }[] = [
+  {
+    key: 'standard',
+    name: 'Full summary',
+    description: 'Every count for the month, one row per person.',
+    // The columns the export has always had, in the same order; the employee code comes last.
+    columns: (['name', 'email', 'team', 'counted', 'present', 'late', 'halfDays', 'absent', 'paidLeave', 'unpaidLeave', 'holidays', 'daysOff', 'workedDaysOff', 'workedHours', 'lateMinutes', 'payableDays', 'employeeCode'] as PayrollField[]).map((f) => col(f)),
+  },
+  {
+    key: 'payable_days',
+    name: 'Payable days (salaried staff)',
+    description: 'What most payroll software needs: code, name, payable days and deductions.',
+    columns: [col('employeeCode'), col('name'), col('payableDays'), col('absent'), col('unpaidLeave'), col('halfDays'), col('late', 'Late days')],
+  },
+  {
+    key: 'hours',
+    name: 'Hours (hourly staff)',
+    description: 'Hours worked, including on days off, and lateness.',
+    columns: [col('employeeCode'), col('name'), col('workedHours'), col('workedDaysOff'), col('lateMinutes')],
+  },
+];
+
+export const payrollTemplateSchema = z.object({
+  name: name('a template name', 80),
+  columns: z
+    .array(z.object({ field: z.enum(PAYROLL_FIELD_KEYS), header: z.string().trim().min(1, 'Give each column a heading').max(60) }))
+    .min(1, 'Choose at least one column')
+    .max(30),
+});
+export type PayrollTemplateInput = z.infer<typeof payrollTemplateSchema>;
+
+export interface PayrollTemplateDto {
+  /** A built-in key, or the saved template's id. */
+  id: string;
+  name: string;
+  description: string | null;
+  columns: PayrollColumn[];
+  builtIn: boolean;
+}
+
+const code = z
+  .string()
+  .trim()
+  .max(40)
+  .regex(/^[A-Za-z0-9._/-]*$/, 'Use letters, numbers, dots, dashes or slashes')
+  .nullish()
+  .transform((v) => v || null);
+export const memberCodesSchema = z.object({ employeeCode: code, deviceUserId: code });
+export type MemberCodesInput = z.infer<typeof memberCodesSchema>;
+
+export interface MemberCodesDto {
+  userId: string;
+  name: string;
+  email: string;
+  employeeCode: string | null;
+  deviceUserId: string | null;
+}
+
+/** One person on the device, from the file being imported. */
+export interface DevicePersonDto {
+  deviceUserId: string;
+  /** The name in the file, when the export has one. */
+  name: string | null;
+  punches: number;
+  /** Who they are in WorkHub: matched by device number or employee code, or null. */
+  userId: string | null;
+}
+
+export interface DeviceImportPreviewDto {
+  format: 'attlog' | 'csv';
+  punches: number;
+  /** Local dates of the first and last punch. */
+  from: string | null;
+  to: string | null;
+  people: DevicePersonDto[];
+  /** Lines that couldn't be read, with the first few for checking. */
+  unreadable: number;
+  examples: string[];
+}
+
+export interface DeviceImportResultDto {
+  /** Workdays given a check-in (and a check-out where there were two or more punches). */
+  days: number;
+  /** Days with only one punch: checked in, no check-out. */
+  singlePunchDays: number;
+  /** Days already recorded in the app, left as they were. */
+  keptExisting: number;
+  /** Days this file (or an earlier import of it) already added. */
+  alreadyImported: number;
+  /** Punches from device users not matched to anyone. */
+  unmatchedPunches: number;
+  /** Punches in the future, ignored. */
+  futurePunches: number;
+}
+
+/** Device user number → WorkHub person (or null to skip them), sent with the file. */
+export const deviceMappingSchema = z.record(z.string().max(40), uuid.nullable());

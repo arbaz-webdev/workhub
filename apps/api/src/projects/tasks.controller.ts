@@ -152,7 +152,11 @@ export class TasksController {
       const { task, project } = await loadTask(tx, ws, auth.userId, id);
       const fields: Partial<TaskRow> = {};
       const changes: Record<string, unknown> = {};
-      for (const key of ['title', 'description', 'priority', 'dueDate', 'estimateHours'] as const) {
+      // A start after the due date can't be drawn on a timeline.
+      const start = body.startDate !== undefined ? body.startDate : task.startDate;
+      const due = body.dueDate !== undefined ? body.dueDate : task.dueDate;
+      if (start && due && start > due) throw new BadRequestException('The start date must be on or before the due date.');
+      for (const key of ['title', 'description', 'priority', 'startDate', 'dueDate', 'estimateHours'] as const) {
         if (body[key] !== undefined && body[key] !== task[key]) {
           (fields as Record<string, unknown>)[key] = body[key];
           if (key !== 'description') changes[key] = body[key];
@@ -674,6 +678,7 @@ export class TasksController {
             columnId: task.columnId,
             title: task.title,
             priority: task.priority,
+            startDate: task.startDate,
             dueDate: task.dueDate,
             estimateHours: task.estimateHours,
             actualHours: 0, // filled in below from this subtask's own time entries

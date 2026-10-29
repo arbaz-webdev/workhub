@@ -75,6 +75,7 @@ interface CardRow extends Record<string, unknown> {
   column_id: string;
   title: string;
   priority: Priority;
+  start_date: string | null;
   due_date: string | null;
   estimate_hours: string | null;
   actual_minutes: number;
@@ -92,7 +93,7 @@ interface CardRow extends Record<string, unknown> {
 /** Board cards (top-level tasks) for a project, or just one when `taskId` is given. */
 export async function cardsFor(tx: Tx, projectId: string, taskId?: string): Promise<TaskCardDto[]> {
   const result = await tx.execute<CardRow>(sql`
-    select t.id, t.column_id, t.title, t.priority, t.due_date::text as due_date, t.estimate_hours,
+    select t.id, t.column_id, t.title, t.priority, t.start_date::text as start_date, t.due_date::text as due_date, t.estimate_hours,
            t.position, t.completed_at,
            coalesce((select array_agg(a.user_id::text order by a.user_id) from task_assignees a where a.task_id = t.id), '{}') as assignee_ids,
            coalesce((select array_agg(l.label_id::text order by l.label_id) from task_labels l where l.task_id = t.id), '{}') as label_ids,
@@ -114,6 +115,7 @@ export async function cardsFor(tx: Tx, projectId: string, taskId?: string): Prom
     columnId: r.column_id,
     title: r.title,
     priority: r.priority,
+    startDate: r.start_date,
     dueDate: r.due_date,
     estimateHours: r.estimate_hours === null ? null : Number(r.estimate_hours),
     actualHours: Math.round((r.actual_minutes / 60) * 100) / 100,

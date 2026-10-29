@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Board } from '@/components/board/board';
+import { CalendarView } from '@/components/board/calendar-view';
+import { TimelineView } from '@/components/board/timeline-view';
 import { ListView } from '@/components/board/list-view';
 import { hoursText } from '@/components/board/style';
 import { TaskPanel } from '@/components/board/task-panel';
@@ -12,6 +14,9 @@ import { useBoardEvents } from '@/components/board/use-board-events';
 import { Alert, btn } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
+
+const VIEWS = ['board', 'list', 'calendar', 'timeline'] as const;
+type View = (typeof VIEWS)[number];
 
 export default function ProjectBoardPage() {
   return (
@@ -35,7 +40,7 @@ function ProjectBoard() {
   const [taskVersion, setTaskVersion] = useState(0);
   const [notice, setNotice] = useState<string>();
   const openTaskId = params.get('task');
-  const view = params.get('view') === 'list' ? 'list' : 'board';
+  const view = VIEWS.find((v) => v === params.get('view')) ?? 'board';
 
   const load = useCallback(() => {
     api<BoardDto>(`/projects/${id}`)
@@ -81,10 +86,10 @@ function ProjectBoard() {
 
   // The URL holds the view and the open task, so both survive reloads and can be shared.
   const go = useCallback(
-    (next: { view?: 'board' | 'list'; task?: string | null }) => {
+    (next: { view?: View; task?: string | null }) => {
       const q = new URLSearchParams();
       const v = next.view ?? view;
-      if (v === 'list') q.set('view', 'list');
+      if (v !== 'board') q.set('view', v);
       const t = next.task === undefined ? openTaskId : next.task;
       if (t) q.set('task', t);
       const qs = q.toString();
@@ -98,6 +103,17 @@ function ProjectBoard() {
     setError(m);
     setTimeout(() => setError(undefined), 6000);
   }, []);
+
+  /** Moves a task's dates from the calendar or timeline: shown at once, saved, and put back if it fails. */
+  async function reschedule(task: TaskCardDto, startDate: string | null, dueDate: string | null) {
+    setTasks((all) => ({ ...all, [task.id]: { ...task, startDate, dueDate } }));
+    try {
+      await api(`/tasks/${task.id}`, { method: 'PATCH', body: { startDate, dueDate } });
+    } catch (err) {
+      setTasks((all) => ({ ...all, [task.id]: task }));
+      showError(err instanceof ApiError ? err.message : 'Could not move the task.');
+    }
+  }
 
   async function saveAsTemplate() {
     const name = window.prompt('Name this template', board ? `${board.project.name} template` : '');
@@ -166,7 +182,7 @@ function ProjectBoard() {
         ) : null}
         <div className="ml-auto flex items-center gap-3">
           <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 text-sm" role="group" aria-label="View">
-            {(['board', 'list'] as const).map((v) => (
+            {VIEWS.map((v) => (
               <button
                 key={v}
                 type="button"
@@ -174,7 +190,7 @@ function ProjectBoard() {
                 onClick={() => go({ view: v })}
                 className={`rounded-md px-3 py-1 font-medium ${view === v ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
               >
-                {v === 'board' ? 'Board' : 'List'}
+                {{ board: 'Board', list: 'List', calendar: 'Calendar', timeline: 'Timeline' }[v]}
               </button>
             ))}
           </div>
@@ -206,6 +222,10 @@ function ProjectBoard() {
 
       {view === 'list' ? (
         <ListView board={board} tasks={tasks} onOpen={openTask} onError={showError} />
+      ) : view === 'calendar' ? (
+        <CalendarView board={board} tasks={tasks} onOpen={openTask} onReschedule={(t, s, d) => void reschedule(t, s, d)} />
+      ) : view === 'timeline' ? (
+        <TimelineView board={board} tasks={tasks} onOpen={openTask} onReschedule={(t, s, d) => void reschedule(t, s, d)} />
       ) : (
         <Board
           board={board}

@@ -3,6 +3,7 @@
 import type { BoardDto, TaskCardDto } from '@workhub/shared';
 import { useRef, useState } from 'react';
 import { btn } from '@/components/ui';
+import { useLocale, useT } from '@/lib/i18n';
 import { addDays, dayMonth, daysBetween, mondayOf, span } from './dates';
 import { localToday } from './style';
 
@@ -32,6 +33,8 @@ function dragged(d: Drag): { from: string; to: string } {
 /** A Gantt chart of the board: each task from its start to its due date, by column. */
 export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
   const today = localToday();
+  const tr = useT();
+  const locale = useLocale();
   const [start, setStart] = useState(addDays(mondayOf(today), -7));
   const [drag, setDrag] = useState<Drag | null>(null);
   const moved = useRef(false);
@@ -89,32 +92,36 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
     <div className="pe-4 lg:pe-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="me-auto text-lg font-semibold">
-          {dayMonth(start)} – {dayMonth(end)}
+          {dayMonth(start, locale)} – {dayMonth(end, locale)}
         </h2>
-        <button type="button" className={btn.secondary} onClick={() => setStart(addDays(start, -14))} aria-label="Two weeks earlier">
-          ‹
+        <button type="button" className={btn.secondary} onClick={() => setStart(addDays(start, -14))} aria-label={tr('board.timeline.earlier')}>
+          <span className="inline-block rtl:rotate-180" aria-hidden="true">
+            ‹
+          </span>
         </button>
         <button type="button" className={btn.secondary} onClick={() => setStart(addDays(mondayOf(today), -7))}>
-          Today
+          {tr('time.today')}
         </button>
-        <button type="button" className={btn.secondary} onClick={() => setStart(addDays(start, 14))} aria-label="Two weeks later">
-          ›
+        <button type="button" className={btn.secondary} onClick={() => setStart(addDays(start, 14))} aria-label={tr('board.timeline.later')}>
+          <span className="inline-block rtl:rotate-180" aria-hidden="true">
+            ›
+          </span>
         </button>
       </div>
 
       {groups.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">No tasks have dates yet. Open a task and give it a start and due date to see it here.</p>
+        <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">{tr('board.timeline.empty')}</p>
       ) : (
         <div dir="ltr" className="overflow-x-auto rounded-2xl border border-gray-200 bg-white" onPointerMove={move} onPointerUp={finish} onPointerCancel={() => setDrag(null)}>
           <div style={{ width: 224 + DAYS * DAY }} className="relative select-none">
             {/* Dates */}
             <div className="sticky top-0 z-10 flex border-b border-gray-200 bg-gray-50 text-[11px] text-gray-500">
-              <div className="sticky start-0 z-10 w-56 shrink-0 border-e border-gray-200 bg-gray-50 px-3 py-2 font-medium">Task</div>
+              <div className="sticky start-0 z-10 w-56 shrink-0 border-e border-gray-200 bg-gray-50 px-3 py-2 font-medium">{tr('board.timeline.task')}</div>
               {days.map((d) => {
                 const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
                 return (
                   <div key={d} style={{ width: DAY }} className={`shrink-0 py-1 text-center ${dow === 0 || dow === 6 ? 'bg-gray-100' : ''} ${d === today ? 'font-semibold text-brand-700' : ''}`}>
-                    {dow === 1 && <div className="truncate">{dayMonth(d)}</div>}
+                    {dow === 1 && <div className="truncate">{dayMonth(d, locale)}</div>}
                     {dow !== 1 && <div>&nbsp;</div>}
                     <div>{Number(d.slice(8))}</div>
                   </div>
@@ -146,7 +153,7 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
                           <div
                             role="button"
                             tabIndex={0}
-                            aria-label={`${t.title}: ${dayMonth(s.from)} to ${dayMonth(s.to)}`}
+                            aria-label={tr('board.timeline.bar', { title: t.title, from: dayMonth(s.from, locale), to: dayMonth(s.to, locale) })}
                             onKeyDown={(e) => e.key === 'Enter' && onOpen(t.id)}
                             onPointerDown={(e) => begin(e, t, 'move')}
                             onClick={() => !moved.current && onOpen(t.id)}
@@ -175,10 +182,10 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
 
       {unscheduled.length > 0 && (
         <p className="mt-3 text-sm text-gray-500">
-          {unscheduled.length} open {unscheduled.length === 1 ? 'task has' : 'tasks have'} no dates and {unscheduled.length === 1 ? 'isn’t' : 'aren’t'} shown.
+          {unscheduled.length === 1 ? tr('board.timeline.undated.one') : tr('board.timeline.undated.many', { n: unscheduled.length })}
         </p>
       )}
-      {board.canEdit && <p className="mt-1 text-xs text-gray-400">Drag a bar to move it, or its ends to change the start or due date.</p>}
+      {board.canEdit && <p className="mt-1 text-xs text-gray-400">{tr('board.timeline.hint')}</p>}
     </div>
   );
 }

@@ -21,6 +21,7 @@ import type { BoardDto, ColumnDto, LabelDto, PersonDto, TaskCardDto } from '@wor
 import { useMemo, useState } from 'react';
 import { btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
 import { CardBody, TaskCard } from './task-card';
 
@@ -55,6 +56,7 @@ interface Props {
 
 export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, reload }: Props) {
   const api = useWorkspaceApi();
+  const t = useT();
   const labels = useMemo(() => new Map<string, LabelDto>(board.labels.map((l) => [l.id, l])), [board.labels]);
   const people = useMemo(() => new Map<string, PersonDto>(board.people.map((p) => [p.id, p])), [board.people]);
   const baseOrder = useMemo(() => orderFrom(board.columns, tasks), [board.columns, tasks]);
@@ -89,18 +91,18 @@ export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, rel
     return tasks[key]?.title ?? board.columns.find((c) => c.id === key)?.name ?? '';
   };
   const placeOf = (id: UniqueIdentifier | undefined) => {
-    if (id === undefined) return 'nowhere';
+    if (id === undefined) return t('board.dnd.nowhere');
     const key = String(id);
     const column = board.columns.find((c) => c.id === key || (dragOrder ?? baseOrder)[c.id]?.includes(key));
-    return column ? `the ${column.name} column` : 'the board';
+    return column ? t('board.dnd.column', { name: column.name }) : t('board.dnd.board');
   };
   const announcements = {
-    onDragStart: ({ active }: { active: { id: UniqueIdentifier } }) => `Picked up ${nameOf(active.id)}. Use the arrow keys to move it, Space to drop, Escape to cancel.`,
+    onDragStart: ({ active }: { active: { id: UniqueIdentifier } }) => t('board.dnd.start', { name: nameOf(active.id) }),
     onDragOver: ({ active, over }: { active: { id: UniqueIdentifier }; over: { id: UniqueIdentifier } | null }) =>
-      `${nameOf(active.id)} is now in ${placeOf(over?.id)}.`,
+      t('board.dnd.over', { name: nameOf(active.id), place: placeOf(over?.id) }),
     onDragEnd: ({ active, over }: { active: { id: UniqueIdentifier }; over: { id: UniqueIdentifier } | null }) =>
-      over ? `Dropped ${nameOf(active.id)} in ${placeOf(over.id)}.` : `${nameOf(active.id)} was not moved.`,
-    onDragCancel: ({ active }: { active: { id: UniqueIdentifier } }) => `Cancelled. ${nameOf(active.id)} is back where it was.`,
+      over ? t('board.dnd.end', { name: nameOf(active.id), place: placeOf(over.id) }) : t('board.dnd.notMoved', { name: nameOf(active.id) }),
+    onDragCancel: ({ active }: { active: { id: UniqueIdentifier } }) => t('board.dnd.cancel', { name: nameOf(active.id) }),
   };
 
   const sensors = useSensors(
@@ -160,7 +162,7 @@ export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, rel
       const saved = await api<TaskCardDto>(`/tasks/${id}/move`, { method: 'POST', body: { columnId: column, index } });
       setTasks((cur) => ({ ...cur, [id]: saved }));
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not move the task.');
+      onError(err instanceof ApiError ? err.message : t('board.moveFailed'));
       reload();
     }
   }
@@ -174,8 +176,7 @@ export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, rel
       accessibility={{
         announcements,
         screenReaderInstructions: {
-          draggable:
-            'Press Enter to open this task. To move it, press Space, use the arrow keys (left and right change column), then press Space to drop or Escape to cancel.',
+          draggable: t('board.dnd.instructions'),
         },
       }}
       onDragStart={onDragStart}
@@ -199,7 +200,7 @@ export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, rel
             onOpen={onOpen}
             onError={onError}
             setColumns={setColumns}
-            onCreated={(t) => setTasks((cur) => ({ ...cur, [t.id]: t }))}
+            onCreated={(task) => setTasks((cur) => ({ ...cur, [task.id]: task }))}
           />
         ))}
         {board.canManage && <AddColumn projectId={board.project.id} setColumns={setColumns} onError={onError} />}
@@ -239,6 +240,7 @@ function Column({
   onCreated: (t: TaskCardDto) => void;
 }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -253,7 +255,7 @@ function Column({
       onCreated(await api<TaskCardDto>(`/projects/${board.project.id}/tasks`, { method: 'POST', body: { title, columnId: column.id } }));
       form.reset();
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not add the task.');
+      onError(err instanceof ApiError ? err.message : t('board.addTaskFailed'));
     }
   }
 
@@ -270,16 +272,16 @@ function Column({
       );
       setEditing(false);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not save the column.');
+      onError(err instanceof ApiError ? err.message : t('board.saveColumnFailed'));
     }
   }
 
   async function deleteColumn() {
-    if (!window.confirm(`Delete the "${column.name}" column?`)) return;
+    if (!window.confirm(t('board.confirmDeleteColumn', { name: column.name }))) return;
     try {
       setColumns(await api<ColumnDto[]>(`/projects/${board.project.id}/columns/${column.id}`, { method: 'DELETE' }));
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not delete the column.');
+      onError(err instanceof ApiError ? err.message : t('board.deleteColumnFailed'));
     }
   }
 
@@ -290,25 +292,25 @@ function Column({
     >
       {editing ? (
         <form onSubmit={saveColumn} className="mb-2 space-y-2 rounded-xl bg-white p-2">
-          <input name="name" defaultValue={column.name} aria-label="Column name" className={input} autoFocus />
+          <input name="name" defaultValue={column.name} aria-label={t('board.columnName')} className={input} autoFocus />
           <input
             name="wipLimit"
             type="number"
             min="1"
             defaultValue={column.wipLimit ?? ''}
-            placeholder="Work-in-progress limit (optional)"
-            aria-label="Work-in-progress limit"
+            placeholder={t('board.wipOptional')}
+            aria-label={t('board.wip')}
             className={input}
           />
           <div className="flex gap-2">
             <button type="submit" className={btn.primary}>
-              Save
+              {t('common.save')}
             </button>
             <button type="button" onClick={() => setEditing(false)} className={btn.ghost}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="button" onClick={deleteColumn} className={`${btn.danger} ms-auto`}>
-              Delete
+              {t('board.delete')}
             </button>
           </div>
         </form>
@@ -322,7 +324,7 @@ function Column({
           {board.canManage && (
             <button
               onClick={() => setEditing(true)}
-              aria-label={`Edit column ${column.name}`}
+              aria-label={t('board.editColumn', { name: column.name })}
               className="ms-auto rounded px-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
             >
               ⋯
@@ -347,8 +349,8 @@ function Column({
             <input
               name="title"
               autoFocus
-              placeholder="Task title, then Enter"
-              aria-label={`New task in ${column.name}`}
+              placeholder={t('board.taskPlaceholder')}
+              aria-label={t('board.newTaskIn', { name: column.name })}
               onKeyDown={(e) => e.key === 'Escape' && setAdding(false)}
               onBlur={(e) => !e.currentTarget.value && setAdding(false)}
               className={input}
@@ -359,7 +361,7 @@ function Column({
             onClick={() => setAdding(true)}
             className="mt-2 rounded-lg px-2 py-1.5 text-start text-sm text-gray-500 hover:bg-gray-200 hover:text-gray-800"
           >
-            + Add task
+            {t('board.addTask')}
           </button>
         ))}
     </section>
@@ -368,6 +370,7 @@ function Column({
 
 function AddColumn({ projectId, setColumns, onError }: { projectId: string; setColumns: (c: ColumnDto[]) => void; onError: (m: string) => void }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -378,19 +381,19 @@ function AddColumn({ projectId, setColumns, onError }: { projectId: string; setC
       setColumns(await api<ColumnDto[]>(`/projects/${projectId}/columns`, { method: 'POST', body: { name } }));
       setOpen(false);
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not add the column.');
+      onError(err instanceof ApiError ? err.message : t('board.addColumnFailed'));
     }
   }
 
   return open ? (
     <form onSubmit={onSubmit} className="w-72 shrink-0 rounded-2xl bg-gray-100 p-2">
-      <input name="name" autoFocus placeholder="Column name" aria-label="New column name" className={input} />
+      <input name="name" autoFocus placeholder={t('board.columnName')} aria-label={t('board.newColumnName')} className={input} />
       <div className="mt-2 flex gap-2">
         <button type="submit" className={btn.primary}>
-          Add column
+          {t('board.addColumnSubmit')}
         </button>
         <button type="button" onClick={() => setOpen(false)} className={btn.ghost}>
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -399,7 +402,7 @@ function AddColumn({ projectId, setColumns, onError }: { projectId: string; setC
       onClick={() => setOpen(true)}
       className="w-72 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 px-3 py-3 text-start text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
     >
-      + Add column
+      {t('board.addColumn')}
     </button>
   );
 }

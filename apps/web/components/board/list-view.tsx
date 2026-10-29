@@ -4,8 +4,9 @@ import { PRIORITIES, type BoardDto, type BulkTasksInput, type LabelDto, type Per
 import { useEffect, useMemo, useState } from 'react';
 import { btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
-import { dueLabel, hoursText, initials, LABEL_STYLES, localToday, PRIORITY_LABEL, PRIORITY_STYLE } from './style';
+import { dueLabel, hoursText, initials, LABEL_STYLES, localToday, PRIORITY_STYLE } from './style';
 
 type DueFilter = 'any' | 'overdue' | 'today' | 'week' | 'none';
 
@@ -37,6 +38,8 @@ interface Props {
 /** Every top-level card in one sortable, filterable table, with bulk edit for the selected rows. */
 export function ListView({ board, tasks, onOpen, onError }: Props) {
   const api = useWorkspaceApi();
+  const tr = useT();
+  const locale = useLocale();
   const { me } = useWorkspace();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -99,14 +102,14 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
 
   async function bulk(action: BulkTasksInput['action']) {
     if (selected.size === 0) return;
-    if (action.type === 'delete' && !window.confirm(`Delete ${selected.size} task${selected.size === 1 ? '' : 's'}? This can't be undone.`)) return;
+    if (action.type === 'delete' && !window.confirm(selected.size === 1 ? tr('list.confirmDelete.one') : tr('list.confirmDelete.many', { n: selected.size }))) return;
     setBusy(true);
     try {
       // The board's live events bring the changes in, for this tab and everyone else's.
       await api(`/projects/${board.project.id}/tasks/bulk`, { method: 'POST', body: { taskIds: [...selected], action } });
       if (action.type === 'delete') setSelected(new Set());
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not update the selected tasks.');
+      onError(err instanceof ApiError ? err.message : tr('list.bulkFailed'));
     } finally {
       setBusy(false);
     }
@@ -116,55 +119,55 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
 
   return (
     <div className={`pe-4 lg:pe-8 ${selected.size > 0 ? 'pb-28' : ''}`}>
-      <div className="mb-3 flex flex-wrap items-center gap-2" role="search" aria-label="Filter tasks">
+      <div className="mb-3 flex flex-wrap items-center gap-2" role="search" aria-label={tr('list.filter')}>
         <input
           type="search"
           value={filters.search}
           onChange={(e) => set('search', e.target.value)}
-          placeholder="Search tasks"
-          aria-label="Search tasks"
+          placeholder={tr('list.search')}
+          aria-label={tr('list.search')}
           className={`${input} max-w-56 !py-1.5`}
         />
-        <select aria-label="Column" value={filters.columnId} onChange={(e) => set('columnId', e.target.value)} className={select}>
-          <option value="">All columns</option>
+        <select aria-label={tr('list.column')} value={filters.columnId} onChange={(e) => set('columnId', e.target.value)} className={select}>
+          <option value="">{tr('list.allColumns')}</option>
           {board.columns.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
-        <select aria-label="Assignee" value={filters.assignee} onChange={(e) => set('assignee', e.target.value)} className={select}>
-          <option value="">Anyone</option>
-          <option value="me">Assigned to me</option>
-          <option value="none">Unassigned</option>
+        <select aria-label={tr('list.assignee')} value={filters.assignee} onChange={(e) => set('assignee', e.target.value)} className={select}>
+          <option value="">{tr('list.anyone')}</option>
+          <option value="me">{tr('list.assignedToMe')}</option>
+          <option value="none">{tr('list.unassigned')}</option>
           {board.people.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
           ))}
         </select>
-        <select aria-label="Label" value={filters.labelId} onChange={(e) => set('labelId', e.target.value)} className={select}>
-          <option value="">Any label</option>
+        <select aria-label={tr('list.label')} value={filters.labelId} onChange={(e) => set('labelId', e.target.value)} className={select}>
+          <option value="">{tr('list.anyLabel')}</option>
           {board.labels.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
             </option>
           ))}
         </select>
-        <select aria-label="Priority" value={filters.priority} onChange={(e) => set('priority', e.target.value as Filters['priority'])} className={select}>
-          <option value="">Any priority</option>
+        <select aria-label={tr('list.priority')} value={filters.priority} onChange={(e) => set('priority', e.target.value as Filters['priority'])} className={select}>
+          <option value="">{tr('list.anyPriority')}</option>
           {[...PRIORITIES].reverse().map((p) => (
             <option key={p} value={p}>
-              {PRIORITY_LABEL[p]}
+              {tr(`priority.${p}`)}
             </option>
           ))}
         </select>
-        <select aria-label="Due date" value={filters.due} onChange={(e) => set('due', e.target.value as DueFilter)} className={select}>
-          <option value="any">Any due date</option>
-          <option value="overdue">Overdue</option>
-          <option value="today">Due today</option>
-          <option value="week">Due in the next 7 days</option>
-          <option value="none">No due date</option>
+        <select aria-label={tr('list.dueDate')} value={filters.due} onChange={(e) => set('due', e.target.value as DueFilter)} className={select}>
+          <option value="any">{tr('list.anyDue')}</option>
+          <option value="overdue">{tr('myWork.group.overdue')}</option>
+          <option value="today">{tr('list.dueToday')}</option>
+          <option value="week">{tr('list.dueWeek')}</option>
+          <option value="none">{tr('myWork.group.none')}</option>
         </select>
         <label className="flex items-center gap-1.5 text-sm text-gray-700">
           <input type="checkbox" checked={filters.showCompleted} onChange={(e) => set('showCompleted', e.target.checked)} />
@@ -172,7 +175,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
         </label>
         {filtered && (
           <button type="button" className={btn.ghost} onClick={() => setFilters(NO_FILTERS)}>
-            Clear filters
+            {tr('list.clearFilters')}
           </button>
         )}
       </div>
@@ -187,29 +190,29 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
                 <th className="w-10 px-3 py-2">
                   <input
                     type="checkbox"
-                    aria-label="Select all shown tasks"
+                    aria-label={tr('list.selectAll')}
                     checked={allSelected}
                     onChange={() => setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)))}
                   />
                 </th>
               )}
-              <th className="px-3 py-2">Task</th>
-              <th className="px-3 py-2">Column</th>
-              <th className="px-3 py-2">Assignees</th>
-              <th className="px-3 py-2">Priority</th>
-              <th className="px-3 py-2">Due</th>
-              <th className="px-3 py-2 text-end">Hours</th>
+              <th className="px-3 py-2">{tr('board.timeline.task')}</th>
+              <th className="px-3 py-2">{tr('list.column')}</th>
+              <th className="px-3 py-2">{tr('list.assignees')}</th>
+              <th className="px-3 py-2">{tr('list.priority')}</th>
+              <th className="px-3 py-2">{tr('list.due')}</th>
+              <th className="px-3 py-2 text-end">{tr('list.hours')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((t) => {
-              const due = t.dueDate ? dueLabel(t.dueDate, t.completed) : null;
+              const due = t.dueDate ? dueLabel(t.dueDate, t.completed, locale) : null;
               const over = t.estimateHours !== null && t.actualHours > t.estimateHours;
               return (
                 <tr key={t.id} className={`border-b border-gray-100 last:border-0 ${selected.has(t.id) ? 'bg-brand-50/60' : 'hover:bg-gray-50'}`}>
                   {board.canEdit && (
                     <td className="px-3 py-2">
-                      <input type="checkbox" aria-label={`Select ${t.title}`} checked={selected.has(t.id)} onChange={() => toggle(t.id)} />
+                      <input type="checkbox" aria-label={tr('list.select', { title: t.title })} checked={selected.has(t.id)} onChange={() => toggle(t.id)} />
                     </td>
                   )}
                   <td className="px-3 py-2">
@@ -259,7 +262,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
                       <span className="text-gray-400">—</span>
                     ) : (
                       <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${PRIORITY_STYLE[t.priority] ?? 'text-gray-600'}`}>
-                        {PRIORITY_LABEL[t.priority]}
+                        {tr(`priority.${t.priority}`)}
                       </span>
                     )}
                   </td>
@@ -267,8 +270,8 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
                   <td className={`px-3 py-2 text-end tabular-nums ${over ? 'font-medium text-red-600' : 'text-gray-600'}`}>
                     {t.actualHours > 0 || t.estimateHours !== null ? (
                       <>
-                        {hoursText(t.actualHours)}
-                        {t.estimateHours !== null && <span className="text-gray-400"> / {hoursText(t.estimateHours)}</span>}
+                        {hoursText(t.actualHours, locale)}
+                        {t.estimateHours !== null && <span className="text-gray-400"> / {hoursText(t.estimateHours, locale)}</span>}
                       </>
                     ) : (
                       <span className="text-gray-400">—</span>
@@ -280,7 +283,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-3 py-10 text-center text-sm text-gray-500">
-                  {filtered ? 'No tasks match these filters.' : 'No open tasks yet.'}
+                  {filtered ? tr('list.noMatch') : tr('list.noTasks')}
                 </td>
               </tr>
             )}
@@ -288,8 +291,8 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
         </table>
       </div>
       <p className="mt-2 text-xs text-gray-500" role="status">
-        {rows.length} task{rows.length === 1 ? '' : 's'} shown
-        {selected.size > 0 && ` · ${selected.size} selected`}
+        {rows.length === 1 ? tr('list.shown.one') : tr('list.shown.many', { n: rows.length })}
+        {selected.size > 0 && ` · ${tr('list.selected', { n: selected.size })}`}
       </p>
     </div>
   );
@@ -308,6 +311,7 @@ function BulkBar({
   onAction: (action: BulkTasksInput['action']) => void;
   onClear: () => void;
 }) {
+  const tr = useT();
   const [due, setDue] = useState('');
   const select = 'rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm disabled:opacity-60';
   // Each menu fires once on choice, then resets to its placeholder.
@@ -321,44 +325,44 @@ function BulkBar({
     <div
       className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-5xl flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm shadow-lg lg:start-64"
       role="toolbar"
-      aria-label="Bulk edit"
+      aria-label={tr('list.bulk')}
     >
-      <span className="font-medium text-brand-800">{count} selected</span>
-      <select aria-label="Move to column" disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (columnId) => ({ type: 'move', columnId }))}>
-        <option value="">Move to…</option>
+      <span className="font-medium text-brand-800">{tr('list.selected', { n: count })}</span>
+      <select aria-label={tr('list.moveToColumn')} disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (columnId) => ({ type: 'move', columnId }))}>
+        <option value="">{tr('list.moveTo')}</option>
         {board.columns.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>
         ))}
       </select>
-      <select aria-label="Assign to" disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (userId) => ({ type: 'assign', userId }))}>
-        <option value="">Assign…</option>
+      <select aria-label={tr('list.assignTo')} disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (userId) => ({ type: 'assign', userId }))}>
+        <option value="">{tr('list.assign')}</option>
         {board.people.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}
           </option>
         ))}
       </select>
-      <select aria-label="Unassign" disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (userId) => ({ type: 'unassign', userId }))}>
-        <option value="">Unassign…</option>
+      <select aria-label={tr('list.unassign')} disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (userId) => ({ type: 'unassign', userId }))}>
+        <option value="">{tr('list.unassignMenu')}</option>
         {board.people.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}
           </option>
         ))}
       </select>
-      <select aria-label="Set priority" disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (p) => ({ type: 'priority', priority: p as Priority }))}>
-        <option value="">Priority…</option>
+      <select aria-label={tr('list.setPriority')} disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (p) => ({ type: 'priority', priority: p as Priority }))}>
+        <option value="">{tr('list.priorityMenu')}</option>
         {[...PRIORITIES].reverse().map((p) => (
           <option key={p} value={p}>
-            {PRIORITY_LABEL[p]}
+            {tr(`priority.${p}`)}
           </option>
         ))}
       </select>
       {board.labels.length > 0 && (
-        <select aria-label="Add label" disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (labelId) => ({ type: 'label', labelId }))}>
-          <option value="">Add label…</option>
+        <select aria-label={tr('list.addLabel')} disabled={busy} className={select} defaultValue="" onChange={(e) => pick(e, (labelId) => ({ type: 'label', labelId }))}>
+          <option value="">{tr('list.addLabelMenu')}</option>
           {board.labels.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
@@ -367,25 +371,25 @@ function BulkBar({
         </select>
       )}
       <span className="flex items-center gap-1">
-        <input type="date" aria-label="Due date" value={due} onChange={(e) => setDue(e.target.value)} className={select} />
+        <input type="date" aria-label={tr('list.dueDate')} value={due} onChange={(e) => setDue(e.target.value)} className={select} />
         <button type="button" disabled={busy || !due} className={btn.ghost} onClick={() => onAction({ type: 'due', dueDate: due })}>
-          Set due
+          {tr('list.setDue')}
         </button>
         <button type="button" disabled={busy} className={btn.ghost} onClick={() => onAction({ type: 'due', dueDate: null })}>
-          Clear due
+          {tr('list.clearDue')}
         </button>
       </span>
       <button type="button" disabled={busy} className={btn.ghost} onClick={() => onAction({ type: 'complete', completed: true })}>
-        Mark done
+        {tr('list.markDone')}
       </button>
       <button type="button" disabled={busy} className={btn.ghost} onClick={() => onAction({ type: 'complete', completed: false })}>
-        Reopen
+        {tr('list.reopen')}
       </button>
       <button type="button" disabled={busy} className={btn.danger} onClick={() => onAction({ type: 'delete' })}>
-        Delete
+        {tr('board.delete')}
       </button>
       <button type="button" className={`${btn.ghost} ms-auto`} onClick={onClear}>
-        Clear selection
+        {tr('list.clearSelection')}
       </button>
     </div>
   );

@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { AuthCard } from '@/components/form';
 import { api, ApiError } from '@/lib/api';
+import { useT } from '@/lib/i18n';
 
 type State = { status: 'checking' } | { status: 'done' } | { status: 'failed'; message: string };
 
 export function VerifyEmail({ token }: { token?: string }) {
+  const t = useT();
   const [state, setState] = useState<State>(
-    token ? { status: 'checking' } : { status: 'failed', message: 'This link is missing its code.' },
+    token ? { status: 'checking' } : { status: 'failed', message: t('verifyEmail.missing') },
   );
   const sent = useRef(false);
 
@@ -22,33 +24,37 @@ export function VerifyEmail({ token }: { token?: string }) {
       .catch((err) =>
         setState({
           status: 'failed',
-          message: err instanceof ApiError ? err.message : 'Could not reach the server. Please try again.',
+          message: err instanceof ApiError ? err.message : t('auth.network'),
         }),
       );
-  }, [token]);
+  }, [token, t]);
 
   const title =
-    state.status === 'checking' ? 'Confirming your email…' : state.status === 'done' ? 'Email confirmed' : 'Link not valid';
+    state.status === 'checking' ? t('verifyEmail.checking') : state.status === 'done' ? t('verifyEmail.done') : t('verifyEmail.invalid');
+
+  const [resendBefore, resendAfter] = t('verifyEmail.resendHint').split('{button}');
 
   return (
     <AuthCard
       title={title}
       subtitle={
         state.status === 'done'
-          ? 'Thanks. Your account is fully set up.'
+          ? t('verifyEmail.doneHint')
           : state.status === 'failed'
             ? state.message
-            : 'This takes a second.'
+            : t('common.aSecond')
       }
       footer={
         <Link href="/app" className="font-medium text-brand-700 hover:underline">
-          Go to your workspace
+          {t('verifyEmail.go')}
         </Link>
       }
     >
       {state.status === 'failed' && (
         <p className="text-sm text-gray-600">
-          Sign in and use <strong>Resend email</strong> on the banner at the top of your workspace to get a new link.
+          {resendBefore}
+          <strong>{t('verify.resend')}</strong>
+          {resendAfter}
         </p>
       )}
     </AuthCard>

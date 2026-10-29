@@ -310,6 +310,17 @@ Still to do, and yours:
 - Paid launch (#80): open a Safepay or PayFast merchant account (#66), set `BILLING_ENFORCED`, real emails (Resend), the seller and bank details, and have a lawyer write the terms of service and privacy policy.
 - An outside uptime monitor for alerts (see `docs/STAGING.md`).
 
+## Phase 2 status
+
+- [x] Quotes and invoices to clients (#89), in **CRM → Quotes & invoices**:
+  - Numbered per workspace (Q-0001, INV-0001), any currency, an optional tax line, printable or saved as PDF.
+  - Statuses: draft, sent, accepted or declined, paid, void. An accepted quote becomes an invoice in one click.
+  - **Bill hours**: a client's approved, billable, not-yet-billed timesheet hours become one line per project, at its hourly rate. Hours are billed once; voiding or deleting the invoice frees them.
+  - Managers and up only; isolated per workspace (tested).
+- [x] 289 tests, plus 2 that run against Redis in CI
+
+Next, buildable without paid accounts: client portal (#88), Gantt and calendar (#87), payroll exports and ZKTeco import (#90), Urdu (#91). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+
 ## Key decisions so far
 
 - Market: Pakistan first, then international (Gulf, then global)

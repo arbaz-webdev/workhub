@@ -101,6 +101,7 @@ export const WORKSPACE_HEADER = 'x-workspace-id';
 // ---- Workspace settings ----------------------------------------------------
 
 export const CURRENCIES = ['PKR', 'USD', 'AED', 'SAR', 'GBP', 'EUR'] as const;
+export type Currency = (typeof CURRENCIES)[number];
 /** ISO weekday numbers: 1 = Monday … 7 = Sunday. */
 export const WEEKDAYS = [
   { value: 1, label: 'Mon' },
@@ -1895,3 +1896,123 @@ export const incidentUpdateSchema = z.object({
   body: z.string().trim().min(3, 'Say what’s changed').max(2000),
 });
 export type IncidentUpdateInput = z.infer<typeof incidentUpdateSchema>;
+
+// ---- Quotes and invoices to clients (phase 2) ------------------------------------------------
+
+export const CLIENT_DOC_KINDS = ['quote', 'invoice'] as const;
+export type ClientDocKind = (typeof CLIENT_DOC_KINDS)[number];
+export const QUOTE_STATUSES = ['draft', 'sent', 'accepted', 'declined'] as const;
+export const CLIENT_INVOICE_STATUSES = ['draft', 'sent', 'paid', 'void'] as const;
+export type ClientDocStatus = (typeof QUOTE_STATUSES)[number] | (typeof CLIENT_INVOICE_STATUSES)[number];
+export const CLIENT_DOC_STATUS_LABELS: Record<ClientDocStatus, string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  accepted: 'Accepted',
+  declined: 'Declined',
+  paid: 'Paid',
+  void: 'Void',
+};
+
+const money2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Line amounts, subtotal, tax and total, rounded to paisa/cents. */
+export function documentTotals(lines: { quantity: number; unitPrice: number }[], taxRate: number) {
+  const amounts = lines.map((l) => money2(l.quantity * l.unitPrice));
+  const subtotal = money2(amounts.reduce((t, a) => t + a, 0));
+  const taxAmount = money2((subtotal * taxRate) / 100);
+  return { amounts, subtotal, taxAmount, total: money2(subtotal + taxAmount) };
+}
+
+export const clientDocLineSchema = z.object({
+  description: z.string().trim().min(1, 'Describe the line').max(500),
+  // Stored to two decimals, so the arithmetic uses the same numbers the document shows.
+  quantity: z.number().positive('Quantity must be more than 0').max(100_000).transform(money2),
+  unitPrice: z.number().min(0, 'Price can’t be negative').max(1_000_000_000).transform(money2),
+  projectId: uuid.nullish().transform((v) => v ?? null),
+});
+export type ClientDocLineInput = z.infer<typeof clientDocLineSchema>;
+
+const clientDocFields = {
+  companyId: uuid,
+  currency: z.enum(CURRENCIES),
+  issueDate: calendarDate,
+  dueDate: calendarDate.nullish().transform((v) => v ?? null),
+  notes: z.string().trim().max(2000).nullish().transform((v) => v || null),
+  taxLabel: z.string().trim().max(80).nullish().transform((v) => v || null),
+  taxRate: z.number().min(0).max(100),
+};
+
+export const clientDocSchema = z.object({
+  kind: z.enum(CLIENT_DOC_KINDS),
+  ...clientDocFields,
+  lines: z.array(clientDocLineSchema).min(1, 'Add at least one line').max(100),
+});
+export type ClientDocInput = z.infer<typeof clientDocSchema>;
+
+/** Editing a draft replaces everything but its kind and number. */
+export const updateClientDocSchema = z.object({ ...clientDocFields, lines: z.array(clientDocLineSchema).min(1, 'Add at least one line').max(100) });
+export type UpdateClientDocInput = z.infer<typeof updateClientDocSchema>;
+
+export const clientDocStatusSchema = z.object({ status: z.enum(['draft', 'sent', 'accepted', 'declined', 'paid', 'void']) });
+
+export const invoiceFromHoursSchema = z
+  .object({
+    ...clientDocFields,
+    from: calendarDate,
+    to: calendarDate,
+    projectIds: z.array(uuid).min(1, 'Choose at least one project').max(50),
+  })
+  .refine((v) => v.from <= v.to, { message: 'The start must be before the end', path: ['to'] });
+export type InvoiceFromHoursInput = z.infer<typeof invoiceFromHoursSchema>;
+
+export interface ClientDocLineDto {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  projectId: string | null;
+}
+
+export interface ClientDocSummaryDto {
+  id: string;
+  kind: ClientDocKind;
+  number: string;
+  status: ClientDocStatus;
+  company: { id: string; name: string };
+  currency: Currency;
+  issueDate: string;
+  dueDate: string | null;
+  total: number;
+  /** An invoice sent and unpaid past its due date, or a quote past its validity. */
+  overdue: boolean;
+}
+
+export interface ClientDocumentDto extends ClientDocSummaryDto {
+  notes: string | null;
+  taxLabel: string | null;
+  taxRate: number;
+  subtotal: number;
+  taxAmount: number;
+  lines: ClientDocLineDto[];
+  /** The quote this invoice came from, or the invoice made from this quote. */
+  quoteId: string | null;
+  invoiceId: string | null;
+  sentAt: string | null;
+  paidAt: string | null;
+  /** Hours on this invoice, from timesheets. */
+  billedHours: number;
+  client: { name: string; email: string | null; address: string | null; city: string | null; country: string | null };
+  /** The workspace, as the sender. */
+  from: { name: string; ntn: string | null; address: string | null; email: string | null };
+}
+
+export interface UnbilledProjectDto {
+  projectId: string;
+  projectName: string;
+  hours: number;
+  entries: number;
+  rate: number | null;
+  currency: Currency | null;
+  amount: number | null;
+}

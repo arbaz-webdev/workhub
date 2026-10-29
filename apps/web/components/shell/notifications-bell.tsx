@@ -4,6 +4,7 @@ import type { NotificationDto, NotificationsResponse } from '@workhub/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { timeAgo } from '@/components/ui';
+import { useLocale, useT } from '@/lib/i18n';
 import { useInboxEvents } from '@/lib/inbox';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -11,6 +12,8 @@ const POLL_MS = 60_000;
 
 export function NotificationsBell() {
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const { me } = useWorkspace();
   const router = useRouter();
   const [data, setData] = useState<NotificationsResponse>({ items: [], unreadCount: 0 });
@@ -70,7 +73,7 @@ export function NotificationsBell() {
     load();
   }
 
-  const label = data.unreadCount > 0 ? `Notifications, ${data.unreadCount} unread` : 'Notifications';
+  const label = data.unreadCount > 0 ? t('notifications.unreadLabel', { n: data.unreadCount }) : t('notifications.title');
 
   return (
     <div className="relative">
@@ -100,19 +103,19 @@ export function NotificationsBell() {
         <div
           ref={panel}
           role="region"
-          aria-label="Notifications"
+          aria-label={t('notifications.title')}
           className="absolute end-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <p className="text-sm font-semibold">Notifications</p>
+            <p className="text-sm font-semibold">{t('notifications.title')}</p>
             {data.unreadCount > 0 && (
               <button onClick={markAll} className="text-xs font-medium text-brand-700 hover:underline">
-                Mark all as read
+                {t('notifications.markAll')}
               </button>
             )}
           </div>
           {data.items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-500">You&apos;re all caught up.</p>
+            <p className="px-4 py-8 text-center text-sm text-gray-500">{t('notifications.empty')}</p>
           ) : (
             <ul className="max-h-96 overflow-y-auto">
               {data.items.map((n) => (
@@ -128,10 +131,10 @@ export function NotificationsBell() {
                     <span className="min-w-0">
                       <span className={`block text-sm ${n.read ? 'text-gray-600' : 'font-medium text-gray-900'}`}>
                         {n.title}
-                        {!n.read && <span className="sr-only"> (unread)</span>}
+                        {!n.read && <span className="sr-only">{t('notifications.unread')}</span>}
                       </span>
                       {n.body && <span className="block truncate text-xs text-gray-500">{n.body}</span>}
-                      <span className="block text-xs text-gray-400">{timeAgo(n.createdAt)}</span>
+                      <span className="block text-xs text-gray-400">{timeAgo(n.createdAt, locale)}</span>
                     </span>
                   </button>
                 </li>

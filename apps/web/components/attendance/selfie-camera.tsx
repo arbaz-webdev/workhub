@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { btn } from '@/components/ui';
+import { useT } from '@/lib/i18n';
 
 const MAX_WIDTH = 640;
 
@@ -20,6 +21,7 @@ async function toJpeg(source: CanvasImageSource, width: number, height: number):
  * no camera, an in-app browser), it falls back to the phone's own camera picker.
  */
 export function SelfieCamera({ title, onCapture, onCancel }: { title: string; onCapture: (photo: Blob) => void; onCancel: () => void }) {
+  const t = useT();
   const video = useRef<HTMLVideoElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream>();
@@ -36,7 +38,7 @@ export function SelfieCamera({ title, onCapture, onCancel }: { title: string; on
     navigator.mediaDevices
       .getUserMedia({ video: { facingMode: 'user', width: { ideal: 960 } }, audio: false })
       .then((s) => {
-        if (cancelled) return s.getTracks().forEach((t) => t.stop());
+        if (cancelled) return s.getTracks().forEach((track) => track.stop());
         live = s;
         setStream(s);
         if (video.current) video.current.srcObject = s;
@@ -44,7 +46,7 @@ export function SelfieCamera({ title, onCapture, onCancel }: { title: string; on
       .catch(() => setFailed(true));
     return () => {
       cancelled = true;
-      live?.getTracks().forEach((t) => t.stop());
+      live?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -86,26 +88,26 @@ export function SelfieCamera({ title, onCapture, onCancel }: { title: string; on
           <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-900">
             {/* Mirrored like a mirror; the saved photo isn't. */}
             <video ref={video} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
-            {!stream && <p className="absolute inset-0 grid place-items-center text-sm text-gray-300">Starting the camera…</p>}
+            {!stream && <p className="absolute inset-0 grid place-items-center text-sm text-gray-300">{t('selfie.starting')}</p>}
           </div>
         ) : (
           <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
-            The camera isn&apos;t available here. Allow camera access in your browser, or take a photo with your phone&apos;s camera instead.
+            {t('selfie.unavailable')}
           </p>
         )}
-        <p className="mt-2 text-xs text-gray-500">Your selfie is kept for 30 days. You and your managers can see it.</p>
+        <p className="mt-2 text-xs text-gray-500">{t('selfie.kept')}</p>
         <div className="mt-4 flex gap-2">
           {!failed ? (
             <button type="button" className={`${btn.primary} flex-1`} disabled={!stream || busy} onClick={snap}>
-              Take photo
+              {t('selfie.take')}
             </button>
           ) : (
             <button type="button" className={`${btn.primary} flex-1`} disabled={busy} onClick={() => picker.current?.click()}>
-              Open camera
+              {t('selfie.open')}
             </button>
           )}
           <button type="button" className={btn.ghost} onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
         <input ref={picker} type="file" accept="image/*" capture="user" hidden onChange={(e) => fromFile(e.target.files?.[0])} />

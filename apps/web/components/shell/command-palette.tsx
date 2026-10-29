@@ -9,7 +9,7 @@ import { NAV } from './nav';
 
 interface Command {
   id: string;
-  group: 'Go to' | 'Actions' | 'Projects' | 'Teams' | 'People' | 'Switch workspace';
+  group: 'goTo' | 'actions' | 'projects' | 'teams' | 'people' | 'workspaces';
   label: string;
   hint?: string;
   keywords?: string;
@@ -65,30 +65,30 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = NAV.filter((n) => !n.minRole || hasRole(workspace.role, n.minRole)).map((n) => ({
       id: `nav:${n.href}`,
-      group: 'Go to',
+      group: 'goTo',
       label: t(n.labelKey),
       // English words still find it.
       keywords: `${n.label} ${n.keywords ?? ''}`,
       run: go(n.href),
     }));
     if (hasRole(workspace.role, 'admin')) {
-      list.push({ id: 'act:invite', group: 'Actions', label: 'Invite people', keywords: 'add teammate email link', run: go('/app/people#invite') });
+      list.push({ id: 'act:invite', group: 'actions', label: t('palette.invite'), keywords: 'invite people add teammate email link', run: go('/app/people#invite') });
     }
     if (hasRole(workspace.role, 'manager')) {
-      list.push({ id: 'act:team', group: 'Actions', label: 'Create a team', keywords: 'new department', run: go('/app/teams') });
+      list.push({ id: 'act:team', group: 'actions', label: t('palette.createTeam'), keywords: 'create a team new department', run: go('/app/teams') });
     }
     for (const p of projects) {
-      list.push({ id: `project:${p.id}`, group: 'Projects', label: p.name, hint: p.client?.name, keywords: p.client?.name, run: go(`/app/projects/${p.id}`) });
+      list.push({ id: `project:${p.id}`, group: 'projects', label: p.name, hint: p.client?.name, keywords: p.client?.name, run: go(`/app/projects/${p.id}`) });
     }
-    for (const t of teams) list.push({ id: `team:${t.id}`, group: 'Teams', label: t.name, run: go('/app/teams') });
+    for (const team of teams) list.push({ id: `team:${team.id}`, group: 'teams', label: team.name, run: go('/app/teams') });
     for (const p of people) {
-      list.push({ id: `person:${p.userId}`, group: 'People', label: p.name, hint: p.email, keywords: p.email, run: go('/app/people') });
+      list.push({ id: `person:${p.userId}`, group: 'people', label: p.name, hint: p.email, keywords: p.email, run: go('/app/people') });
     }
     for (const w of me.workspaces) {
       if (w.id === workspace.id) continue;
       list.push({
         id: `ws:${w.id}`,
-        group: 'Switch workspace',
+        group: 'workspaces',
         label: w.name,
         run: () => {
           close();
@@ -98,11 +98,11 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       });
     }
     return list;
-  }, [workspace, me.workspaces, projects, teams, people, go, close, switchTo, router]);
+  }, [workspace, me.workspaces, projects, teams, people, go, close, switchTo, router, t]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return commands.filter((c) => c.group === 'Go to' || c.group === 'Actions');
+    if (!q) return commands.filter((c) => c.group === 'goTo' || c.group === 'actions');
     return commands.filter((c) => `${c.label} ${c.keywords ?? ''} ${c.hint ?? ''}`.toLowerCase().includes(q)).slice(0, 30);
   }, [commands, query]);
 
@@ -132,7 +132,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Search"
+        aria-label={t('shell.search')}
         onMouseDown={(e) => e.stopPropagation()}
         className="w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"
       >
@@ -146,11 +146,11 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           aria-controls={listId}
           aria-activedescendant={results[active] ? `${listId}-${active}` : undefined}
           aria-autocomplete="list"
-          placeholder="Search pages, people, teams…"
+          placeholder={t('palette.placeholder')}
           className="w-full border-b border-gray-100 px-4 py-3.5 text-sm outline-none"
         />
-        <ul id={listId} role="listbox" aria-label="Results" className="max-h-80 overflow-y-auto py-2">
-          {results.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-500">No results</li>}
+        <ul id={listId} role="listbox" aria-label={t('palette.results')} className="max-h-80 overflow-y-auto py-2">
+          {results.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-500">{t('palette.none')}</li>}
           {results.map((c, i) => {
             const header = c.group !== lastGroup ? c.group : null;
             lastGroup = c.group;
@@ -158,7 +158,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               <li key={c.id} role="presentation">
                 {header && (
                   <p role="presentation" className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    {header}
+                    {t(`palette.group.${header}`)}
                   </p>
                 )}
                 <div
@@ -179,7 +179,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           })}
         </ul>
         <p className="border-t border-gray-100 px-4 py-2 text-xs text-gray-400">
-          ↑↓ to move · Enter to open · Esc to close
+          {t('palette.help')}
         </p>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import type { ChatMessageDto, PersonDto, TaskRefDto } from '@workhub/shared';
 import { Fragment, useLayoutEffect, useRef } from 'react';
+import { useLocale, useT } from '@/lib/i18n';
 import { dayHeading } from './bits';
 import type { Draft } from './composer';
 import { MessageItem } from './message-item';
@@ -42,6 +43,8 @@ export function MessageList({
   /** A message to scroll to and flash (from a notification link). */
   highlight?: string | null;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const scroller = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
   const olderFrom = useRef<{ height: number; top: number } | null>(null);
@@ -68,8 +71,8 @@ export function MessageList({
     if (!target) return;
     target.scrollIntoView({ block: 'center' });
     target.classList.add('ring-2', 'ring-amber-300');
-    const t = setTimeout(() => target.classList.remove('ring-2', 'ring-amber-300'), 2500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => target.classList.remove('ring-2', 'ring-amber-300'), 2500);
+    return () => clearTimeout(timer);
   }, [highlight, messages.length]);
 
   async function older() {
@@ -91,7 +94,7 @@ export function MessageList({
       {hasMore && (
         <div className="mb-2 text-center">
           <button type="button" onClick={() => void older()} className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
-            Load earlier messages
+            {t('inbox.loadEarlier')}
           </button>
         </div>
       )}
@@ -106,7 +109,7 @@ export function MessageList({
             {newDay && (
               <div className="my-3 flex items-center gap-3 text-xs font-medium text-gray-500" role="separator">
                 <span className="h-px flex-1 bg-gray-200" />
-                {dayHeading(m.createdAt)}
+                {dayHeading(m.createdAt, locale)}
                 <span className="h-px flex-1 bg-gray-200" />
               </div>
             )}

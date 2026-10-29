@@ -28,6 +28,8 @@ import { MyWorkController } from './projects/my-work.controller';
 import { ProjectsController } from './projects/projects.controller';
 import { TasksController } from './projects/tasks.controller';
 import { RealtimeService } from './realtime/realtime.service';
+import { StatusController } from './status/status.controller';
+import { StatusService } from './status/status.service';
 import { ReportsController } from './reports/reports.controller';
 import { StorageService } from './storage/storage.service';
 import { TeamsController } from './teams/teams.controller';
@@ -72,9 +74,10 @@ class HealthController {
     ReportsController,
     BillingController,
     PlatformController,
+    StatusController,
     OnboardingController,
     WaitlistController,
   ],
-  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
+  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })
 export class AppModule {}

@@ -2,6 +2,7 @@
 
 import {
   ANNUAL_MONTHS_CHARGED,
+  planCost,
   billingDetailsSchema,
   hasRole,
   PLAN_INFO,
@@ -105,6 +106,7 @@ export default function BillingPage() {
             </p>
           </div>
           <p className="mt-1 text-sm text-gray-600">{statusLine}</p>
+          {sub.discount && <p className="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">{sub.discount.label}</p>}
           {sub.seatLimit !== null && (
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100" role="meter" aria-valuenow={sub.seatsUsed} aria-valuemin={0} aria-valuemax={sub.seatLimit} aria-label="People on the plan">
               <div className={`h-full ${sub.seatsUsed >= sub.seatLimit ? 'bg-red-500' : 'bg-brand-500'}`} style={{ width: `${Math.min(100, (sub.seatsUsed / sub.seatLimit) * 100)}%` }} />
@@ -128,8 +130,9 @@ export default function BillingPage() {
               {(['free', 'starter', 'business'] as PlanKey[]).map((key) => {
                 const p = PLAN_INFO[key];
                 const current = sub.plan === key && sub.status !== 'trial';
-                const perMonth = cycle === 'annual' ? (p.pricePerUser * ANNUAL_MONTHS_CHARGED) / 12 : p.pricePerUser;
-                const estimate = p.pricePerUser * Math.max(1, sub.seatsUsed) * (cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1);
+                const off = sub.discount?.percent ?? 0;
+                const perMonth = planCost(p.pricePerUser, cycle, 1, off).net / (cycle === 'annual' ? 12 : 1);
+                const estimate = planCost(p.pricePerUser, cycle, Math.max(1, sub.seatsUsed), off).net;
                 return (
                   <div key={key} className={`flex flex-col rounded-2xl border bg-white p-5 shadow-sm ${key === 'business' ? 'border-brand-500 ring-1 ring-brand-100' : 'border-gray-200'}`}>
                     <h3 className="font-semibold">{p.name}</h3>
@@ -137,6 +140,7 @@ export default function BillingPage() {
                       {p.pricePerUser === 0 ? 'Free' : pkr(Math.round(perMonth))}
                       {p.pricePerUser > 0 && <span className="text-sm font-normal text-gray-500"> per person / month</span>}
                     </p>
+                    {off > 0 && p.pricePerUser > 0 && <p className="text-xs text-gray-500 line-through">{pkr(Math.round(planCost(p.pricePerUser, cycle, 1).net / (cycle === 'annual' ? 12 : 1)))}</p>}
                     <p className="mt-2 flex-1 text-sm text-gray-600">{p.blurb}</p>
                     {key === 'free' ? (
                       <p className="mt-4 text-sm text-gray-500">{current ? 'Your plan' : 'Up to 10 people'}</p>

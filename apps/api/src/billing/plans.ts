@@ -2,10 +2,11 @@
 // All run inside the caller's tenant transaction.
 import { ForbiddenException } from '@nestjs/common';
 import {
-  ANNUAL_MONTHS_CHARGED,
+  FOUNDING_DISCOUNT,
   PLAN_INFO,
   PROVINCE_LABELS,
   TRIAL_DAYS,
+  planCost,
   type BillingCycle,
   type InvoiceDto,
   type PaidPlan,
@@ -18,7 +19,7 @@ import { and, eq, ne, sql } from 'drizzle-orm';
 import { addDays } from '../attendance/zoned';
 import { config } from '../config';
 import type { Tx } from '../db/db.service';
-import { invoices, memberships, subscriptions } from '../db/schema';
+import { invoices, memberships, subscriptions, workspaces } from '../db/schema';
 
 /** Days after a paid period ends before the workspace drops to Free. */
 export const GRACE_DAYS = 7;
@@ -26,13 +27,21 @@ export const GRACE_DAYS = 7;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
 export type InvoiceRow = typeof invoices.$inferSelect;
 
+/** The founding-customer discount, for a workspace created at `createdAt` (none after the offer ends). */
+export function foundingTerms(createdAt: Date): { discountPercent: number; discountLabel: string | null } {
+  return createdAt.toISOString().slice(0, 10) < config.foundingOfferEnds
+    ? { discountPercent: FOUNDING_DISCOUNT.percent, discountLabel: FOUNDING_DISCOUNT.label }
+    : { discountPercent: 0, discountLabel: null };
+}
+
 export async function loadSubscription(tx: Tx, workspaceId: string): Promise<SubscriptionRow> {
   const [row] = await tx.select().from(subscriptions).where(eq(subscriptions.workspaceId, workspaceId));
   if (row) return row;
   // Workspaces made before billing existed, or by a path that didn't add one.
+  const [w] = await tx.select({ createdAt: workspaces.createdAt }).from(workspaces).where(eq(workspaces.id, workspaceId));
   const [created] = await tx
     .insert(subscriptions)
-    .values({ workspaceId, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) })
+    .values({ workspaceId, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000), ...foundingTerms(w?.createdAt ?? new Date()) })
     .onConflictDoNothing()
     .returning();
   return created ?? (await tx.select().from(subscriptions).where(eq(subscriptions.workspaceId, workspaceId)))[0]!;
@@ -94,6 +103,7 @@ export async function subscriptionDto(tx: Tx, workspaceId: string): Promise<Subs
     seatLimit: enforced ? PLAN_INFO[plan].maxUsers : null,
     features: [...PLAN_INFO[plan].features],
     enforced,
+    discount: sub.discountPercent > 0 ? { percent: sub.discountPercent, label: sub.discountLabel ?? `${sub.discountPercent}% off` } : null,
     details: { billingName: sub.billingName, billingEmail: sub.billingEmail, ntn: sub.ntn, province: sub.province, address: sub.address },
     payments: {
       online: config.paymentsDriver !== 'none',
@@ -111,20 +121,31 @@ export function salesTax(province: Province): { rate: number; label: string | nu
 
 const money = (n: number) => Math.round(n * 100) / 100;
 
-/** What a plan costs for `seats` people over one billing period starting `start`. */
-export function priceFor(plan: PaidPlan, cycle: BillingCycle, seats: number, province: Province, start: string) {
+/** What a plan costs for `seats` people over one billing period starting `start`, after the workspace's discount. */
+export function priceFor(plan: PaidPlan, cycle: BillingCycle, seats: number, province: Province, start: string, discountPercent = 0) {
   const unitPrice = PLAN_INFO[plan].pricePerUser;
   const months = cycle === 'annual' ? 12 : 1;
-  const charged = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
-  const subtotal = money(unitPrice * seats * charged);
+  const cost = planCost(unitPrice, cycle, seats, discountPercent);
   const tax = salesTax(province);
-  const taxAmount = money((subtotal * tax.rate) / 100);
+  // Tax is charged on what the customer pays, after the discount.
+  const taxAmount = money((cost.net * tax.rate) / 100);
   const [y, m, d] = start.split('-').map(Number) as [number, number, number];
   // The same day next month (or year), less a day; clamped for months without that day.
   const endMonth = new Date(Date.UTC(y, m - 1 + months, 1));
   const lastDay = new Date(Date.UTC(endMonth.getUTCFullYear(), endMonth.getUTCMonth() + 1, 0)).getUTCDate();
   const periodEnd = addDays(`${endMonth.toISOString().slice(0, 7)}-${String(Math.min(d, lastDay)).padStart(2, '0')}`, -1);
-  return { unitPrice, months, subtotal, taxRate: tax.rate, taxLabel: tax.label, taxAmount, total: money(subtotal + taxAmount), periodEnd };
+  return {
+    unitPrice,
+    months,
+    subtotal: cost.gross,
+    discountPercent,
+    discountAmount: cost.discount,
+    taxRate: tax.rate,
+    taxLabel: tax.label,
+    taxAmount,
+    total: money(cost.net + taxAmount),
+    periodEnd,
+  };
 }
 
 export function invoiceDto(r: InvoiceRow): InvoiceDto {
@@ -138,6 +159,9 @@ export function invoiceDto(r: InvoiceRow): InvoiceDto {
     unitPrice: r.unitPrice,
     months: r.months,
     subtotal: r.subtotal,
+    discountLabel: r.discountLabel,
+    discountPercent: r.discountPercent,
+    discountAmount: r.discountAmount,
     taxLabel: r.taxLabel,
     taxRate: r.taxRate,
     taxAmount: r.taxAmount,

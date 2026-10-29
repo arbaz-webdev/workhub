@@ -1666,6 +1666,19 @@ export const TRIAL_DAYS = 14;
 /** An annual plan costs this many months: two months free. */
 export const ANNUAL_MONTHS_CHARGED = 10;
 
+/** Paid plans start on this day; workspaces made before it are founding customers. */
+export const LAUNCH_DATE = '2027-05-03';
+export const FOUNDING_DISCOUNT = { percent: 40, label: 'Founding customer: 40% off for life' } as const;
+
+const roundMoney = (n: number) => Math.round(n * 100) / 100;
+
+/** A plan's cost for one billing period before tax: the list price, the discount, and what's left. */
+export function planCost(pricePerUser: number, cycle: BillingCycle, seats: number, discountPercent = 0) {
+  const gross = roundMoney(pricePerUser * seats * (cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1));
+  const discount = roundMoney((gross * discountPercent) / 100);
+  return { gross, discount, net: roundMoney(gross - discount) };
+}
+
 export const BILLING_CYCLES = ['monthly', 'annual'] as const;
 export type BillingCycle = (typeof BILLING_CYCLES)[number];
 
@@ -1723,6 +1736,8 @@ export interface SubscriptionDto {
   /** False while billing isn't switched on (the free beta): everything is open. */
   enforced: boolean;
   details: { billingName: string | null; billingEmail: string | null; ntn: string | null; province: Province | null; address: string | null };
+  /** A lasting discount on every invoice, such as the founding-customer offer. */
+  discount: { percent: number; label: string } | null;
   /** How customers can pay right now. */
   payments: { online: boolean; onlineLabel: string | null; bankTransfer: { bank: string; accountTitle: string; iban: string } | null };
 }
@@ -1738,7 +1753,11 @@ export interface InvoiceDto {
   seats: number;
   unitPrice: number;
   months: number;
+  /** The list price for the period; the discount comes off it before tax. */
   subtotal: number;
+  discountLabel: string | null;
+  discountPercent: number;
+  discountAmount: number;
   taxLabel: string | null;
   taxRate: number;
   taxAmount: number;
@@ -1822,3 +1841,57 @@ export interface TwoFactorSetupDto {
   /** A PNG data URL of the QR code. */
   qr: string;
 }
+
+// ---- Status page (sprint 13) --------------------------------------------------------------
+
+export const STATUS_COMPONENTS = ['app', 'database', 'files', 'live'] as const;
+export type StatusComponent = (typeof STATUS_COMPONENTS)[number];
+export const STATUS_COMPONENT_LABELS: Record<StatusComponent, string> = {
+  app: 'Website and API',
+  database: 'Database',
+  files: 'File uploads and downloads',
+  live: 'Live chat and board updates',
+};
+
+export const INCIDENT_IMPACTS = ['minor', 'major', 'maintenance'] as const;
+export type IncidentImpact = (typeof INCIDENT_IMPACTS)[number];
+export const INCIDENT_STATUSES = ['investigating', 'identified', 'monitoring', 'resolved'] as const;
+export type IncidentStatus = (typeof INCIDENT_STATUSES)[number];
+
+export interface StatusPageDto {
+  /** When the components were last checked. */
+  checkedAt: string;
+  components: {
+    key: StatusComponent;
+    label: string;
+    state: 'operational' | 'degraded' | 'down';
+    /** Uptime over the days shown, as a percentage, or null before any checks. */
+    uptime: number | null;
+    /** Oldest first. A null share means no checks were recorded that day. */
+    days: { day: string; uptime: number | null }[];
+  }[];
+  incidents: {
+    id: string;
+    title: string;
+    impact: IncidentImpact;
+    components: StatusComponent[];
+    startedAt: string;
+    resolvedAt: string | null;
+    updates: { status: IncidentStatus; body: string; createdAt: string }[];
+  }[];
+}
+
+export const createIncidentSchema = z.object({
+  title: z.string().trim().min(3, 'Give the incident a title').max(150),
+  impact: z.enum(INCIDENT_IMPACTS),
+  components: z.array(z.enum(STATUS_COMPONENTS)).max(STATUS_COMPONENTS.length).default([]),
+  status: z.enum(INCIDENT_STATUSES).default('investigating'),
+  body: z.string().trim().min(3, 'Say what’s happening').max(2000),
+});
+export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;
+
+export const incidentUpdateSchema = z.object({
+  status: z.enum(INCIDENT_STATUSES),
+  body: z.string().trim().min(3, 'Say what’s changed').max(2000),
+});
+export type IncidentUpdateInput = z.infer<typeof incidentUpdateSchema>;

@@ -2,11 +2,12 @@
 
 import { PLAN_INFO, type TransferReviewDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
+import { StatusIncidents } from '@/components/settings/status-incidents';
 import { pkr } from '@/components/settings/tabs';
 import { Alert, PageHeader, btn, input } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 
-/** WorkHub staff only: bank transfers to confirm against the bank statement. */
+/** WorkHub staff only: bank transfers to confirm against the bank statement, and the status page. */
 export default function PlatformPage() {
   const [list, setList] = useState<TransferReviewDto[]>();
   const [forbidden, setForbidden] = useState(false);
@@ -85,6 +86,7 @@ export default function PlatformPage() {
           ))
         )}
       </div>
+      <StatusIncidents />
     </>
   );
 }

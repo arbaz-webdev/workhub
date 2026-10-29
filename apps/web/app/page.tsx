@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { FOUNDING_DISCOUNT, PLAN_INFO, type PlanKey } from '@workhub/shared';
 import Link from 'next/link';
 import { BetaForm } from '@/components/landing/beta-form';
+import { PLAN_HIGHLIGHTS } from '@/components/landing/plans';
+import { SiteFooter, SiteHeader } from '@/components/landing/site';
 
 export const metadata: Metadata = {
   title: 'WorkHub: attendance, projects, clients and team chat in one place',
@@ -35,25 +38,14 @@ const MODULES = [
 ];
 
 const LOCAL = [
-  'Billed in PKR: card, JazzCash, Easypaisa or bank transfer',
+  'Billed in PKR with sales tax invoices; no dollar card needed',
   'Night shifts for US clients count as one workday',
   'Pakistani public holidays built in',
   'Works on slow internet; check-ins sync when you are back online',
   'Support on WhatsApp from people in your time zone',
 ];
 
-const PLANS = [
-  { name: 'Free', price: '0', note: 'Up to 10 users', features: ['Attendance with selfie check-in', 'Boards (3 projects)', 'Team chat (90-day history)'] },
-  { name: 'Starter', price: '699', note: 'per user / month', features: ['Unlimited projects', 'Leave, shifts and timesheets', 'Full chat history'] },
-  {
-    name: 'Business',
-    price: '1,299',
-    note: 'per user / month',
-    features: ['Everything in Starter', 'CRM and client 360', 'Client Profitability and utilisation reports'],
-    highlight: true,
-  },
-  { name: 'Pro', price: '1,999', note: 'per user / month · later in 2027', features: ['Everything in Business', 'Consent-based activity tracking', 'Client portal and automations'] },
-];
+const PLANS: PlanKey[] = ['free', 'starter', 'business'];
 
 const FAQ = [
   {
@@ -70,18 +62,9 @@ const FAQ = [
   },
   {
     q: 'Can I pay in rupees?',
-    a: 'Yes. Prices are in PKR and you can pay by card, JazzCash, Easypaisa or bank transfer. No dollar card needed.',
+    a: 'Yes. Prices are in PKR, with sales tax invoices. Pay by bank transfer, or by card, JazzCash or Easypaisa once paid plans open. No dollar card needed.',
   },
 ];
-
-function Logo() {
-  return (
-    <span className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">W</span>
-      WorkHub
-    </span>
-  );
-}
 
 function ProfitabilityMock() {
   return (
@@ -130,24 +113,7 @@ function ProfitabilityMock() {
 export default function Landing() {
   return (
     <div className="bg-white">
-      <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/90 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-          <Logo />
-          <div className="ml-auto hidden items-center gap-6 text-sm text-gray-600 md:flex">
-            <a href="#features" className="hover:text-gray-900">Features</a>
-            <a href="#pricing" className="hover:text-gray-900">Pricing</a>
-            <a href="#faq" className="hover:text-gray-900">FAQ</a>
-          </div>
-          <div className="ml-auto flex items-center gap-2 md:ml-0">
-            <Link href="/sign-in" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
-              Sign in
-            </Link>
-            <a href="#beta" className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-              Join the beta
-            </a>
-          </div>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <main>
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 md:grid-cols-2 md:py-24">
@@ -227,32 +193,43 @@ export default function Landing() {
 
         <section id="pricing" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20">
           <h2 className="text-3xl font-bold tracking-tight">Simple pricing in rupees</h2>
-          <p className="mt-3 text-gray-600">Billed annually. No seat minimums. Beta teams get 40% off for life.</p>
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {PLANS.map((p) => (
-              <div
-                key={p.name}
-                className={`rounded-2xl border p-6 ${p.highlight ? 'border-brand-500 ring-2 ring-brand-100' : 'border-gray-200'}`}
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{p.name}</h3>
-                  {p.highlight && (
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">Most popular</span>
-                  )}
+          <p className="mt-3 text-gray-600">
+            Per person, monthly or yearly (2 months free). Guests are free. Beta teams keep {FOUNDING_DISCOUNT.percent}% off for life.
+          </p>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {PLANS.map((key) => {
+              const p = PLAN_INFO[key];
+              return (
+                <div key={key} className={`rounded-2xl border p-6 ${key === 'business' ? 'border-brand-500 ring-2 ring-brand-100' : 'border-gray-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{p.name}</h3>
+                    {key === 'business' && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">Most popular</span>}
+                  </div>
+                  <p className="mt-4">
+                    {p.pricePerUser === 0 ? (
+                      <span className="text-3xl font-bold">Free</span>
+                    ) : (
+                      <>
+                        <span className="text-sm text-gray-500">PKR </span>
+                        <span className="text-3xl font-bold">{p.pricePerUser.toLocaleString('en-PK')}</span>
+                      </>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500">{p.pricePerUser === 0 ? 'for up to 10 people' : 'per person / month'}</p>
+                  <ul className="mt-5 space-y-2 text-sm text-gray-700">
+                    {PLAN_HIGHLIGHTS[key].map((f) => (
+                      <li key={f}>· {f}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="mt-4">
-                  <span className="text-sm text-gray-500">PKR </span>
-                  <span className="text-3xl font-bold">{p.price}</span>
-                </p>
-                <p className="text-xs text-gray-500">{p.note}</p>
-                <ul className="mt-5 space-y-2 text-sm text-gray-700">
-                  {p.features.map((f) => (
-                    <li key={f}>· {f}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          <p className="mt-6">
+            <Link href="/pricing" className="text-sm font-semibold text-brand-700 underline">
+              Compare plans and work out your price
+            </Link>
+          </p>
         </section>
 
         <section id="beta" className="scroll-mt-20 border-t border-gray-100 bg-gray-50">
@@ -281,12 +258,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-gray-100">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm text-gray-500">
-          <Logo />
-          <p>© 2026 WorkHub · Made in Pakistan</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

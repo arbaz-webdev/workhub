@@ -149,6 +149,14 @@ export default function InvoicePage() {
               </td>
               <td className="whitespace-nowrap pt-3 pl-4 text-right tabular-nums">{pkr(invoice.subtotal)}</td>
             </tr>
+            {invoice.discountAmount > 0 && (
+              <tr>
+                <td colSpan={3} className="pt-1 text-right text-gray-600">
+                  {invoice.discountLabel ?? `Discount (${invoice.discountPercent}%)`}
+                </td>
+                <td className="whitespace-nowrap pt-1 pl-4 text-right tabular-nums">−{pkr(invoice.discountAmount)}</td>
+              </tr>
+            )}
             {invoice.taxLabel && (
               <tr>
                 <td colSpan={3} className="pt-1 text-right text-gray-600">

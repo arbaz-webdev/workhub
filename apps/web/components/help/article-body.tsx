@@ -1,15 +1,21 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-/** **bold** and [text](/path) inside a line. Only links within the site are made. */
+/** **bold**, `code` and [text](/path) inside a line. Only links within the site are made. */
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /\*\*(.+?)\*\*|\[(.+?)\]\((\/[^)\s]*)\)/g;
+  const re = /\*\*(.+?)\*\*|\[(.+?)\]\((\/[^)\s]*)\)|`([^`]+)`/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
     if (m[1]) out.push(<strong key={m.index}>{m[1]}</strong>);
+    else if (m[4])
+      out.push(
+        <code key={m.index} className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[13px] text-gray-800">
+          {m[4]}
+        </code>,
+      );
     else
       out.push(
         <Link key={m.index} href={m[3]!} className="text-brand-700 underline">
@@ -29,6 +35,14 @@ export function ArticleBody({ body }: { body: string }) {
     <div className="space-y-4 text-[15px] leading-7 text-gray-700">
       {blocks.map((block, i) => {
         const lines = block.split('\n');
+        // A code example: ``` on its own line before and after (no blank lines inside).
+        if (lines.length > 1 && lines[0]!.startsWith('```') && lines.at(-1) === '```') {
+          return (
+            <pre key={i} className="overflow-x-auto rounded-xl bg-gray-900 p-4 font-mono text-[13px] leading-6 text-gray-100">
+              <code>{lines.slice(1, -1).join('\n')}</code>
+            </pre>
+          );
+        }
         if (block.startsWith('## ')) {
           return (
             <h2 key={i} className="pt-4 text-xl font-semibold text-gray-900">

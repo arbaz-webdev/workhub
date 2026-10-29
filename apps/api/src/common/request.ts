@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 import type { Request } from 'express';
-import type { Role } from '@workhub/shared';
+import type { ApiKeyAccess, Role } from '@workhub/shared';
 
 export interface AuthContext {
   userId: string;
@@ -12,9 +12,16 @@ export interface WorkspaceContext {
   role: Role;
 }
 
+export interface ApiKeyContext {
+  id: string;
+  access: ApiKeyAccess;
+}
+
 export interface AppRequest extends Request {
   auth?: AuthContext;
   workspace?: WorkspaceContext;
+  /** Set when the request came with an API key rather than a session (the public API). */
+  apiKey?: ApiKeyContext;
 }
 
 export const IS_PUBLIC = 'isPublic';

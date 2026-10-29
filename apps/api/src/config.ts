@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { LAUNCH_DATE } from '@workhub/shared';
+import { API_RATE_LIMIT_PER_MINUTE, LAUNCH_DATE } from '@workhub/shared';
 
 // Load apps/api/.env when present (works from both src/ and dist/).
 const envFile = join(__dirname, '..', '.env');
@@ -109,6 +109,10 @@ export const config = {
   /** Where the in-app feedback button's messages are emailed; unset keeps them in the database only. */
   get feedbackTo(): string | undefined {
     return process.env.FEEDBACK_TO || undefined;
+  },
+  /** Public API requests each key may make per minute. */
+  get apiRateLimit(): number {
+    return Number(process.env.API_RATE_LIMIT_PER_MINUTE ?? API_RATE_LIMIT_PER_MINUTE);
   },
   /** Billing and plan limits. "false" opens everything (the free beta). */
   get billingEnforced() {

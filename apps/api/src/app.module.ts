@@ -37,6 +37,10 @@ import { ReportsController } from './reports/reports.controller';
 import { StorageService } from './storage/storage.service';
 import { TeamsController } from './teams/teams.controller';
 import { TimesheetsController } from './timesheets/timesheets.controller';
+import { ApiKeyGuard } from './public-api/api-key.guard';
+import { ApiKeysController } from './public-api/api-keys.controller';
+import { OpenApiController } from './public-api/openapi';
+import { PublicApiV1Controller } from './public-api/v1.controller';
 import { WaitlistController } from './waitlist/waitlist.controller';
 import { WorkspaceGuard } from './workspaces/workspace.guard';
 import { WorkspacesController } from './workspaces/workspaces.controller';
@@ -83,7 +87,10 @@ class HealthController {
     PayrollController,
     OnboardingController,
     WaitlistController,
+    ApiKeysController,
+    PublicApiV1Controller,
+    OpenApiController,
   ],
-  providers: [WorkspaceGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
+  providers: [WorkspaceGuard, ApiKeyGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })
 export class AppModule {}

@@ -11,3 +11,5 @@ process.env.LOCAL_STORAGE_DIR = join(__dirname, '..', '..', '..', '.data', 'test
 delete process.env.REDIS_URL;
 // Billing tests expect list prices; test/sprint13.spec.ts switches the founding offer on.
 process.env.FOUNDING_OFFER_ENDS = '2000-01-01';
+// A small public API limit, so test/public-api.spec.ts can reach it.
+process.env.API_RATE_LIMIT_PER_MINUTE = '20';

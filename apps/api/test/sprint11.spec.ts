@@ -42,7 +42,7 @@ afterAll(async () => {
 describe('plans', () => {
   it('starts a new workspace on a two-week trial of everything', async () => {
     const s = await subscription();
-    expect(s).toMatchObject({ plan: 'business', status: 'trial', seatLimit: null, seatsUsed: 2, enforced: true, features: ['profitability', 'custom_fields', 'pipelines'] });
+    expect(s).toMatchObject({ plan: 'business', status: 'trial', seatLimit: null, seatsUsed: 2, enforced: true, features: ['profitability', 'custom_fields', 'pipelines', 'api'] });
     const days = (new Date(s.trialEndsAt!).getTime() - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(13.9);
     // Everyone can see the plan; only owners and admins manage billing.

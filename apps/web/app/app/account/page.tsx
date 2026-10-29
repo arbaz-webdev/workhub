@@ -25,8 +25,8 @@ export default function AccountPage() {
   const load = useCallback(() => {
     api<TwoFactorStatusDto>('/auth/2fa')
       .then(setStatus)
-      .catch(() => setResult({ kind: 'error', text: 'Could not load your security settings.' }));
-  }, []);
+      .catch(() => setResult({ kind: 'error', text: t('account.loadError') }));
+  }, [t]);
   useEffect(load, [load]);
 
   async function run(fn: () => Promise<void>) {
@@ -35,7 +35,7 @@ export default function AccountPage() {
     try {
       await fn();
     } catch (err) {
-      setResult({ kind: 'error', text: message(err, 'That didn’t work. Please try again.') });
+      setResult({ kind: 'error', text: message(err, t('common.failed')) });
     } finally {
       setBusy(false);
     }
@@ -55,7 +55,7 @@ export default function AccountPage() {
     run(async () => {
       if (mode === 'disable') {
         await api('/auth/2fa/disable', { method: 'POST', body: { code } });
-        setResult({ kind: 'success', text: 'Two-factor sign-in is off.' });
+        setResult({ kind: 'success', text: t('account.twoFactorOff') });
         await refresh();
       } else {
         setCodes((await api<{ recoveryCodes: string[] }>('/auth/2fa/recovery-codes', { method: 'POST', body: { code } })).recoveryCodes);
@@ -66,7 +66,7 @@ export default function AccountPage() {
     });
 
   function download() {
-    const text = `WorkHub recovery codes for ${me.user.email}\nEach code works once. Keep them somewhere safe.\n\n${codes!.join('\n')}\n`;
+    const text = `${t('account.codesFileTitle', { email: me.user.email })}\n${t('account.codesFileNote')}\n\n${codes!.join('\n')}\n`;
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
     const a = document.createElement('a');
     a.href = url;
@@ -74,6 +74,8 @@ export default function AccountPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  const [keyBefore, keyAfter] = t('account.step2').split('{key}');
 
   return (
     <>
@@ -83,7 +85,7 @@ export default function AccountPage() {
         {result && <Alert kind={result.kind}>{result.text}</Alert>}
 
         {codes && (
-          <Card title="Your recovery codes" description="If you lose your phone, each of these signs you in once. This is the only time they’re shown.">
+          <Card title={t('account.codesTitle')} description={t('account.codesHint')}>
             <ul className="grid grid-cols-2 gap-2 rounded-xl bg-gray-50 p-4 font-mono text-sm sm:grid-cols-5">
               {codes.map((c) => (
                 <li key={c}>{c}</li>
@@ -91,34 +93,34 @@ export default function AccountPage() {
             </ul>
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" className={btn.secondary} onClick={download}>
-                Download
+                {t('account.download')}
               </button>
               <button type="button" className={btn.secondary} onClick={() => void navigator.clipboard?.writeText(codes.join('\n'))}>
-                Copy
+                {t('account.copy')}
               </button>
               <button type="button" className={btn.primary} onClick={() => setCodes(null)}>
-                I’ve saved them
+                {t('account.savedThem')}
               </button>
             </div>
           </Card>
         )}
 
-        <Card title="Two-factor sign-in" description="After your password (or Google), WorkHub asks for a code from an authenticator app such as Google Authenticator or Microsoft Authenticator.">
+        <Card title={t('twoFactor.title')} description={t('account.twoFactorHint')}>
           {!status ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{t('common.loading')}</p>
           ) : status.enabled ? (
             <div className="space-y-4">
               <p className="flex items-center gap-2 text-sm">
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">On</span>
-                {status.recoveryCodesLeft} recovery code{status.recoveryCodesLeft === 1 ? '' : 's'} left
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">{t('account.on')}</span>
+                {status.recoveryCodesLeft === 1 ? t('account.codesLeft.one') : t('account.codesLeft.many', { n: status.recoveryCodesLeft })}
               </p>
               {mode === 'none' ? (
                 <div className="flex flex-wrap gap-2">
                   <button type="button" className={btn.secondary} onClick={() => setMode('regenerate')}>
-                    New recovery codes
+                    {t('account.newCodes')}
                   </button>
                   <button type="button" className={btn.danger} onClick={() => setMode('disable')}>
-                    Turn off
+                    {t('account.turnOff')}
                   </button>
                 </div>
               ) : (
@@ -130,26 +132,32 @@ export default function AccountPage() {
                   }}
                 >
                   <label className="block text-sm">
-                    <span className="text-gray-700">A code from your app, or a recovery code</span>
+                    <span className="text-gray-700">{t('account.codeOrRecovery')}</span>
                     <input value={code} onChange={(e) => setCode(e.target.value)} autoFocus autoComplete="one-time-code" maxLength={11} className={`mt-1 ${input} !w-48 font-mono`} />
                   </label>
                   <button type="submit" className={mode === 'disable' ? btn.danger : btn.primary} disabled={busy}>
-                    {mode === 'disable' ? 'Turn off' : 'Make new codes'}
+                    {mode === 'disable' ? t('account.turnOff') : t('account.makeCodes')}
                   </button>
                   <button type="button" className={btn.ghost} onClick={() => setMode('none')}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </form>
               )}
             </div>
           ) : setup ? (
             <div className="grid gap-6 sm:grid-cols-[auto_1fr]">
-              <img src={setup.qr} alt="QR code to scan with your authenticator app" width={220} height={220} className="rounded-lg border border-gray-200" />
+              <img src={setup.qr} alt={t('account.qrAlt')} width={220} height={220} className="rounded-lg border border-gray-200" />
               <div className="space-y-3 text-sm">
                 <ol className="list-decimal space-y-1 ps-5 text-gray-700">
-                  <li>Open your authenticator app and add an account.</li>
-                  <li>Scan the QR code, or type this key: <code className="break-all rounded bg-gray-100 px-1.5 py-0.5 font-mono">{setup.secret.replace(/(.{4})/g, '$1 ').trim()}</code></li>
-                  <li>Enter the 6-digit code it shows.</li>
+                  <li>{t('account.step1')}</li>
+                  <li>
+                    {keyBefore}
+                    <code dir="ltr" className="break-all rounded bg-gray-100 px-1.5 py-0.5 font-mono">
+                      {setup.secret.replace(/(.{4})/g, '$1 ').trim()}
+                    </code>
+                    {keyAfter}
+                  </li>
+                  <li>{t('account.step3')}</li>
                 </ol>
                 <form
                   className="flex flex-wrap items-end gap-2"
@@ -159,27 +167,27 @@ export default function AccountPage() {
                   }}
                 >
                   <label className="block">
-                    <span className="text-gray-700">Code</span>
+                    <span className="text-gray-700">{t('twoFactor.code')}</span>
                     <input value={code} onChange={(e) => setCode(e.target.value)} autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={7} placeholder="123 456" className={`mt-1 ${input} !w-36 text-center font-mono tracking-widest`} />
                   </label>
                   <button type="submit" className={btn.primary} disabled={busy || code.replace(/\s/g, '').length < 6}>
-                    {busy ? 'Checking…' : 'Turn on'}
+                    {busy ? t('account.checking') : t('account.turnOn')}
                   </button>
                   <button type="button" className={btn.ghost} onClick={() => setSetup(null)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </form>
-                <p className="text-xs text-gray-500">Turning it on signs you out on your other devices.</p>
+                <p className="text-xs text-gray-500">{t('account.signsOut')}</p>
               </div>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="flex items-center gap-2 text-sm">
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Off</span>
-                Recommended for owners and admins.
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{t('account.off')}</span>
+                {t('account.recommended')}
               </p>
               <button type="button" className={btn.primary} onClick={() => void start()} disabled={busy}>
-                Set up two-factor sign-in
+                {t('account.setUp')}
               </button>
             </div>
           )}

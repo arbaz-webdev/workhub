@@ -5,59 +5,61 @@ import { useCallback, useEffect, useState } from 'react';
 import { LEAVE_COLOR, LeaveTabs, rangeLabel, StatusPill } from '@/components/leave/tabs';
 import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
-
-const days = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
 
 export default function MyLeavePage() {
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const [data, setData] = useState<MyLeaveDto>();
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const days = (n: number) => (n === 1 ? t('common.days.one') : t('common.days.many', { n }));
 
   const load = useCallback(() => {
     api<MyLeaveDto>('/leave/me')
       .then(setData)
-      .catch(() => setError('Could not load your leave.'));
-  }, [api]);
+      .catch(() => setError(t('leave.mine.loadError')));
+  }, [api, t]);
   useEffect(load, [load]);
 
   async function cancel(id: string) {
     setError(undefined);
     try {
       await api(`/leave/requests/${id}/cancel`, { method: 'POST' });
-      setNotice('Request withdrawn.');
+      setNotice(t('leave.mine.withdrawn'));
       load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not withdraw the request.');
+      setError(err instanceof ApiError ? err.message : t('leave.mine.withdrawFailed'));
     }
   }
 
   return (
     <>
-      <PageHeader title="Leave" description="Your balances, requests and time off." />
+      <PageHeader title={t('leave.title')} description={t('leave.mine.description')} />
       <LeaveTabs />
       <div className="mb-4 space-y-2" aria-live="polite">
         {error && <Alert>{error}</Alert>}
         {notice && <Alert kind="success">{notice}</Alert>}
       </div>
       {!data ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : (
         <div className="space-y-6">
-          <section aria-label="Balances" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <section aria-label={t('leave.mine.balances')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.balances.map((b) => (
               <div key={b.leaveType.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <span className={`h-2.5 w-2.5 rounded-full ${LEAVE_COLOR[b.leaveType.color]?.split(' ')[0]}`} aria-hidden="true" />
                   {b.leaveType.name}
-                  {!b.leaveType.paid && <span className="text-xs font-normal text-gray-500">unpaid</span>}
+                  {!b.leaveType.paid && <span className="text-xs font-normal text-gray-500">{t('leave.mine.unpaid')}</span>}
                 </p>
                 <p className="mt-2 text-3xl font-semibold tabular-nums">{b.available === null ? '∞' : b.available}</p>
                 <p className="text-xs text-gray-500">
-                  {b.available === null ? 'No limit' : `available of ${b.entitled! + b.adjustments} earned in ${data.year}`}
-                  {b.used > 0 && ` · ${b.used} used`}
-                  {b.pending > 0 && ` · ${b.pending} waiting`}
+                  {b.available === null ? t('leave.mine.noLimit') : t('leave.mine.availableOf', { n: b.entitled! + b.adjustments, year: data.year })}
+                  {b.used > 0 && t('leave.mine.used', { n: b.used })}
+                  {b.pending > 0 && t('leave.mine.waiting', { n: b.pending })}
                 </p>
               </div>
             ))}
@@ -65,21 +67,21 @@ export default function MyLeavePage() {
 
           <RequestForm data={data} onDone={(m) => (setNotice(m), setError(undefined), load())} onError={setError} />
 
-          <Card title="Your requests" description={`This year (${data.year}).`}>
+          <Card title={t('leave.mine.requests')} description={t('leave.mine.thisYear', { year: data.year })}>
             {data.requests.length === 0 ? (
-              <p className="text-sm text-gray-500">No leave requested yet.</p>
+              <p className="text-sm text-gray-500">{t('leave.mine.noRequests')}</p>
             ) : (
               <ul className="divide-y divide-gray-100">
                 {data.requests.map((r) => (
                   <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-sm">
                     <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${LEAVE_COLOR[r.leaveType.color]}`}>{r.leaveType.name}</span>
-                    <span className="font-medium">{rangeLabel(r.startDate, r.endDate, r.halfDay)}</span>
+                    <span className="font-medium">{rangeLabel(r.startDate, r.endDate, r.halfDay, locale)}</span>
                     <span className="text-gray-500">{days(r.days)}</span>
                     <StatusPill status={r.status} />
                     {r.decisionNote && <span className="text-gray-500">“{r.decisionNote}”</span>}
                     {r.status === 'pending' && (
                       <button type="button" className={`${btn.ghost} ms-auto`} onClick={() => cancel(r.id)}>
-                        Withdraw
+                        {t('leave.mine.withdraw')}
                       </button>
                     )}
                   </li>
@@ -95,6 +97,7 @@ export default function MyLeavePage() {
 
 function RequestForm({ data, onDone, onError }: { data: MyLeaveDto; onDone: (m: string) => void; onError: (m: string) => void }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const [typeId, setTypeId] = useState(data.balances[0]?.leaveType.id ?? '');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -103,6 +106,7 @@ function RequestForm({ data, onDone, onError }: { data: MyLeaveDto; onDone: (m: 
   const [preview, setPreview] = useState<{ days: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const single = !!start && (start === end || !end);
+  const days = (n: number) => (n === 1 ? t('common.days.one') : t('common.days.many', { n }));
 
   // How many days the dates take, as the dates change.
   useEffect(() => {
@@ -110,18 +114,18 @@ function RequestForm({ data, onDone, onError }: { data: MyLeaveDto; onDone: (m: 
     const finish = end || start;
     if (!start || finish < start) return;
     const q = new URLSearchParams({ startDate: start, endDate: finish, halfDay: single ? halfDay : 'none' });
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       api<{ days: number }>(`/leave/preview?${q}`)
         .then(setPreview)
         .catch(() => setPreview(null));
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [api, start, end, halfDay, single]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = leaveRequestSchema.safeParse({ leaveTypeId: typeId, startDate: start, endDate: end || start, halfDay: single ? halfDay : 'none', reason: reason || undefined });
-    if (!parsed.success) return onError(parsed.error.issues[0]?.message ?? 'Check the request.');
+    if (!parsed.success) return onError(parsed.error.issues[0]?.message ?? t('leave.ask.check'));
     setSaving(true);
     try {
       await api('/leave/requests', { method: 'POST', body: parsed.data });
@@ -129,9 +133,9 @@ function RequestForm({ data, onDone, onError }: { data: MyLeaveDto; onDone: (m: 
       setEnd('');
       setHalfDay('none');
       setReason('');
-      onDone('Request sent. Your manager has been told.');
+      onDone(t('leave.ask.sent'));
     } catch (err) {
-      onError(err instanceof ApiError ? err.message : 'Could not send the request.');
+      onError(err instanceof ApiError ? err.message : t('leave.ask.failed'));
     } finally {
       setSaving(false);
     }
@@ -139,45 +143,45 @@ function RequestForm({ data, onDone, onError }: { data: MyLeaveDto; onDone: (m: 
 
   const label = 'text-sm font-medium text-gray-700';
   return (
-    <Card title="Ask for leave">
+    <Card title={t('leave.ask.title')}>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-4">
         <label className="block">
-          <span className={label}>Type</span>
+          <span className={label}>{t('leave.ask.type')}</span>
           <select value={typeId} onChange={(e) => setTypeId(e.target.value)} className={`mt-1 ${input}`}>
             {data.balances.map((b) => (
               <option key={b.leaveType.id} value={b.leaveType.id}>
                 {b.leaveType.name}
-                {b.available !== null ? ` (${b.available} left)` : ''}
+                {b.available !== null ? t('leave.ask.left', { n: b.available }) : ''}
               </option>
             ))}
           </select>
         </label>
         <label className="block">
-          <span className={label}>From</span>
+          <span className={label}>{t('leave.ask.from')}</span>
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={`mt-1 ${input}`} required />
         </label>
         <label className="block">
-          <span className={label}>To</span>
-          <input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} className={`mt-1 ${input}`} placeholder="Same day" />
+          <span className={label}>{t('leave.ask.to')}</span>
+          <input type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} className={`mt-1 ${input}`} placeholder={t('leave.ask.sameDay')} />
         </label>
         <label className="block">
-          <span className={label}>Length</span>
+          <span className={label}>{t('leave.ask.length')}</span>
           <select value={single ? halfDay : 'none'} disabled={!single} onChange={(e) => setHalfDay(e.target.value as HalfDay)} className={`mt-1 ${input}`}>
-            <option value="none">Full day{single ? '' : 's'}</option>
-            <option value="first">First half</option>
-            <option value="second">Second half</option>
+            <option value="none">{single ? t('leave.ask.fullDay') : t('leave.ask.fullDays')}</option>
+            <option value="first">{t('leave.ask.firstHalf')}</option>
+            <option value="second">{t('leave.ask.secondHalf')}</option>
           </select>
         </label>
         <label className="block sm:col-span-4">
-          <span className={label}>Reason (optional)</span>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="Only your managers see this" className={`mt-1 ${input}`} />
+          <span className={label}>{t('leave.ask.reason')}</span>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder={t('leave.ask.reasonHint')} className={`mt-1 ${input}`} />
         </label>
         <div className="flex flex-wrap items-center gap-3 sm:col-span-4">
           <button type="submit" className={btn.primary} disabled={saving || !start || preview?.days === 0}>
-            {saving ? 'Sending…' : 'Send request'}
+            {saving ? t('leave.ask.sending') : t('leave.ask.send')}
           </button>
           <span className="text-sm text-gray-600" role="status">
-            {preview && (preview.days === 0 ? 'Those are all days off or holidays: no leave needed.' : `Takes ${days(preview.days)} (weekends and holidays don’t count).`)}
+            {preview && (preview.days === 0 ? t('leave.ask.noDays') : t('leave.ask.takes', { days: days(preview.days) }))}
           </span>
         </div>
       </form>

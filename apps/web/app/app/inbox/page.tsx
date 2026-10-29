@@ -3,18 +3,20 @@
 import { hasRole, type ChannelDto, type ChatMessageDto, type MessagePageDto, type PersonDto, type TaskRefDto, type ThreadDto } from '@workhub/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChannelIcon, channelTitle, PRESENCE_LABELS } from '@/components/inbox/bits';
+import { ChannelIcon, channelTitle } from '@/components/inbox/bits';
 import { Composer, type Draft } from '@/components/inbox/composer';
 import { BrowseChannelsDialog, ChannelDetailsDialog, NewChannelDialog, NewDmDialog } from '@/components/inbox/dialogs';
 import { MessageList, type MessageActions } from '@/components/inbox/message-list';
 import { Alert, btn } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { useInbox, useInboxEvents } from '@/lib/inbox';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 export default function InboxPage() {
+  const t = useT();
   return (
-    <Suspense fallback={<p className="p-4 text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<p className="p-4 text-sm text-gray-500">{t('common.loading')}</p>}>
       <Inbox />
     </Suspense>
   );
@@ -28,6 +30,8 @@ const sortChannels = (list: ChannelDto[]) =>
 function Inbox() {
   const { workspace, me } = useWorkspace();
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const params = useSearchParams();
   const { presence, live, refreshSummary } = useInbox();
@@ -52,10 +56,10 @@ function Inbox() {
   openRef.current = openId;
 
   const go = useCallback(
-    (c: string | null, t?: string | null) => {
+    (c: string | null, thread?: string | null) => {
       const q = new URLSearchParams();
       if (c) q.set('c', c);
-      if (t) q.set('thread', t);
+      if (thread) q.set('thread', thread);
       router.push(`/app/inbox${q.size ? `?${q}` : ''}`, { scroll: false });
     },
     [router],
@@ -65,9 +69,9 @@ function Inbox() {
     try {
       setChannels(sortChannels(await api<ChannelDto[]>('/chat/channels')));
     } catch {
-      setError('Could not load your conversations.');
+      setError(t('inbox.loadChannelsError'));
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void loadChannels();
@@ -110,12 +114,12 @@ function Inbox() {
         if (openRef.current !== id) return;
         setCurrent(null);
         setMessages([]);
-        setError(err instanceof ApiError && err.status === 404 ? 'This conversation isn’t available. It may have been archived, or you were removed from it.' : 'Could not load the conversation.');
+        setError(err instanceof ApiError && err.status === 404 ? t('inbox.notAvailable') : t('inbox.loadConversationError'));
       } finally {
         setLoadingMessages(false);
       }
     },
-    [api, markRead, staff],
+    [api, markRead, staff, t],
   );
 
   useEffect(() => {
@@ -166,13 +170,13 @@ function Inbox() {
 
   const replace = (m: ChatMessageDto) => {
     setMessages((list) => list.map((x) => (x.id === m.id ? m : x)));
-    setThread((t) => (t ? { root: t.root.id === m.id ? m : t.root, replies: t.replies.map((r) => (r.id === m.id ? m : r)) } : t));
+    setThread((th) => (th ? { root: th.root.id === m.id ? m : th.root, replies: th.replies.map((r) => (r.id === m.id ? m : r)) } : th));
   };
 
   const received = (m: ChatMessageDto) => {
     if (m.channelId === openRef.current) {
       if (!m.parentId) setMessages((list) => (list.some((x) => x.id === m.id) ? list : [...list, m]));
-      setThread((t) => (t && m.parentId === t.root.id && !t.replies.some((r) => r.id === m.id) ? { ...t, replies: [...t.replies, m] } : t));
+      setThread((th) => (th && m.parentId === th.root.id && !th.replies.some((r) => r.id === m.id) ? { ...th, replies: [...th.replies, m] } : th));
     }
   };
 
@@ -232,7 +236,7 @@ function Inbox() {
     try {
       received(await api<ChatMessageDto>(`/chat/channels/${channelId}/messages`, { method: 'POST', body: form }));
     } catch (err) {
-      throw new Error(err instanceof ApiError ? (Object.values(err.fieldErrors)[0] ?? err.message) : 'Could not send. Check your connection and try again.');
+      throw new Error(err instanceof ApiError ? (Object.values(err.fieldErrors)[0] ?? err.message) : t('inbox.sendFailed'));
     }
   }
 
@@ -241,11 +245,11 @@ function Inbox() {
       try {
         replace(await api<ChatMessageDto>(`/chat/messages/${m.id}`, { method: 'PATCH', body: { body: d.body, mentions: d.mentions, taskIds: d.taskIds } }));
       } catch (err) {
-        throw new Error(err instanceof ApiError ? err.message : 'Could not save the change.');
+        throw new Error(err instanceof ApiError ? err.message : t('inbox.editFailed'));
       }
     },
     onDelete: (m) => {
-      api(`/chat/messages/${m.id}`, { method: 'DELETE' }).catch((err) => setError(err instanceof ApiError ? err.message : 'Could not delete the message.'));
+      api(`/chat/messages/${m.id}`, { method: 'DELETE' }).catch((err) => setError(err instanceof ApiError ? err.message : t('inbox.deleteFailed')));
     },
   };
 
@@ -262,7 +266,7 @@ function Inbox() {
       setCurrent(await api<ChannelDto>(`/chat/channels/${current.id}/join`, { method: 'POST' }));
       await loadChannels();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not join the channel.');
+      setError(err instanceof ApiError ? err.message : t('inbox.joinFailed'));
     }
   }
 
@@ -283,38 +287,38 @@ function Inbox() {
   return (
     <div className="flex h-[calc(100dvh-3.6rem)] min-h-[26rem] overflow-hidden border-gray-200 bg-white sm:h-[calc(100dvh-5.6rem)] sm:rounded-2xl sm:border">
       {/* Conversations */}
-      <nav aria-label="Conversations" className={`${openId ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-e border-gray-200 md:w-64 lg:w-72`}>
+      <nav aria-label={t('inbox.conversations')} className={`${openId ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-e border-gray-200 md:w-64 lg:w-72`}>
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
           <h1 className="flex items-center gap-2 text-base font-semibold">
-            Inbox
-            <span title={live ? 'Live' : 'Reconnecting…'} className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-              <span className="sr-only">{live ? 'Live' : 'Reconnecting'}</span>
+            {t('nav.inbox')}
+            <span title={live ? t('inbox.live') : t('inbox.reconnectingTitle')} className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+              <span className="sr-only">{live ? t('inbox.live') : t('inbox.reconnecting')}</span>
             </span>
           </h1>
           {staff && (
             <button type="button" onClick={() => setDialog('dm')} className={`${btn.primary} !px-3 !py-1.5`}>
-              New message
+              {t('inbox.newMessage')}
             </button>
           )}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {!channels && <p className="px-2 py-3 text-sm text-gray-500">Loading…</p>}
+          {!channels && <p className="px-2 py-3 text-sm text-gray-500">{t('common.loading')}</p>}
           {channels && (
             <>
-              <Section title="Channels" action={staff ? { label: 'Browse or create a channel', onClick: () => setDialog('browse') } : undefined}>
+              <Section title={t('inbox.channels')} action={staff ? { label: t('inbox.browseOrCreate'), onClick: () => setDialog('browse') } : undefined}>
                 {channelsList.map((c) => (
                   <ChannelRow key={c.id} channel={c} active={c.id === openId} onClick={() => go(c.id)} />
                 ))}
                 {staff && (
                   <li>
                     <button type="button" onClick={() => setDialog('channel')} className="w-full rounded-lg px-2 py-1.5 text-start text-sm text-gray-500 hover:bg-gray-50">
-                      + Add a channel
+                      {t('inbox.addChannel')}
                     </button>
                   </li>
                 )}
               </Section>
-              <Section title="Direct messages" action={staff ? { label: 'New message', onClick: () => setDialog('dm') } : undefined}>
-                {dms.length === 0 && <li className="px-2 py-1.5 text-sm text-gray-500">No direct messages yet.</li>}
+              <Section title={t('inbox.directMessages')} action={staff ? { label: t('inbox.newMessage'), onClick: () => setDialog('dm') } : undefined}>
+                {dms.length === 0 && <li className="px-2 py-1.5 text-sm text-gray-500">{t('inbox.noDms')}</li>}
                 {dms.map((c) => (
                   <ChannelRow key={c.id} channel={c} active={c.id === openId} onClick={() => go(c.id)} />
                 ))}
@@ -325,12 +329,12 @@ function Inbox() {
       </nav>
 
       {/* The open conversation */}
-      <section aria-label={current ? channelTitle(current) : 'Conversation'} className={`${openId && !threadId ? 'flex' : 'hidden'} ${threadId ? 'xl:flex' : 'md:flex'} min-w-0 flex-1 flex-col`}>
+      <section aria-label={current ? channelTitle(current, locale) : t('inbox.conversation')} className={`${openId && !threadId ? 'flex' : 'hidden'} ${threadId ? 'xl:flex' : 'md:flex'} min-w-0 flex-1 flex-col`}>
         {openId ? (
           <>
             <header className="flex items-center gap-2 border-b border-gray-100 px-3 py-2.5">
-              <button type="button" aria-label="Back to conversations" onClick={() => go(null)} className="grid h-8 w-8 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 md:hidden">
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <button type="button" aria-label={t('inbox.back')} onClick={() => go(null)} className="grid h-8 w-8 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 md:hidden">
+                <svg aria-hidden="true" className="rtl:rotate-180" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="m15 18-6-6 6-6" />
                 </svg>
               </button>
@@ -339,11 +343,14 @@ function Inbox() {
                   <ChannelIcon channel={current} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold">
-                      {channelTitle(current)}
-                      {current.muted && <span className="ms-1.5 text-xs font-normal text-gray-400">muted</span>}
+                      {channelTitle(current, locale)}
+                      {current.muted && <span className="ms-1.5 text-xs font-normal text-gray-400">{t('inbox.muted')}</span>}
                     </span>
                     <span className="block truncate text-xs text-gray-500">
-                      {soloPresence ? PRESENCE_LABELS[soloPresence.presence] : current.topic || (current.kind === 'dm' ? 'Direct message' : `${current.memberCount} ${current.memberCount === 1 ? 'member' : 'members'}`)}
+                      {soloPresence
+                        ? t(`presence.${soloPresence.presence}`)
+                        : current.topic ||
+                          (current.kind === 'dm' ? t('inbox.directMessage') : current.memberCount === 1 ? t('inbox.members.one') : t('inbox.members.many', { n: current.memberCount }))}
                     </span>
                   </span>
                 </button>
@@ -368,19 +375,19 @@ function Inbox() {
                   empty={
                     !loadingMessages && (
                       <p className="px-4 py-10 text-center text-sm text-gray-500">
-                        {current.kind === 'dm' ? `This is the start of your conversation with ${channelTitle(current)}.` : `This is the start of ${channelTitle(current)}.`}
+                        {t(current.kind === 'dm' ? 'inbox.startDm' : 'inbox.startChannel', { name: channelTitle(current, locale) })}
                       </p>
                     )
                   }
                 />
                 <div className="border-t border-gray-100 p-3">
                   {current.joined ? (
-                    <Composer key={current.id} people={mentionable.filter((p) => p.id !== meId)} placeholder={`Message ${channelTitle(current)}`} onSend={(d) => send(current.id, d)} autoFocus />
+                    <Composer key={current.id} people={mentionable.filter((p) => p.id !== meId)} placeholder={t('inbox.messagePlaceholder', { name: channelTitle(current, locale) })} onSend={(d) => send(current.id, d)} autoFocus />
                   ) : (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-gray-50 px-4 py-3 text-sm">
-                      <span className="text-gray-600">You’re viewing {channelTitle(current)}. Join to post and get its updates.</span>
+                      <span className="text-gray-600">{t('inbox.viewing', { name: channelTitle(current, locale) })}</span>
                       <button type="button" className={btn.primary} onClick={join}>
-                        Join channel
+                        {t('inbox.joinChannel')}
                       </button>
                     </div>
                   )}
@@ -389,23 +396,23 @@ function Inbox() {
             )}
           </>
         ) : (
-          <div className="grid flex-1 place-items-center p-8 text-center text-sm text-gray-500">Choose a conversation.</div>
+          <div className="grid flex-1 place-items-center p-8 text-center text-sm text-gray-500">{t('inbox.choose')}</div>
         )}
       </section>
 
       {/* A thread */}
       {threadId && current && (
-        <aside aria-label="Thread" className="flex min-w-0 flex-1 flex-col border-s border-gray-200 xl:w-96 xl:flex-none">
+        <aside aria-label={t('inbox.thread')} className="flex min-w-0 flex-1 flex-col border-s border-gray-200 xl:w-96 xl:flex-none">
           <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <h2 className="text-sm font-semibold">
-              Thread <span className="font-normal text-gray-500">in {channelTitle(current)}</span>
+              {t('inbox.thread')} <span className="font-normal text-gray-500">{t('inbox.threadIn', { name: channelTitle(current, locale) })}</span>
             </h2>
-            <button type="button" aria-label="Close thread" onClick={() => go(current.id)} className="grid h-8 w-8 place-items-center rounded-lg text-gray-500 hover:bg-gray-100">
+            <button type="button" aria-label={t('inbox.closeThread')} onClick={() => go(current.id)} className="grid h-8 w-8 place-items-center rounded-lg text-gray-500 hover:bg-gray-100">
               ×
             </button>
           </header>
           {!thread ? (
-            <p className="p-4 text-sm text-gray-500">Loading…</p>
+            <p className="p-4 text-sm text-gray-500">{t('common.loading')}</p>
           ) : (
             <>
               <MessageList
@@ -419,9 +426,9 @@ function Inbox() {
               />
               <div className="border-t border-gray-100 p-3">
                 {current.joined && !thread.root.deleted ? (
-                  <Composer key={thread.root.id} people={mentionable.filter((p) => p.id !== meId)} placeholder="Reply…" onSend={(d) => send(current.id, d, thread.root.id)} autoFocus />
+                  <Composer key={thread.root.id} people={mentionable.filter((p) => p.id !== meId)} placeholder={t('inbox.replyPlaceholder')} onSend={(d) => send(current.id, d, thread.root.id)} autoFocus />
                 ) : (
-                  <p className="text-sm text-gray-500">{thread.root.deleted ? 'The message was deleted.' : 'Join the channel to reply.'}</p>
+                  <p className="text-sm text-gray-500">{thread.root.deleted ? t('inbox.rootDeleted') : t('inbox.joinToReply')}</p>
                 )}
               </div>
             </>
@@ -502,6 +509,8 @@ function Section({ title, action, children }: { title: string; action?: { label:
 }
 
 function ChannelRow({ channel, active, onClick }: { channel: ChannelDto; active: boolean; onClick: () => void }) {
+  const t = useT();
+  const locale = useLocale();
   const unread = channel.unread > 0 && !channel.muted;
   return (
     <li>
@@ -513,18 +522,18 @@ function ChannelRow({ channel, active, onClick }: { channel: ChannelDto; active:
       >
         <ChannelIcon channel={channel} />
         <span className={`min-w-0 flex-1 truncate ${unread || channel.mentions ? 'font-semibold text-gray-900' : ''} ${channel.muted ? 'text-gray-400' : ''}`}>
-          {channel.kind === 'dm' ? channelTitle(channel) : channel.name}
+          {channel.kind === 'dm' ? channelTitle(channel, locale) : channel.name}
         </span>
         {channel.mentions > 0 ? (
           <span className="rounded-full bg-red-500 px-1.5 text-[11px] font-semibold leading-5 text-white">
             @{channel.mentions}
-            <span className="sr-only"> mentions</span>
+            <span className="sr-only">{t('inbox.mentionsSr')}</span>
           </span>
         ) : (
           unread && (
             <span className="rounded-full bg-gray-200 px-1.5 text-[11px] font-semibold leading-5 text-gray-700">
               {channel.unread > 99 ? '99+' : channel.unread}
-              <span className="sr-only"> unread</span>
+              <span className="sr-only">{t('nav.unread')}</span>
             </span>
           )
         )}

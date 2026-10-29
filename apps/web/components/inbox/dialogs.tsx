@@ -4,6 +4,7 @@ import { createChannelSchema, hasRole, MAX_DM_PEOPLE, type ChannelDto, type Pers
 import { useEffect, useState } from 'react';
 import { Alert, btn, input } from '@/components/ui';
 import { ApiError } from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspaceApi } from '@/lib/workspace';
 import { Avatar, channelTitle, PresenceDot } from './bits';
 
@@ -34,13 +35,14 @@ function errorText(err: unknown, fallback: string) {
 
 /** Search and tick people. */
 function PeoplePicker({ people, chosen, onChange, max, exclude = [] }: { people: PersonDto[]; chosen: string[]; onChange: (ids: string[]) => void; max?: number; exclude?: string[] }) {
+  const t = useT();
   const [q, setQ] = useState('');
   const list = people.filter((p) => !exclude.includes(p.id) && (p.name.toLowerCase().includes(q.toLowerCase()) || p.email.toLowerCase().includes(q.toLowerCase())));
   return (
     <div className="flex min-h-0 flex-col gap-2">
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people" aria-label="Search people" className={input} autoFocus />
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('inbox.searchPeople')} aria-label={t('inbox.searchPeople')} className={input} autoFocus />
       <ul className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200">
-        {list.length === 0 && <li className="px-3 py-4 text-center text-sm text-gray-500">No one matches.</li>}
+        {list.length === 0 && <li className="px-3 py-4 text-center text-sm text-gray-500">{t('inbox.noMatch')}</li>}
         {list.map((p) => {
           const on = chosen.includes(p.id);
           const full = !on && max !== undefined && chosen.length >= max;
@@ -67,6 +69,7 @@ function PeoplePicker({ people, chosen, onChange, max, exclude = [] }: { people:
 
 export function NewChannelDialog({ people, meId, onClose, onCreated }: { people: PersonDto[]; meId: string; onClose: () => void; onCreated: (c: ChannelDto) => void }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const [name, setName] = useState('');
   const [topic, setTopic] = useState('');
   const [secret, setSecret] = useState(false);
@@ -82,49 +85,49 @@ export function NewChannelDialog({ people, meId, onClose, onCreated }: { people:
     try {
       onCreated(await api<ChannelDto>('/chat/channels', { method: 'POST', body: parsed.data }));
     } catch (err) {
-      setError(errorText(err, 'Could not create the channel.'));
+      setError(errorText(err, t('inbox.createChannelFailed')));
       setSaving(false);
     }
   }
 
   return (
-    <Modal label="New channel" onClose={onClose}>
+    <Modal label={t('inbox.newChannel')} onClose={onClose}>
       <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
         <div>
-          <h2 className="text-base font-semibold">New channel</h2>
-          <p className="text-sm text-gray-500">A place for a team, a client or a topic.</p>
+          <h2 className="text-base font-semibold">{t('inbox.newChannel')}</h2>
+          <p className="text-sm text-gray-500">{t('inbox.newChannelHint')}</p>
         </div>
         {error && <Alert>{error}</Alert>}
         <label className="block text-sm">
-          <span className="text-gray-700">Name</span>
+          <span className="text-gray-700">{t('inbox.name')}</span>
           <span className="mt-1 flex items-center rounded-lg border border-gray-300 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
             <span className="ps-3 text-gray-400">#</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. sales" maxLength={80} required autoFocus className="w-full bg-transparent px-1.5 py-2 text-sm outline-none" />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('inbox.channelNamePlaceholder')} maxLength={80} required autoFocus className="w-full bg-transparent px-1.5 py-2 text-sm outline-none" />
           </span>
         </label>
         <label className="block text-sm">
-          <span className="text-gray-700">Topic (optional)</span>
+          <span className="text-gray-700">{t('inbox.topicOptional')}</span>
           <input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={250} className={`mt-1 ${input}`} />
         </label>
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" checked={secret} onChange={(e) => setSecret(e.target.checked)} className="mt-0.5 h-4 w-4 accent-brand-600" />
           <span>
-            <span className="font-medium text-gray-800">Private</span>
-            <span className="block text-gray-500">Only the people you add can find it or read it. Not even admins can see inside.</span>
+            <span className="font-medium text-gray-800">{t('inbox.private')}</span>
+            <span className="block text-gray-500">{t('inbox.privateHint')}</span>
           </span>
         </label>
         {secret && (
           <div className="flex h-64 flex-col">
-            <p className="mb-2 text-sm text-gray-700">Add people</p>
+            <p className="mb-2 text-sm text-gray-700">{t('inbox.addPeople')}</p>
             <PeoplePicker people={people} chosen={members} onChange={setMembers} exclude={[meId]} />
           </div>
         )}
         <div className="flex gap-2">
           <button type="submit" className={btn.primary} disabled={saving}>
-            {saving ? 'Creating…' : 'Create channel'}
+            {saving ? t('inbox.creating') : t('inbox.createChannel')}
           </button>
           <button type="button" className={btn.ghost} onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </form>
@@ -134,6 +137,7 @@ export function NewChannelDialog({ people, meId, onClose, onCreated }: { people:
 
 export function NewDmDialog({ people, meId, onClose, onOpened }: { people: PersonDto[]; meId: string; onClose: () => void; onOpened: (c: ChannelDto) => void }) {
   const api = useWorkspaceApi();
+  const t = useT();
   const [chosen, setChosen] = useState<string[]>([]);
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -143,17 +147,17 @@ export function NewDmDialog({ people, meId, onClose, onOpened }: { people: Perso
     try {
       onOpened(await api<ChannelDto>('/chat/dm', { method: 'POST', body: { userIds: chosen } }));
     } catch (err) {
-      setError(errorText(err, 'Could not start the conversation.'));
+      setError(errorText(err, t('inbox.startFailed')));
       setSaving(false);
     }
   }
 
   return (
-    <Modal label="New message" onClose={onClose}>
+    <Modal label={t('inbox.newMessage')} onClose={onClose}>
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-5">
         <div>
-          <h2 className="text-base font-semibold">New message</h2>
-          <p className="text-sm text-gray-500">Choose one person, or up to {MAX_DM_PEOPLE - 1} for a group.</p>
+          <h2 className="text-base font-semibold">{t('inbox.newMessage')}</h2>
+          <p className="text-sm text-gray-500">{t('inbox.newMessageHint', { n: MAX_DM_PEOPLE - 1 })}</p>
         </div>
         {error && <Alert>{error}</Alert>}
         <div className="flex h-80 flex-col">
@@ -161,10 +165,10 @@ export function NewDmDialog({ people, meId, onClose, onOpened }: { people: Perso
         </div>
         <div className="flex gap-2">
           <button type="button" className={btn.primary} disabled={saving || chosen.length === 0} onClick={start}>
-            {saving ? 'Opening…' : chosen.length > 1 ? `Message ${chosen.length} people` : 'Message'}
+            {saving ? t('inbox.opening') : chosen.length > 1 ? t('inbox.messageN', { n: chosen.length }) : t('inbox.message')}
           </button>
           <button type="button" className={btn.ghost} onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>
@@ -174,53 +178,55 @@ export function NewDmDialog({ people, meId, onClose, onOpened }: { people: Perso
 
 export function BrowseChannelsDialog({ onClose, onOpen }: { onClose: () => void; onOpen: (c: ChannelDto) => void }) {
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const [list, setList] = useState<ChannelDto[]>();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
     api<ChannelDto[]>('/chat/channels/browse')
       .then(setList)
-      .catch(() => setError('Could not load channels.'));
-  }, [api]);
+      .catch(() => setError(t('inbox.loadBrowseError')));
+  }, [api, t]);
 
   async function join(c: ChannelDto) {
     try {
       onOpen(await api<ChannelDto>(`/chat/channels/${c.id}/join`, { method: 'POST' }));
     } catch (err) {
-      setError(errorText(err, 'Could not join the channel.'));
+      setError(errorText(err, t('inbox.joinFailed')));
     }
   }
 
   return (
-    <Modal label="Browse channels" onClose={onClose}>
+    <Modal label={t('inbox.browse')} onClose={onClose}>
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-5">
-        <h2 className="text-base font-semibold">Channels</h2>
+        <h2 className="text-base font-semibold">{t('inbox.channels')}</h2>
         {error && <Alert>{error}</Alert>}
         <ul className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-200">
-          {!list && <li className="px-3 py-4 text-sm text-gray-500">Loading…</li>}
-          {list?.length === 0 && <li className="px-3 py-4 text-sm text-gray-500">No public channels yet.</li>}
+          {!list && <li className="px-3 py-4 text-sm text-gray-500">{t('common.loading')}</li>}
+          {list?.length === 0 && <li className="px-3 py-4 text-sm text-gray-500">{t('inbox.noPublic')}</li>}
           {list?.map((c) => (
             <li key={c.id} className="flex items-center gap-3 border-b border-gray-100 px-3 py-2.5 last:border-0">
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{channelTitle(c)}</span>
+                <span className="block truncate text-sm font-medium">{channelTitle(c, locale)}</span>
                 <span className="block truncate text-xs text-gray-500">
-                  {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
+                  {c.memberCount === 1 ? t('inbox.members.one') : t('inbox.members.many', { n: c.memberCount })}
                   {c.topic && ` · ${c.topic}`}
                 </span>
               </span>
               <button type="button" className={btn.ghost} onClick={() => onOpen(c)}>
-                View
+                {t('inbox.view')}
               </button>
               {!c.joined && (
                 <button type="button" className={`${btn.primary} !px-3 !py-1.5`} onClick={() => join(c)}>
-                  Join
+                  {t('inbox.join')}
                 </button>
               )}
             </li>
           ))}
         </ul>
         <button type="button" className={`${btn.ghost} self-start`} onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </div>
     </Modal>
@@ -245,6 +251,8 @@ export function ChannelDetailsDialog({
   onLeft: () => void;
 }) {
   const api = useWorkspaceApi();
+  const t = useT();
+  const locale = useLocale();
   const [members, setMembers] = useState<PersonDto[]>();
   const [name, setName] = useState(channel.name ?? '');
   const [topic, setTopic] = useState(channel.topic ?? '');
@@ -258,8 +266,8 @@ export function ChannelDetailsDialog({
   useEffect(() => {
     api<PersonDto[]>(`/chat/channels/${channel.id}/members`)
       .then(setMembers)
-      .catch(() => setError('Could not load the members.'));
-  }, [api, channel.id]);
+      .catch(() => setError(t('inbox.loadMembersError')));
+  }, [api, channel.id, t]);
 
   async function run(fn: () => Promise<void>, done?: string) {
     setError(undefined);
@@ -268,19 +276,19 @@ export function ChannelDetailsDialog({
       await fn();
       if (done) setNotice(done);
     } catch (err) {
-      setError(errorText(err, 'That didn’t work. Please try again.'));
+      setError(errorText(err, t('common.failed')));
     }
   }
 
   const reloadMembers = async () => setMembers(await api<PersonDto[]>(`/chat/channels/${channel.id}/members`));
 
   return (
-    <Modal label={`${channelTitle(channel)} details`} onClose={onClose} wide>
+    <Modal label={t('inbox.details', { name: channelTitle(channel, locale) })} onClose={onClose} wide>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
         <div>
-          <h2 className="text-base font-semibold">{channelTitle(channel)}</h2>
+          <h2 className="text-base font-semibold">{channelTitle(channel, locale)}</h2>
           <p className="text-sm text-gray-500">
-            {isDm ? 'Direct message. Only the people in it can read it.' : channel.kind === 'private' ? 'Private channel. Only its members can find or read it.' : 'Public channel. Anyone in the workspace can read and join it.'}
+            {isDm ? t('inbox.aboutDm') : channel.kind === 'private' ? t('inbox.aboutPrivate') : t('inbox.aboutPublic')}
           </p>
         </div>
         <div aria-live="polite" className="space-y-2">
@@ -293,19 +301,19 @@ export function ChannelDetailsDialog({
             className="space-y-3"
             onSubmit={(e) => {
               e.preventDefault();
-              void run(async () => onChanged(await api<ChannelDto>(`/chat/channels/${channel.id}`, { method: 'PATCH', body: { name, topic: topic || null } })), 'Saved.');
+              void run(async () => onChanged(await api<ChannelDto>(`/chat/channels/${channel.id}`, { method: 'PATCH', body: { name, topic: topic || null } })), t('inbox.saved'));
             }}
           >
             <label className="block text-sm">
-              <span className="text-gray-700">Name</span>
+              <span className="text-gray-700">{t('inbox.name')}</span>
               <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} className={`mt-1 ${input}`} />
             </label>
             <label className="block text-sm">
-              <span className="text-gray-700">Topic</span>
+              <span className="text-gray-700">{t('inbox.topic')}</span>
               <input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={250} className={`mt-1 ${input}`} />
             </label>
             <button type="submit" className={btn.secondary}>
-              Save
+              {t('common.save')}
             </button>
           </form>
         )}
@@ -313,11 +321,11 @@ export function ChannelDetailsDialog({
         <section>
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-semibold">
-              Members {members && <span className="font-normal text-gray-500">({members.length})</span>}
+              {t('inbox.members')} {members && <span className="font-normal text-gray-500">({members.length})</span>}
             </h3>
             {!isDm && channel.joined && adding === null && hasRole(role, 'member') && (
               <button type="button" className={btn.ghost} onClick={() => setAdding([])}>
-                Add people
+                {t('inbox.addPeople')}
               </button>
             )}
           </div>
@@ -334,13 +342,13 @@ export function ChannelDetailsDialog({
                       onChanged(await api<ChannelDto>(`/chat/channels/${channel.id}/members`, { method: 'POST', body: { userIds: adding } }));
                       setAdding(null);
                       await reloadMembers();
-                    }, 'Added.')
+                    }, t('inbox.added'))
                   }
                 >
-                  Add {adding.length > 0 ? adding.length : ''}
+                  {adding.length > 0 ? t('inbox.addN', { n: adding.length }) : t('common.add')}
                 </button>
                 <button type="button" className={btn.ghost} onClick={() => setAdding(null)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -351,7 +359,7 @@ export function ChannelDetailsDialog({
                   <Avatar person={m} size="sm" />
                   <span className="min-w-0 flex-1 truncate">
                     {m.name}
-                    {m.id === meId && <span className="text-gray-400"> (you)</span>}
+                    {m.id === meId && <span className="text-gray-400">{t('inbox.you')}</span>}
                   </span>
                   <PresenceDot userId={m.id} />
                   {canManage && m.id !== meId && (
@@ -362,10 +370,10 @@ export function ChannelDetailsDialog({
                         void run(async () => {
                           await api(`/chat/channels/${channel.id}/members/${m.id}`, { method: 'DELETE' });
                           await reloadMembers();
-                        }, `${m.name} was removed.`)
+                        }, t('inbox.removed', { name: m.name }))
                       }
                     >
-                      Remove
+                      {t('common.remove')}
                     </button>
                   )}
                 </li>
@@ -381,7 +389,7 @@ export function ChannelDetailsDialog({
               className={btn.secondary}
               onClick={() => void run(async () => onChanged(await api<ChannelDto>(`/chat/channels/${channel.id}/mute`, { method: 'POST', body: { muted: !channel.muted } })))}
             >
-              {channel.muted ? 'Unmute' : 'Mute'}
+              {channel.muted ? t('inbox.unmute') : t('inbox.mute')}
             </button>
           )}
           {!isDm && !channel.isDefault && channel.joined && (
@@ -395,7 +403,7 @@ export function ChannelDetailsDialog({
                 })
               }
             >
-              Leave channel
+              {t('inbox.leave')}
             </button>
           )}
           {canManage && (
@@ -403,18 +411,18 @@ export function ChannelDetailsDialog({
               type="button"
               className={btn.danger}
               onClick={() => {
-                if (!confirm(`Archive ${channelTitle(channel)}? It becomes read-only and leaves everyone’s list.`)) return;
+                if (!confirm(t('inbox.confirmArchive', { name: channelTitle(channel, locale) }))) return;
                 void run(async () => {
                   await api(`/chat/channels/${channel.id}/archive`, { method: 'POST' });
                   onLeft();
                 });
               }}
             >
-              Archive
+              {t('inbox.archive')}
             </button>
           )}
           <button type="button" className={`${btn.ghost} ms-auto`} onClick={onClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

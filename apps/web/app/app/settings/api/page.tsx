@@ -58,7 +58,7 @@ export default function ApiSettingsPage() {
 
         <Card
           title="API keys"
-          description="A key lets other software read this workspace's data. It acts as you, with your access, and stops working if you leave or stop being an admin."
+          description="A key lets other software use this workspace's data. It acts as you, with your access, and stops working if you leave or stop being an admin."
         >
           {!keys ? (
             <p className="text-sm text-gray-500">Loading…</p>
@@ -138,7 +138,7 @@ function CreateKey({ onCreated, onError }: { onCreated: (k: ApiKeyCreatedDto) =>
       <button type="submit" className={btn.primary} disabled={saving}>
         {saving ? 'Creating…' : 'Create key'}
       </button>
-      <p className="w-full text-xs text-gray-500">Changing data through the API is coming soon. Until then, every key can only read.</p>
+      <p className="w-full text-xs text-gray-500">Read and write keys can also add and change tasks, leads, contacts and activities. Choose read only unless the other software needs to.</p>
     </form>
   );
 }

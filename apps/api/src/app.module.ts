@@ -40,6 +40,7 @@ import { TimesheetsController } from './timesheets/timesheets.controller';
 import { ApiKeyGuard } from './public-api/api-key.guard';
 import { ApiKeysController } from './public-api/api-keys.controller';
 import { OpenApiController } from './public-api/openapi';
+import { PublicApiV1WriteController } from './public-api/v1-write.controller';
 import { PublicApiV1Controller } from './public-api/v1.controller';
 import { WaitlistController } from './waitlist/waitlist.controller';
 import { WorkspaceGuard } from './workspaces/workspace.guard';
@@ -89,6 +90,7 @@ class HealthController {
     WaitlistController,
     ApiKeysController,
     PublicApiV1Controller,
+    PublicApiV1WriteController,
     OpenApiController,
   ],
   providers: [WorkspaceGuard, ApiKeyGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],

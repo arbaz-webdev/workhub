@@ -6,7 +6,7 @@ import { siteUrl } from '@/lib/site-url';
 
 export const metadata: Metadata = {
   title: 'API documentation · WorkHub',
-  description: "Read a WorkHub workspace's people, attendance, leave, time, projects, CRM and invoices from your own software.",
+  description: "Read a WorkHub workspace's people, attendance, leave, time, projects, CRM and invoices from your own software, and add tasks, leads, contacts and activities.",
 };
 
 /** The public API's guide. The full reference is the OpenAPI description it links to. */
@@ -49,7 +49,26 @@ To keep another system in step, ask only for what changed: tasks, companies, con
 - \`GET /v1/time-entries?from=2027-01-01&to=2027-01-31\`: time logged on projects, up to a year at a time. Each entry says whether its week was \`approved\`; filter with \`approved=true\`, \`projectId\` or \`userId\`.
 - \`GET /v1/projects\` and \`GET /v1/tasks\`: filter tasks by \`projectId\` or \`completed\`.
 - \`GET /v1/companies\`, \`/v1/contacts\`, \`/v1/leads\` and \`/v1/deals\`: your CRM, including custom fields.
+- \`GET /v1/activities\`: calls, meetings, notes and follow-ups. Filter by \`dealId\`, \`companyId\`, \`contactId\` or \`leadId\`.
 - \`GET /v1/invoices\` and \`GET /v1/invoices/{id}\`: invoices to your clients, with their lines.
+
+## Change data
+
+A key made with **Read and write** access can also add and change data. Every change follows the same rules as the app: the same checks, the same activity history, and the same notifications. For example, people you assign a task to are told, and the board updates live for anyone looking at it.
+
+- \`POST /v1/tasks\` and \`PATCH /v1/tasks/{id}\`: add a task (or, with \`parentTaskId\`, a subtask), change its details, mark it \`completed\`, or move it with \`columnId\`.
+- \`POST /v1/leads\` and \`PATCH /v1/leads/{id}\`: for example, add a lead from your website's contact form.
+- \`POST /v1/contacts\` and \`PATCH /v1/contacts/{id}\`.
+- \`POST /v1/activities\`: log a call or meeting, or add a follow-up with \`dueAt\`. Link it to a deal, company, contact or lead.
+
+Send JSON. Fields you leave out stay as they are. The answer is the record as it is now, in the same shape the lists use.
+
+\`\`\`bash
+curl ${base}/v1/leads \\
+  -H "Authorization: Bearer whk_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "Zara Khan", "email": "zara@example.com", "source": "website"}'
+\`\`\`
 
 Every field is described in the [OpenAPI description](/api/v1/openapi.json). Import it into Postman, Insomnia or a code generator.
 
@@ -57,23 +76,25 @@ Every field is described in the [OpenAPI description](/api/v1/openapi.json). Imp
 
 - Each key can make **${API_RATE_LIMIT_PER_MINUTE} requests a minute**. Past that you get \`429\`; wait a minute and try again.
 - \`401\`: the key is missing, wrong, or was revoked.
-- \`403\`: the person who made the key is no longer an admin, or the workspace's plan doesn't include the API.
-- \`400\`: a parameter is missing or not valid. The \`message\` says which.
+- \`403\`: the key is read-only and you tried to change something, the person who made the key is no longer an admin, or the workspace's plan doesn't include the API.
+- \`404\`: there's no such record in this workspace.
+- \`400\`: a parameter or field is missing or not valid. The \`message\` (and, for fields, \`errors\`) says which.
 
 ## Keep keys safe
 
 - Treat a key like a password. Keep it on your server, never in a web page, an app people download, or a shared spreadsheet.
 - Give each system its own key, so you can revoke one without breaking the others.
 - If a key might have leaked, revoke it in **Settings → API** and make a new one. It stops working at once.
+- Use **read only** keys unless the software needs to change data.
 
-> Coming next: changing data through the API (adding tasks, leads and contacts), and webhooks that tell your system the moment something happens.`;
+> Coming next: webhooks that tell your system the moment something happens.`;
 
   return (
     <div className="min-h-screen bg-white">
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="text-3xl font-bold tracking-tight">WorkHub API</h1>
-        <p className="mt-2 text-lg text-gray-600">Read your workspace&apos;s data from your own software: payroll, accounting, dashboards or anything else.</p>
+        <p className="mt-2 text-lg text-gray-600">Connect your workspace to your own software: payroll, accounting, your website, dashboards or anything else.</p>
         <article className="mt-8 min-w-0">
           <ArticleBody body={body} />
         </article>

@@ -380,12 +380,12 @@ In **Settings → Security**, choose **Require two-factor sign-in**. You need it
     summary: 'Let payroll, accounting or your own tools read WorkHub data with an API key.',
     category: 'Your account and billing',
     keywords: 'api key integration developer payroll accounting export sync zapier connect',
-    body: `The WorkHub API lets other software read your workspace's data: people, attendance, leave, logged time, projects and tasks, your CRM, and invoices to clients. It's part of the Business plan.
+    body: `The WorkHub API lets other software read your workspace's data: people, attendance, leave, logged time, projects and tasks, your CRM, and invoices to clients. Keys with **Read and write** access can also add and change tasks, leads, contacts and activities, for example to send your website's enquiries straight into your leads. It's part of the Business plan.
 
 ## Create a key (owners and admins)
 
 1. Open **Settings → API**.
-2. Give the key a name that says what it's for, such as "Payroll sync", and choose **Create key**.
+2. Give the key a name that says what it's for, such as "Payroll sync". Choose **Read only** unless the software needs to change data. Then choose **Create key**.
 3. Copy the key and give it to whoever is setting up the connection. It's shown only once.
 
 ## What a key can see

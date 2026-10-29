@@ -374,34 +374,6 @@ In **Settings → Security**, choose **Require two-factor sign-in**. You need it
 
 > Recommended for every owner and admin.`,
   },
-  {
-    slug: 'use-workhub-in-urdu',
-    title: 'Use WorkHub in Urdu',
-    summary: 'Switch the app to Urdu, right to left, on every device you use.',
-    category: 'Your account and billing',
-    keywords: 'urdu اردو language english right to left rtl translate',
-    body: `Each person chooses their own language. Changing yours doesn't change it for anyone else.
-
-## Switch to Urdu
-
-1. Open **Account** from the menu.
-2. Under **Language**, choose **اردو**.
-
-The page reloads right to left. Your choice is saved to your account, so WorkHub opens in Urdu on your phone and laptop too. You can also pick the language on the sign-in page.
-
-## What's in Urdu so far
-
-- The menu, the top bar, notifications, the timer and the **Feedback** form
-- Signing in and up, and two-factor sign-in
-- **Attendance**: checking in and out, selfies, your history and asking for a correction
-- **Leave**: your balances and requests, the team calendar, approvals, and leave types and holidays
-- **My work** and the **Inbox**
-- **Account**, including two-factor sign-in and recovery codes
-
-Other screens are still in English while we translate them. Some messages from the server, such as error messages and emails, are in English too.
-
-> To go back to English, choose **English** under **Language** in **Account**.`,
-  },
 ];
 
 export const helpArticle = (slug: string) => HELP_ARTICLES.find((a) => a.slug === slug);

@@ -322,20 +322,10 @@ Still to do, and yours:
 - [x] Payroll exports and fingerprint devices (#90), in **Attendance → Payroll and devices**:
   - Export layouts: three built in (full summary, payable days, hours), plus your own (choose, order and rename columns). Employee codes for payroll software.
   - ZKTeco import from attlog.dat or a ZKTime/ZKBio CSV. Device users are matched to people (remembered next time); each workday's first and last punch become check-in and check-out, using the shift rules. Days recorded in the app are kept, and re-importing changes nothing.
-- [x] Urdu interface, first part (#91):
-  - Each person picks English or اردو in **Account** (or on the sign-in page). It's saved to their account, so it follows them to every device, and pages render in that language and direction from the first byte (a `wh_lang` cookie, read by the root layout).
-  - Right to left: the whole app uses start/end (logical) spacing and positions, so every screen mirrors in Urdu. Timeline charts stay left to right.
-  - Translated so far: the menu and top bar, roles, sign-in, sign-up and two-factor sign-in, the language setting, and the check-in page with its history, statuses and flags (dates and durations in Urdu too). Other screens show in English until translated, and messages from the server are still in English.
-  - **The Urdu needs checking by a native speaker before launch.**
-  - To translate more: add keys to `apps/web/lib/messages/en.ts`, use `const t = useT()` and `t('key')` in the component, and add the Urdu to `ur.ts` (a missing key shows the English).
-- [x] Urdu interface, second part (#91):
-  - Translated: **Leave** (my leave, team calendar, approvals, leave types and holidays), **My work**, the **Inbox** (conversations, threads, the message box, new channel and message dialogs, channel details), the notifications bell, timer, **Feedback** form, install button and search palette, the two-factor section of **Account**, and the selfie camera and correction dialog.
-  - Dates, times, "5 minutes ago" and day headings use Urdu names; month arrows and the Inbox back button point the right way in right to left.
-  - Shared helpers take the language as an optional last argument (`roleLabel`, `timeAgo`, `rangeLabel`, `channelTitle`, `clockTime`, `dayHeading`, `hoursText`, `dayLabel`); without it they stay English, so untranslated screens don't change.
-  - Help article: **Use WorkHub in Urdu**.
-- [x] 299 tests, plus 2 that run against Redis in CI
+- [x] 297 tests, plus 2 that run against Redis in CI
+- [ ] Urdu interface (#91): **parked**. Two parts were built and then taken out again; the work is kept in draft PR #121, which explains how to bring it back. The app is English only, left to right. Staging's `users` table still has an unused `locale` column from that work.
 
-Next: translate the remaining screens into Urdu (#91): projects and boards, CRM, timesheets, reports, people, teams, settings and billing, announcements and the dashboard. Then send stable error codes from the API so its messages can be translated too. These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+Next, buildable without paid accounts: Terms of service and Privacy policy pages (for a lawyer to fill in). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

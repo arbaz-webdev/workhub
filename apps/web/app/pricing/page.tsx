@@ -54,8 +54,8 @@ export default function PricingPage() {
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-start">
-                  <th className="py-3 pe-4 font-medium text-gray-500">
+                <tr className="border-b border-gray-200 text-left">
+                  <th className="py-3 pr-4 font-medium text-gray-500">
                     <span className="sr-only">Feature</span>
                   </th>
                   {PLANS.map((p) => (
@@ -68,13 +68,13 @@ export default function PricingPage() {
               {COMPARISON.map((g) => (
                 <tbody key={g.group}>
                   <tr>
-                    <th colSpan={4} className="pt-6 pb-2 text-start text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th colSpan={4} className="pt-6 pb-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                       {g.group}
                     </th>
                   </tr>
                   {g.rows.map((r) => (
                     <tr key={r.label} className="border-t border-gray-100">
-                      <th scope="row" className="py-2.5 pe-4 text-start font-normal text-gray-800">
+                      <th scope="row" className="py-2.5 pr-4 text-left font-normal text-gray-800">
                         {r.label}
                       </th>
                       {PLANS.map((p) => (

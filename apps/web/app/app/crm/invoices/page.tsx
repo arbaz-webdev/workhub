@@ -75,13 +75,13 @@ export default function ClientDocsPage() {
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
           <table className="w-full min-w-[40rem] text-sm">
-            <thead className="border-b border-gray-200 text-start text-xs text-gray-500">
+            <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
               <tr>
                 <th className="px-4 py-2 font-medium">Number</th>
                 <th className="px-4 py-2 font-medium">Client</th>
                 <th className="px-4 py-2 font-medium">Date</th>
                 <th className="px-4 py-2 font-medium">{kind === 'quote' ? 'Valid until' : 'Due'}</th>
-                <th className="px-4 py-2 text-end font-medium">Total</th>
+                <th className="px-4 py-2 text-right font-medium">Total</th>
                 <th className="px-4 py-2 font-medium">Status</th>
               </tr>
             </thead>
@@ -96,7 +96,7 @@ export default function ClientDocsPage() {
                   <td className="px-4 py-2.5">{d.company.name}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{date(d.issueDate)}</td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-gray-600">{date(d.dueDate)}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-end tabular-nums">{docMoney(d.total, d.currency)}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">{docMoney(d.total, d.currency)}</td>
                   <td className="px-4 py-2.5">
                     <DocStatus status={d.status} overdue={d.overdue} />
                   </td>

@@ -113,7 +113,7 @@ function Leads() {
             </option>
           ))}
         </select>
-        {data && <span className="ms-auto text-sm text-gray-500">{data.total.toLocaleString()} leads</span>}
+        {data && <span className="ml-auto text-sm text-gray-500">{data.total.toLocaleString()} leads</span>}
       </div>
 
       {!data ? (
@@ -127,12 +127,12 @@ function Leads() {
         <>
           <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Source</th>
                   <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2 text-end">Value</th>
+                  <th className="px-3 py-2 text-right">Value</th>
                   <th className="px-3 py-2">Owner</th>
                   <th className="px-3 py-2">Added</th>
                 </tr>
@@ -141,7 +141,7 @@ function Leads() {
                 {data.items.map((l) => (
                   <tr key={l.id} onClick={() => setEditing(l)} className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50">
                     <td className="px-3 py-2">
-                      <button type="button" className="text-start font-medium text-gray-900 hover:underline" onClick={() => setEditing(l)}>
+                      <button type="button" className="text-left font-medium text-gray-900 hover:underline" onClick={() => setEditing(l)}>
                         {l.name}
                       </button>
                       <span className="block text-xs text-gray-500">{[l.companyName, l.email ?? l.phone].filter(Boolean).join(' · ')}</span>
@@ -150,7 +150,7 @@ function Leads() {
                     <td className="px-3 py-2">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[l.status]}`}>{STATUS_LABELS[l.status]}</span>
                     </td>
-                    <td className="px-3 py-2 text-end tabular-nums text-gray-700">{l.value !== null ? money(l.value, l.currency) : '—'}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-gray-700">{l.value !== null ? money(l.value, l.currency) : '—'}</td>
                     <td className="px-3 py-2 text-gray-700">{l.owner?.name ?? '—'}</td>
                     <td className="px-3 py-2 text-gray-500">{timeAgo(l.createdAt)}</td>
                   </tr>

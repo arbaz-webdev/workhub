@@ -147,9 +147,9 @@ export function DocEditor({
           {lines.map((l, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] gap-2 rounded-xl border border-gray-100 p-2 sm:grid-cols-[1fr_6rem_8rem_8rem_auto] sm:items-center sm:border-0 sm:p-0">
               <input aria-label={`Line ${i + 1} description`} value={l.description} onChange={(e) => setLine(i, { description: e.target.value })} placeholder="What it’s for" maxLength={500} className={`${input} col-span-2 sm:col-span-1`} />
-              <input aria-label={`Line ${i + 1} quantity`} inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} placeholder="Qty" className={`${input} text-end tabular-nums`} />
-              <input aria-label={`Line ${i + 1} price`} inputMode="decimal" value={l.unitPrice} onChange={(e) => setLine(i, { unitPrice: e.target.value })} placeholder="Price" className={`${input} text-end tabular-nums`} />
-              <span className="self-center text-end text-sm tabular-nums text-gray-700">{docMoney(totals.amounts[i] ?? 0, currency)}</span>
+              <input aria-label={`Line ${i + 1} quantity`} inputMode="decimal" value={l.quantity} onChange={(e) => setLine(i, { quantity: e.target.value })} placeholder="Qty" className={`${input} text-right tabular-nums`} />
+              <input aria-label={`Line ${i + 1} price`} inputMode="decimal" value={l.unitPrice} onChange={(e) => setLine(i, { unitPrice: e.target.value })} placeholder="Price" className={`${input} text-right tabular-nums`} />
+              <span className="self-center text-right text-sm tabular-nums text-gray-700">{docMoney(totals.amounts[i] ?? 0, currency)}</span>
               <button type="button" className={`${btn.ghost} justify-self-end`} aria-label={`Remove line ${i + 1}`} disabled={lines.length === 1} onClick={() => setLines(lines.filter((_, j) => j !== i))}>
                 ✕
               </button>
@@ -171,7 +171,7 @@ export function DocEditor({
               <input value={taxLabel} onChange={(e) => setTaxLabel(e.target.value)} placeholder="e.g. Sales tax" maxLength={80} className={input} />
             </Labelled>
             <Labelled label="Tax %">
-              <input inputMode="decimal" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className={`${input} text-end`} />
+              <input inputMode="decimal" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className={`${input} text-right`} />
             </Labelled>
           </div>
           <dl className="space-y-1 text-sm tabular-nums">
@@ -219,7 +219,7 @@ export function DocPaper({ doc }: { doc: ClientDocumentDto }) {
           {doc.from.ntn && <p className="text-sm text-gray-600">NTN {doc.from.ntn}</p>}
           {doc.from.email && <p className="text-sm text-gray-600">{doc.from.email}</p>}
         </div>
-        <div className="text-end">
+        <div className="text-right">
           <p className="text-2xl font-bold tracking-tight">{label}</p>
           <p className="text-sm text-gray-600">{doc.number}</p>
           <p className="mt-2 text-sm text-gray-600">Date: {date(doc.issueDate)}</p>
@@ -241,44 +241,44 @@ export function DocPaper({ doc }: { doc: ClientDocumentDto }) {
 
       <div className="mt-8 overflow-x-auto">
         <table className="w-full min-w-[30rem] text-sm">
-          <thead className="border-b border-gray-300 text-start text-xs uppercase tracking-wide text-gray-500">
+          <thead className="border-b border-gray-300 text-left text-xs uppercase tracking-wide text-gray-500">
             <tr>
-              <th className="py-2 pe-3 font-medium">Description</th>
-              <th className="py-2 ps-4 text-end font-medium">Qty</th>
-              <th className="py-2 ps-4 text-end font-medium">Price</th>
-              <th className="py-2 ps-4 text-end font-medium">Amount</th>
+              <th className="py-2 pr-3 font-medium">Description</th>
+              <th className="py-2 pl-4 text-right font-medium">Qty</th>
+              <th className="py-2 pl-4 text-right font-medium">Price</th>
+              <th className="py-2 pl-4 text-right font-medium">Amount</th>
             </tr>
           </thead>
           <tbody>
             {doc.lines.map((l) => (
               <tr key={l.id} className="border-b border-gray-100 align-top">
-                <td className="py-3 pe-3">{l.description}</td>
-                <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{l.quantity}</td>
-                <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{docMoney(l.unitPrice, doc.currency)}</td>
-                <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{docMoney(l.amount, doc.currency)}</td>
+                <td className="py-3 pr-3">{l.description}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{l.quantity}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{docMoney(l.unitPrice, doc.currency)}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{docMoney(l.amount, doc.currency)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3} className="pt-3 text-end text-gray-600">
+              <td colSpan={3} className="pt-3 text-right text-gray-600">
                 Subtotal
               </td>
-              <td className="whitespace-nowrap pt-3 ps-4 text-end tabular-nums">{docMoney(doc.subtotal, doc.currency)}</td>
+              <td className="whitespace-nowrap pt-3 pl-4 text-right tabular-nums">{docMoney(doc.subtotal, doc.currency)}</td>
             </tr>
             {doc.taxRate > 0 && (
               <tr>
-                <td colSpan={3} className="pt-1 text-end text-gray-600">
+                <td colSpan={3} className="pt-1 text-right text-gray-600">
                   {doc.taxLabel || 'Tax'} ({doc.taxRate}%)
                 </td>
-                <td className="whitespace-nowrap pt-1 ps-4 text-end tabular-nums">{docMoney(doc.taxAmount, doc.currency)}</td>
+                <td className="whitespace-nowrap pt-1 pl-4 text-right tabular-nums">{docMoney(doc.taxAmount, doc.currency)}</td>
               </tr>
             )}
             <tr className="text-base font-semibold">
-              <td colSpan={3} className="pt-2 text-end">
+              <td colSpan={3} className="pt-2 text-right">
                 Total
               </td>
-              <td className="whitespace-nowrap pt-2 ps-4 text-end tabular-nums">{docMoney(doc.total, doc.currency)}</td>
+              <td className="whitespace-nowrap pt-2 pl-4 text-right tabular-nums">{docMoney(doc.total, doc.currency)}</td>
             </tr>
           </tfoot>
         </table>

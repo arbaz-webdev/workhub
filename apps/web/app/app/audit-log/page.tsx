@@ -110,7 +110,7 @@ export default function AuditLogPage() {
         <div className="-mx-6 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-start text-xs text-gray-500">
+              <tr className="border-b border-gray-100 text-left text-xs text-gray-500">
                 <th className="px-6 pb-2 font-medium">When</th>
                 <th className="pb-2 font-medium">Who</th>
                 <th className="pb-2 font-medium">What</th>

@@ -69,7 +69,7 @@ export default function SalesReportPage() {
             {p.label}
           </button>
         ))}
-        <button type="button" className={`${btn.secondary} ms-auto`} onClick={csv} disabled={!data}>
+        <button type="button" className={`${btn.secondary} ml-auto`} onClick={csv} disabled={!data}>
           Download CSV
         </button>
       </div>
@@ -135,13 +135,13 @@ export default function SalesReportPage() {
           <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <h2 className="px-4 pt-4 text-sm font-semibold">Where deals come from</h2>
             <table className="mt-2 w-full min-w-[560px] text-sm">
-              <thead className="border-y border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+              <thead className="border-y border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Source</th>
-                  <th className="px-3 py-2 text-end">New leads</th>
-                  <th className="px-3 py-2 text-end">Converted</th>
-                  <th className="px-3 py-2 text-end">Deals won</th>
-                  <th className="px-3 py-2 text-end">Won value</th>
+                  <th className="px-3 py-2 text-right">New leads</th>
+                  <th className="px-3 py-2 text-right">Converted</th>
+                  <th className="px-3 py-2 text-right">Deals won</th>
+                  <th className="px-3 py-2 text-right">Won value</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,13 +155,13 @@ export default function SalesReportPage() {
                 {data.sources.map((s) => (
                   <tr key={s.source} className="border-b border-gray-100 last:border-0">
                     <td className="px-3 py-2 font-medium">{s.source === 'direct' ? 'Direct (no lead)' : LEAD_SOURCE_LABELS[s.source]}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{s.leads}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">
+                    <td className="px-3 py-2 text-right tabular-nums">{s.leads}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
                       {s.converted}
-                      {s.leads > 0 && <span className="ms-1 text-xs text-gray-500">({Math.round((s.converted / s.leads) * 100)}%)</span>}
+                      {s.leads > 0 && <span className="ml-1 text-xs text-gray-500">({Math.round((s.converted / s.leads) * 100)}%)</span>}
                     </td>
-                    <td className="px-3 py-2 text-end tabular-nums">{s.won}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amounts(s.wonValue)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{s.won}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amounts(s.wonValue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -171,15 +171,15 @@ export default function SalesReportPage() {
           <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <h2 className="px-4 pt-4 text-sm font-semibold">Salespeople</h2>
             <table className="mt-2 w-full min-w-[620px] text-sm">
-              <thead className="border-y border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+              <thead className="border-y border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Person</th>
-                  <th className="px-3 py-2 text-end">Activities</th>
-                  <th className="px-3 py-2 text-end">Calls</th>
-                  <th className="px-3 py-2 text-end">Meetings</th>
-                  <th className="px-3 py-2 text-end">Won</th>
-                  <th className="px-3 py-2 text-end">Won value</th>
-                  <th className="px-3 py-2 text-end">Open deals</th>
+                  <th className="px-3 py-2 text-right">Activities</th>
+                  <th className="px-3 py-2 text-right">Calls</th>
+                  <th className="px-3 py-2 text-right">Meetings</th>
+                  <th className="px-3 py-2 text-right">Won</th>
+                  <th className="px-3 py-2 text-right">Won value</th>
+                  <th className="px-3 py-2 text-right">Open deals</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,12 +193,12 @@ export default function SalesReportPage() {
                 {data.people.map((p) => (
                   <tr key={p.person.id} className="border-b border-gray-100 last:border-0">
                     <td className="px-3 py-2 font-medium">{p.person.name}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{p.activities}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{p.calls}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{p.meetings}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{p.won}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amounts(p.wonValue)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{p.open}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.activities}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.calls}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.meetings}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.won}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amounts(p.wonValue)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{p.open}</td>
                   </tr>
                 ))}
               </tbody>

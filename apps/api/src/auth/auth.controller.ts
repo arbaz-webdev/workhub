@@ -1,8 +1,6 @@
-import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import {
   forgotPasswordSchema,
-  LOCALE_COOKIE,
-  localeSchema,
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
@@ -26,7 +24,7 @@ import { RateLimiter } from '../common/rate-limiter';
 import { AppRequest, AuthContext, CurrentAuth, Public } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { AuthService } from './auth.service';
-import { clearSessionCookie, SESSION_COOKIE, setLocaleCookie, setSessionCookie } from './session';
+import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from './session';
 import { Track } from '../analytics/track';
 
 const MINUTE = 60 * 1000;
@@ -64,12 +62,6 @@ export class AuthController {
     await this.signUpLimiter.consume(req.ip ?? 'unknown');
     const { token, user, workspace } = await this.auth.signUp(body, this.meta(req));
     setSessionCookie(res, token);
-    // Signing up from the site in Urdu keeps WorkHub in Urdu.
-    const browsing = req.cookies?.[LOCALE_COOKIE];
-    if (browsing === 'ur') {
-      await this.auth.setLocale(user.id, 'ur');
-      return { user: { ...user, locale: 'ur' as const }, workspace };
-    }
     return { user, workspace };
   }
 
@@ -87,16 +79,7 @@ export class AuthController {
     await this.signInLimiter.reset(key);
     if (result.token === undefined) return { twoFactorRequired: true, challenge: result.challenge };
     setSessionCookie(res, result.token);
-    setLocaleCookie(res, result.user.locale);
     return { user: result.user };
-  }
-
-  /** The language the person uses WorkHub in, on every device. */
-  @Patch('me/locale')
-  @HttpCode(204)
-  async setLocale(@Body(new ZodPipe(localeSchema)) body: z.infer<typeof localeSchema>, @CurrentAuth() auth: AuthContext, @Res({ passthrough: true }) res: Response): Promise<void> {
-    await this.auth.setLocale(auth.userId, body.locale);
-    setLocaleCookie(res, body.locale);
   }
 
   /** The second step of signing in: the code from the authenticator app, or a recovery code. */
@@ -112,7 +95,6 @@ export class AuthController {
     await this.codeLimiter.consume(body.challenge);
     const { token, user } = await this.auth.verifyTwoFactor(body.challenge, body.code, this.meta(req));
     setSessionCookie(res, token);
-    setLocaleCookie(res, user.locale);
     return { user };
   }
 

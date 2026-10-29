@@ -18,10 +18,3 @@ body {
   color: #111827;
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
-
-/* Urdu: the Urdu font first (Latin text such as names and emails falls back to the system font),
-   and a little more line height for its taller letters. */
-html[lang='ur'] body {
-  font-family: var(--font-urdu), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  line-height: 1.7;
-}

@@ -1,5 +1,4 @@
-import type { AttendanceEventType, AttendanceFlag, AttendanceStatus, Locale } from '@workhub/shared';
-import { intlLocale, translate, useT } from '@/lib/i18n';
+import type { AttendanceEventType, AttendanceFlag, AttendanceStatus } from '@workhub/shared';
 
 export const STATUS_LABEL: Record<AttendanceStatus, string> = {
   present: 'Present',
@@ -49,13 +48,11 @@ export const EVENT_LABEL: Record<AttendanceEventType, string> = {
 };
 
 export function StatusBadge({ status }: { status: AttendanceStatus }) {
-  const t = useT();
-  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>{t(`status.${status}`)}</span>;
+  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>{STATUS_LABEL[status]}</span>;
 }
 
 /** Flags worth a manager's attention, as small chips. `late` is already in the status. */
 export function Flags({ flags }: { flags: AttendanceFlag[] }) {
-  const t = useT();
   const shown = flags.filter((f) => f !== 'late');
   if (shown.length === 0) return null;
   return (
@@ -65,32 +62,31 @@ export function Flags({ flags }: { flags: AttendanceFlag[] }) {
           key={f}
           className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${INFO_FLAGS.has(f) ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-800'}`}
         >
-          {t(`flag.${f}`)}
+          {FLAG_LABEL[f]}
         </span>
       ))}
     </span>
   );
 }
 
-/** 125 → "2h 05m" (in Urdu, "2 گھنٹے 05 منٹ"). */
-export function duration(minutes: number, locale: Locale = 'en') {
+/** 125 → "2h 05m". */
+export function duration(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (locale === 'ur') return h > 0 ? `${h} گھنٹے ${String(m).padStart(2, '0')} منٹ` : `${m} منٹ`;
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
 /** A time in the workspace's time zone, e.g. "9:05 AM". */
-export function clock(iso: string | null, timeZone: string, locale: Locale = 'en') {
+export function clock(iso: string | null, timeZone: string) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString(locale === 'en' ? undefined : intlLocale(locale), { hour: 'numeric', minute: '2-digit', timeZone });
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone });
 }
 
-export function prettyDate(date: string, opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }, locale: Locale = 'en') {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale === 'en' ? undefined : intlLocale(locale), { ...opts, timeZone: 'UTC' });
+export function prettyDate(date: string, opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }) {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(undefined, { ...opts, timeZone: 'UTC' });
 }
 
 /** "09:00–18:00" with "(next day)" for overnight shifts. */
-export function shiftHours(s: { startTime: string; endTime: string; overnight: boolean }, locale: Locale = 'en') {
-  return `${s.startTime}–${s.endTime}${s.overnight ? translate(locale, 'time.nextDay') : ''}`;
+export function shiftHours(s: { startTime: string; endTime: string; overnight: boolean }) {
+  return `${s.startTime}–${s.endTime}${s.overnight ? ' (next day)' : ''}`;
 }

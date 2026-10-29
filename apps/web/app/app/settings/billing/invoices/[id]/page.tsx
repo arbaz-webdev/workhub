@@ -52,7 +52,7 @@ export default function InvoicePage() {
         <Link href="/app/settings/billing" className="text-sm text-brand-700 hover:underline">
           ← Plan and billing
         </Link>
-        <button type="button" className={`${btn.secondary} ms-auto`} onClick={() => window.print()}>
+        <button type="button" className={`${btn.secondary} ml-auto`} onClick={() => window.print()}>
           Print or save as PDF
         </button>
       </div>
@@ -87,7 +87,7 @@ export default function InvoicePage() {
               {invoice.seller.email}
             </p>
           </div>
-          <div className="text-end">
+          <div className="text-right">
             <h1 className="text-2xl font-semibold">Invoice</h1>
             <p className="text-sm text-gray-600">{invoice.number}</p>
             <p className="mt-2 text-sm text-gray-600">Issued {date(invoice.issuedAt)}</p>
@@ -120,56 +120,56 @@ export default function InvoicePage() {
 
         <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[480px] text-sm">
-          <thead className="border-b border-gray-200 text-start text-xs text-gray-500">
+          <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
             <tr>
               <th className="py-2">Description</th>
-              <th className="py-2 ps-4 text-end">Qty</th>
-              <th className="py-2 ps-4 text-end">Price</th>
-              <th className="py-2 ps-4 text-end">Amount</th>
+              <th className="py-2 pl-4 text-right">Qty</th>
+              <th className="py-2 pl-4 text-right">Price</th>
+              <th className="py-2 pl-4 text-right">Amount</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-gray-100 align-top">
-              <td className="py-3 pe-3">
+              <td className="py-3 pr-3">
                 WorkHub {PLAN_INFO[invoice.plan].name}, {invoice.billingCycle === 'annual' ? 'yearly' : 'monthly'} ({invoice.billTo.workspace})
                 <span className="block text-xs text-gray-500">
                   {date(invoice.periodStart)} to {date(invoice.periodEnd)}
                   {invoice.billingCycle === 'annual' && ` · ${invoice.months} months for the price of ${invoice.subtotal / (invoice.unitPrice * invoice.seats)}`}
                 </span>
               </td>
-              <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{invoice.seats} people</td>
-              <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{pkr(invoice.unitPrice)} / month</td>
-              <td className="whitespace-nowrap py-3 ps-4 text-end tabular-nums">{pkr(invoice.subtotal)}</td>
+              <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{invoice.seats} people</td>
+              <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{pkr(invoice.unitPrice)} / month</td>
+              <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{pkr(invoice.subtotal)}</td>
             </tr>
           </tbody>
           <tfoot className="text-sm">
             <tr>
-              <td colSpan={3} className="pt-3 text-end text-gray-600">
+              <td colSpan={3} className="pt-3 text-right text-gray-600">
                 Subtotal
               </td>
-              <td className="whitespace-nowrap pt-3 ps-4 text-end tabular-nums">{pkr(invoice.subtotal)}</td>
+              <td className="whitespace-nowrap pt-3 pl-4 text-right tabular-nums">{pkr(invoice.subtotal)}</td>
             </tr>
             {invoice.discountAmount > 0 && (
               <tr>
-                <td colSpan={3} className="pt-1 text-end text-gray-600">
+                <td colSpan={3} className="pt-1 text-right text-gray-600">
                   {invoice.discountLabel ?? `Discount (${invoice.discountPercent}%)`}
                 </td>
-                <td className="whitespace-nowrap pt-1 ps-4 text-end tabular-nums">−{pkr(invoice.discountAmount)}</td>
+                <td className="whitespace-nowrap pt-1 pl-4 text-right tabular-nums">−{pkr(invoice.discountAmount)}</td>
               </tr>
             )}
             {invoice.taxLabel && (
               <tr>
-                <td colSpan={3} className="pt-1 text-end text-gray-600">
+                <td colSpan={3} className="pt-1 text-right text-gray-600">
                   {invoice.taxLabel}
                 </td>
-                <td className="whitespace-nowrap pt-1 ps-4 text-end tabular-nums">{pkr(invoice.taxAmount)}</td>
+                <td className="whitespace-nowrap pt-1 pl-4 text-right tabular-nums">{pkr(invoice.taxAmount)}</td>
               </tr>
             )}
             <tr className="text-base font-semibold">
-              <td colSpan={3} className="pt-2 text-end">
+              <td colSpan={3} className="pt-2 text-right">
                 Total
               </td>
-              <td className="whitespace-nowrap pt-2 ps-4 text-end tabular-nums">{pkr(invoice.total)}</td>
+              <td className="whitespace-nowrap pt-2 pl-4 text-right tabular-nums">{pkr(invoice.total)}</td>
             </tr>
           </tfoot>
         </table>
@@ -244,7 +244,7 @@ function BankTransfer({ invoice, bank, onSent }: { invoice: InvoiceDto; bank: No
         </label>
         <label className="block text-sm">
           <span className="text-gray-700">Receipt (screenshot or PDF)</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required className="mt-1 block text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-medium file:text-brand-700" />
+          <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required className="mt-1 block text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-medium file:text-brand-700" />
         </label>
         <button type="submit" className={btn.secondary} disabled={sending}>
           {sending ? 'Sending…' : 'I’ve paid: send for confirmation'}

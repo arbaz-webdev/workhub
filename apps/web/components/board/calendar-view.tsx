@@ -54,7 +54,7 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
       onDragEnd={() => setDragging(null)}
       onClick={() => onOpen(t.id)}
       title={t.title}
-      className={`block w-full truncate rounded px-1.5 py-0.5 text-start text-xs ${
+      className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-xs ${
         t.completed ? 'bg-gray-100 text-gray-400 line-through' : t.dueDate && t.dueDate < today ? 'bg-red-50 text-red-700' : (PRIORITY_STYLE[t.priority] ?? 'bg-brand-50 text-brand-800')
       } ${board.canEdit ? 'cursor-grab' : ''}`}
     >
@@ -65,9 +65,9 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
   const inMonth = weeks.flat().filter((d) => d.startsWith(month));
 
   return (
-    <div className="pe-4 lg:pe-8">
+    <div className="pr-4 lg:pr-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="me-auto text-lg font-semibold">{monthTitle(month)}</h2>
+        <h2 className="mr-auto text-lg font-semibold">{monthTitle(month)}</h2>
         <button type="button" className={btn.secondary} onClick={() => setMonth(addMonths(month, -1))} aria-label="Previous month">
           ‹
         </button>
@@ -108,7 +108,7 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
                     e.preventDefault();
                     drop(day);
                   }}
-                  className={`min-h-24 border-b border-e border-gray-100 p-1.5 ${outside ? 'bg-gray-50/60' : ''} ${over === day ? 'bg-brand-50' : ''}`}
+                  className={`min-h-24 border-b border-r border-gray-100 p-1.5 ${outside ? 'bg-gray-50/60' : ''} ${over === day ? 'bg-brand-50' : ''}`}
                 >
                   <p className={`mb-1 text-xs ${day === today ? 'inline-grid h-5 w-5 place-items-center rounded-full bg-brand-600 font-semibold text-white' : outside ? 'text-gray-400' : 'text-gray-600'}`}>{Number(day.slice(8))}</p>
                   <div className="space-y-0.5">

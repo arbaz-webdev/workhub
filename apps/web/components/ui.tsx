@@ -1,5 +1,4 @@
-import type { Locale, Role } from '@workhub/shared';
-import { intlLocale, translate } from '@/lib/i18n';
+import type { Role } from '@workhub/shared';
 
 export const btn = {
   primary:
@@ -44,19 +43,24 @@ export function Alert({ kind = 'error', children }: { kind?: 'error' | 'success'
   );
 }
 
-export function roleLabel(role: Role, locale: Locale = 'en') {
-  return translate(locale, `role.${role}`);
+const ROLE_LABELS: Record<Role, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  manager: 'Manager',
+  member: 'Member',
+  guest: 'Guest',
+};
+export function roleLabel(role: Role) {
+  return ROLE_LABELS[role];
 }
 
-const formatters = new Map<Locale, Intl.RelativeTimeFormat>();
-export function timeAgo(iso: string, locale: Locale = 'en'): string {
-  let rtf = formatters.get(locale);
-  if (!rtf) formatters.set(locale, (rtf = new Intl.RelativeTimeFormat(locale === 'en' ? 'en' : intlLocale(locale), { numeric: 'auto' })));
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+export function timeAgo(iso: string): string {
   const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
   const abs = Math.abs(seconds);
-  if (abs < 60) return translate(locale, 'time.justNow');
+  if (abs < 60) return 'just now';
   if (abs < 3600) return rtf.format(Math.round(seconds / 60), 'minute');
   if (abs < 86400) return rtf.format(Math.round(seconds / 3600), 'hour');
   if (abs < 86400 * 30) return rtf.format(Math.round(seconds / 86400), 'day');
-  return new Date(iso).toLocaleDateString(locale === 'en' ? undefined : intlLocale(locale));
+  return new Date(iso).toLocaleDateString();
 }

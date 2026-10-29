@@ -11,10 +11,9 @@ import { NotificationsBell } from '@/components/shell/notifications-bell';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TimerChip } from '@/components/shell/timer-chip';
 import { VerifyBanner } from '@/components/shell/verify-banner';
-import { btn } from '@/components/ui';
+import { btn, roleLabel } from '@/components/ui';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
-import { storeLocale, useLocale, useT } from '@/lib/i18n';
 import { InboxProvider } from '@/lib/inbox';
 import { readStoredWorkspace, storeWorkspace, WorkspaceContext } from '@/lib/workspace';
 
@@ -26,8 +25,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
-  const t = useT();
-  const locale = useLocale();
 
   const refresh = useCallback(async () => {
     try {
@@ -66,14 +63,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // The person's language follows them: after signing in elsewhere (or with Google), use theirs.
-  useEffect(() => {
-    if (me && me.user.locale !== locale) {
-      storeLocale(me.user.locale);
-      router.refresh();
-    }
-  }, [me, locale, router]);
-
   const switchTo = useCallback((next: WorkspaceDto) => {
     storeWorkspace(next.id);
     setWorkspace(next);
@@ -94,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!me) {
     return (
       <p role="status" className="p-8 text-sm text-gray-500">
-        {unreachable ? t('shell.starting') : t('shell.loading')}
+        {unreachable ? 'WorkHub is starting up. This can take up to a minute; it will open by itself.' : 'Loading your workspace…'}
       </p>
     );
   }
@@ -116,7 +105,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <InboxProvider key={workspace.id}>
         <div className="flex min-h-full">
           {/* Desktop sidebar */}
-          <aside className="hidden w-60 shrink-0 border-e border-gray-200 bg-white lg:block print:hidden">
+          <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:block print:hidden">
             <div className="sticky top-0 h-screen overflow-y-auto">
               <Sidebar />
             </div>
@@ -124,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile drawer */}
           {menuOpen && (
-            <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label={t('shell.menu')}>
+            <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
               <div className="absolute inset-0 bg-gray-900/30" onClick={() => setMenuOpen(false)} />
               <aside className="relative h-full w-64 overflow-y-auto bg-white shadow-xl">
                 <Sidebar onNavigate={() => setMenuOpen(false)} />
@@ -137,7 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2 px-4 py-2.5 lg:px-8">
                 <button
                   onClick={() => setMenuOpen(true)}
-                  aria-label={t('shell.openMenu')}
+                  aria-label="Open menu"
                   className="grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden"
                 >
                   <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -147,7 +136,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
                 {me.workspaces.length > 1 ? (
                   <select
-                    aria-label={t('shell.switchWorkspace')}
+                    aria-label="Switch workspace"
                     value={workspace.id}
                     onChange={(e) => {
                       const next = me.workspaces.find((w) => w.id === e.target.value);
@@ -170,15 +159,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
                 <button
                   onClick={() => setSearchOpen(true)}
-                  className="ms-auto hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 sm:flex"
+                  className="ml-auto hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 sm:flex"
                 >
-                  {t('shell.search')}
+                  Search
                   <kbd className="rounded border border-gray-200 bg-gray-50 px-1.5 text-[11px] text-gray-500">Ctrl K</kbd>
                 </button>
                 <button
                   onClick={() => setSearchOpen(true)}
-                  aria-label={t('shell.search')}
-                  className="ms-auto grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 sm:hidden"
+                  aria-label="Search"
+                  className="ml-auto grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 sm:hidden"
                 >
                   <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="7" />
@@ -193,11 +182,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FeedbackButton />
                 <NotificationsBell key={workspace.id} />
 
-                <Link href="/app/account" title={t('shell.accountTitle')} className="hidden rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 md:inline">
-                  {me.user.name} · {t(`role.${workspace.role}`)}
+                <Link href="/app/account" title="Account and security" className="hidden rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 md:inline">
+                  {me.user.name} · {roleLabel(workspace.role)}
                 </Link>
                 <button onClick={signOut} className="whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 sm:px-3">
-                  {t('shell.signOut')}
+                  Sign out
                 </button>
               </div>
             </header>
@@ -209,10 +198,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {/* A workspace that requires two-factor sign-in waits until it's on (the API refuses too). */}
               {workspace.requireTwoFactor && !me.user.twoFactorEnabled && !pathname.startsWith('/app/account') ? (
                 <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
-                  <h1 className="text-lg font-semibold">{t('shell.twoFactor.title')}</h1>
-                  <p className="mt-2 text-sm text-gray-600">{t('shell.twoFactor.body', { workspace: workspace.name })}</p>
+                  <h1 className="text-lg font-semibold">Turn on two-factor sign-in</h1>
+                  <p className="mt-2 text-sm text-gray-600">{workspace.name} asks everyone to sign in with a code from an authenticator app as well as their password. It takes a minute.</p>
                   <Link href="/app/account" className={`${btn.primary} mt-4`}>
-                    {t('shell.twoFactor.setUp')}
+                    Set it up
                   </Link>
                 </div>
               ) : (

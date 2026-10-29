@@ -7,8 +7,6 @@ import { useState } from 'react';
 import { AuthCard, Field, FormError, issuesToFields, SubmitButton } from '@/components/form';
 import { GoogleButton } from '@/components/google-button';
 import { api, ApiError } from '@/lib/api';
-import { useT } from '@/lib/i18n';
-import { LanguageSwitch } from '@/components/language-switch';
 import { safeNext, storeWorkspace } from '@/lib/workspace';
 
 export function SignUpForm({ next: rawNext, email }: { next?: string; email?: string }) {
@@ -16,7 +14,6 @@ export function SignUpForm({ next: rawNext, email }: { next?: string; email?: st
   const next = safeNext(rawNext);
   // Someone coming from an invitation joins that workspace instead of creating one.
   const joining = next?.startsWith('/invite/') ?? false;
-  const t = useT();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -29,7 +26,7 @@ export function SignUpForm({ next: rawNext, email }: { next?: string; email?: st
       return;
     }
     if (!joining && !parsed.data.workspaceName) {
-      setFields({ workspaceName: t('signUp.companyRequired') });
+      setFields({ workspaceName: 'Enter your company name' });
       return;
     }
     setFields({});
@@ -44,7 +41,7 @@ export function SignUpForm({ next: rawNext, email }: { next?: string; email?: st
         setFields(err.fieldErrors);
         setError(err.message === 'Validation failed' ? undefined : err.message);
       } else {
-        setError(t('auth.network'));
+        setError('Could not reach the server. Check your connection and try again.');
       }
       setPending(false);
     }
@@ -54,37 +51,34 @@ export function SignUpForm({ next: rawNext, email }: { next?: string; email?: st
 
   return (
     <AuthCard
-      title={joining ? t('signUp.titleJoin') : t('signUp.titleCreate')}
-      subtitle={joining ? t('signUp.subtitleJoin') : t('signUp.subtitleCreate')}
+      title={joining ? 'Create your account' : 'Create your workspace'}
+      subtitle={joining ? "Then you'll join your team's workspace." : 'Free for teams of up to 10. No card needed.'}
       footer={
         <>
-          {t('signUp.haveAccount')}{' '}
+          Already have an account?{' '}
           <Link href={signInHref} className="font-medium text-brand-700 hover:underline">
-            {t('signUp.signIn')}
+            Sign in
           </Link>
-          <LanguageSwitch />
         </>
       }
     >
       {!joining && <GoogleButton />}
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <FormError message={error} />
-        <Field label={t('signUp.yourName')} name="name" autoComplete="name" error={fields.name} />
+        <Field label="Your name" name="name" autoComplete="name" error={fields.name} />
         {!joining && (
-          <Field label={t('signUp.companyName')} name="workspaceName" autoComplete="organization" error={fields.workspaceName} />
+          <Field label="Company name" name="workspaceName" autoComplete="organization" error={fields.workspaceName} />
         )}
-        <Field label={t('signUp.workEmail')} name="email" type="email" autoComplete="email" defaultValue={email} error={fields.email} />
+        <Field label="Work email" name="email" type="email" autoComplete="email" defaultValue={email} error={fields.email} />
         <Field
-          label={t('auth.password')}
+          label="Password"
           name="password"
           type="password"
           autoComplete="new-password"
           error={fields.password}
-          hint={t('signUp.passwordHint')}
+          hint="At least 10 characters."
         />
-        <SubmitButton pending={pending} pendingLabel={t('auth.wait')}>
-          {joining ? t('signUp.submitJoin') : t('signUp.submitCreate')}
-        </SubmitButton>
+        <SubmitButton pending={pending}>{joining ? 'Create account' : 'Create workspace'}</SubmitButton>
       </form>
     </AuthCard>
   );

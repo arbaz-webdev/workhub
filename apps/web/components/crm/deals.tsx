@@ -216,7 +216,7 @@ export function DealDialog({
               </Link>
             )}
             {current?.status === 'open' && (
-              <span className="ms-auto flex gap-2">
+              <span className="ml-auto flex gap-2">
                 <button type="button" className={`${btn.primary} !py-1.5`} onClick={() => setWinning(true)}>
                   Won
                 </button>
@@ -284,7 +284,7 @@ export function DealDialog({
               {current ? 'Close' : 'Cancel'}
             </button>
             {mayDelete && (
-              <button type="button" className={`${btn.danger} ms-auto`} onClick={() => void remove()}>
+              <button type="button" className={`${btn.danger} ml-auto`} onClick={() => void remove()}>
                 Delete
               </button>
             )}

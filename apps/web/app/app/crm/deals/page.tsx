@@ -133,7 +133,7 @@ function Deals() {
           </select>
         )}
         {deals && (view === 'board' || status === 'open') && (
-          <span className="ms-auto text-sm text-gray-600">
+          <span className="ml-auto text-sm text-gray-600">
             {deals.length} open · {moneyList(total)}
             <span className="text-gray-400"> · forecast {moneyList(weighted)}</span>
           </span>
@@ -256,7 +256,7 @@ function DealCard({ deal, onOpen }: { deal: DealDto; onOpen: () => void }) {
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           {deal.value !== null && <span className="font-medium text-gray-800">{money(deal.value, deal.currency)}</span>}
           {deal.expectedClose && <span className={late ? 'text-red-600' : 'text-gray-500'}>Close {new Date(`${deal.expectedClose}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
-          {deal.owner && <span className="ms-auto text-gray-500">{deal.owner.name.split(' ')[0]}</span>}
+          {deal.owner && <span className="ml-auto text-gray-500">{deal.owner.name.split(' ')[0]}</span>}
         </p>
         {deal.nextActivity && (
           <p className={`mt-1 truncate text-xs ${followOverdue ? 'font-medium text-red-600' : 'text-gray-500'}`}>
@@ -289,11 +289,11 @@ function List({ deals, onOpen }: { deals: DealDto[]; onOpen: (d: DealDto) => voi
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
       <table className="w-full min-w-[680px] text-sm">
-        <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+        <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
           <tr>
             <th className="px-3 py-2">Deal</th>
             <th className="px-3 py-2">Stage</th>
-            <th className="px-3 py-2 text-end">Value</th>
+            <th className="px-3 py-2 text-right">Value</th>
             <th className="px-3 py-2">Expected close</th>
             <th className="px-3 py-2">Owner</th>
           </tr>
@@ -302,7 +302,7 @@ function List({ deals, onOpen }: { deals: DealDto[]; onOpen: (d: DealDto) => voi
           {deals.map((d) => (
             <tr key={d.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
               <td className="px-3 py-2">
-                <button type="button" className="text-start font-medium text-gray-900 hover:underline" onClick={() => onOpen(d)}>
+                <button type="button" className="text-left font-medium text-gray-900 hover:underline" onClick={() => onOpen(d)}>
                   {d.title}
                 </button>
                 {d.company && <span className="block text-xs text-gray-500">{d.company.name}</span>}
@@ -311,7 +311,7 @@ function List({ deals, onOpen }: { deals: DealDto[]; onOpen: (d: DealDto) => voi
                 {d.stageName}
                 {d.status === 'lost' && d.lostReason && <span className="block text-xs text-gray-500">{d.lostReason}</span>}
               </td>
-              <td className="px-3 py-2 text-end tabular-nums">{d.value !== null ? money(d.value, d.currency) : '—'}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{d.value !== null ? money(d.value, d.currency) : '—'}</td>
               <td className="px-3 py-2 text-gray-700">{d.expectedClose ?? '—'}</td>
               <td className="px-3 py-2 text-gray-700">{d.owner?.name ?? '—'}</td>
             </tr>

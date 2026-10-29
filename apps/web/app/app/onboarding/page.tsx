@@ -189,7 +189,7 @@ export default function OnboardingPage() {
             <p className="text-sm text-gray-600">Teams group people for attendance, leave approvals, announcements and reports.</p>
             <ul className="flex flex-wrap gap-2">
               {teams.map((t) => (
-                <li key={t} className="flex items-center gap-1 rounded-full bg-gray-100 py-1 ps-3 pe-1 text-sm">
+                <li key={t} className="flex items-center gap-1 rounded-full bg-gray-100 py-1 pl-3 pr-1 text-sm">
                   {t}
                   <button type="button" aria-label={`Remove ${t}`} onClick={() => setTeams(teams.filter((x) => x !== t))} className="grid h-5 w-5 place-items-center rounded-full text-gray-500 hover:bg-gray-200">
                     ×
@@ -285,7 +285,7 @@ export default function OnboardingPage() {
             {step < 3 ? (
               <button
                 type="button"
-                className={`${btn.primary} ms-auto`}
+                className={`${btn.primary} ml-auto`}
                 onClick={() => {
                   if (step === 0 && teams.length === 0) pick(industry);
                   setStep(step + 1);
@@ -294,7 +294,7 @@ export default function OnboardingPage() {
                 Next
               </button>
             ) : (
-              <button type="button" className={`${btn.primary} ms-auto`} disabled={busy} onClick={() => void finish()}>
+              <button type="button" className={`${btn.primary} ml-auto`} disabled={busy} onClick={() => void finish()}>
                 {busy ? 'Setting up…' : 'Finish setup'}
               </button>
             )}

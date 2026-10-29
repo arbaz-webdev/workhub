@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useT } from '@/lib/i18n';
 
 /** Registers the service worker in production builds (in development it would fight hot reload). */
 export function ServiceWorker() {
@@ -19,7 +18,6 @@ interface InstallPrompt extends Event {
 
 /** "Install app", shown only when the browser offers to install WorkHub. */
 export function InstallButton() {
-  const t = useT();
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
 
   useEffect(() => {
@@ -47,7 +45,7 @@ export function InstallButton() {
       }}
       className="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 md:inline"
     >
-      {t('shell.install')}
+      Install app
     </button>
   );
 }

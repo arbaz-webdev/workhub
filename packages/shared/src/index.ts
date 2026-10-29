@@ -66,21 +66,11 @@ export const createTeamSchema = z.object({
 });
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 
-/** Interface languages. Urdu is written right to left. */
-export const LOCALES = ['en', 'ur'] as const;
-export type Locale = (typeof LOCALES)[number];
-export const LOCALE_COOKIE = 'wh_lang';
-export const LOCALE_NAMES: Record<Locale, string> = { en: 'English', ur: 'اردو' };
-export const isRtl = (locale: Locale) => locale === 'ur';
-export const localeSchema = z.object({ locale: z.enum(LOCALES) });
-
 export interface UserDto {
   id: string;
   name: string;
   email: string;
   emailVerified: boolean;
-  /** The language they use WorkHub in. */
-  locale: Locale;
   /** Set on /auth/me. */
   twoFactorEnabled?: boolean;
 }

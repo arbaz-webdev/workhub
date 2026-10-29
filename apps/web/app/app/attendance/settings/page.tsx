@@ -123,11 +123,11 @@ export default function AttendanceSettingsPage() {
                 <h3 className="mb-2 text-sm font-semibold">People</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[640px] text-sm">
-                    <thead className="text-start text-xs uppercase tracking-wide text-gray-500">
+                    <thead className="text-left text-xs uppercase tracking-wide text-gray-500">
                       <tr>
-                        <th className="py-2 pe-2 font-medium">Person</th>
-                        <th className="py-2 pe-2 font-medium">Team</th>
-                        <th className="py-2 pe-2 font-medium">Shift</th>
+                        <th className="py-2 pr-2 font-medium">Person</th>
+                        <th className="py-2 pr-2 font-medium">Team</th>
+                        <th className="py-2 pr-2 font-medium">Shift</th>
                         <th className="py-2 font-medium">Remote</th>
                       </tr>
                     </thead>
@@ -136,11 +136,11 @@ export default function AttendanceSettingsPage() {
                         const effective = s.shifts.find((x) => x.id === p.effectiveShiftId);
                         return (
                           <tr key={p.userId}>
-                            <td className="py-2 pe-2">
+                            <td className="py-2 pr-2">
                               <p className="font-medium">{p.name}</p>
                               <p className="text-xs text-gray-500">{p.email}</p>
                             </td>
-                            <td className="py-2 pe-2">
+                            <td className="py-2 pr-2">
                               <select
                                 aria-label={`Team for ${p.name}`}
                                 value={p.teamId ?? ''}
@@ -155,7 +155,7 @@ export default function AttendanceSettingsPage() {
                                 ))}
                               </select>
                             </td>
-                            <td className="py-2 pe-2">
+                            <td className="py-2 pr-2">
                               <select
                                 aria-label={`Shift for ${p.name}`}
                                 value={p.shiftId ?? ''}
@@ -244,7 +244,7 @@ function Shifts({ shifts, onChange, onDone, onError }: { shifts: ShiftDto[]; onC
             <li key={x.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">
-                  {x.name} {x.isDefault && <span className="ms-1 rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-medium text-brand-700">Default</span>}
+                  {x.name} {x.isDefault && <span className="ml-1 rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-medium text-brand-700">Default</span>}
                 </p>
                 <p className="text-gray-500">
                   {shiftHours(x)} · {WEEKDAYS.filter((d) => x.workingDays.includes(d.value)).map((d) => d.label).join(', ')} · {x.graceMinutes} min grace

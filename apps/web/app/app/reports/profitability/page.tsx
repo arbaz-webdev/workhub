@@ -70,7 +70,7 @@ export default function ProfitabilityPage() {
           <span className="text-gray-700">To</span>
           <input type="month" value={to} min={from} onChange={(e) => e.target.value && setTo(e.target.value)} className={`mt-1 ${input} !w-40`} />
         </label>
-        <button type="button" className={`${btn.secondary} ms-auto`} onClick={csv} disabled={!data}>
+        <button type="button" className={`${btn.secondary} ml-auto`} onClick={csv} disabled={!data}>
           Download CSV
         </button>
       </div>
@@ -136,15 +136,15 @@ export default function ProfitabilityPage() {
 
           <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Client</th>
-                  <th className="px-3 py-2 text-end">Revenue</th>
-                  <th className="px-3 py-2 text-end">Cost</th>
-                  <th className="px-3 py-2 text-end">Profit</th>
-                  <th className="px-3 py-2 text-end">Margin</th>
-                  <th className="px-3 py-2 text-end">Hours</th>
-                  <th className="px-3 py-2 text-end">Per hour</th>
+                  <th className="px-3 py-2 text-right">Revenue</th>
+                  <th className="px-3 py-2 text-right">Cost</th>
+                  <th className="px-3 py-2 text-right">Profit</th>
+                  <th className="px-3 py-2 text-right">Margin</th>
+                  <th className="px-3 py-2 text-right">Hours</th>
+                  <th className="px-3 py-2 text-right">Per hour</th>
                 </tr>
               </thead>
               <tbody>
@@ -166,12 +166,12 @@ export default function ProfitabilityPage() {
                         <span className="text-gray-500">No client (internal)</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amount(c.revenue)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amount(c.cost)}</td>
-                    <td className={`px-3 py-2 text-end font-medium tabular-nums ${c.profit < 0 ? 'text-red-600' : 'text-gray-900'}`}>{amount(c.profit)}</td>
-                    <td className={`px-3 py-2 text-end tabular-nums ${c.margin !== null && c.margin < 20 ? 'text-amber-700' : ''}`}>{pct(c.margin)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{c.hours}</td>
-                    <td className="px-3 py-2 text-end tabular-nums text-gray-600">{c.hours > 0 ? amount(c.revenue / c.hours) : '—'}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amount(c.revenue)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amount(c.cost)}</td>
+                    <td className={`px-3 py-2 text-right font-medium tabular-nums ${c.profit < 0 ? 'text-red-600' : 'text-gray-900'}`}>{amount(c.profit)}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums ${c.margin !== null && c.margin < 20 ? 'text-amber-700' : ''}`}>{pct(c.margin)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{c.hours}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-gray-600">{c.hours > 0 ? amount(c.revenue / c.hours) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -179,12 +179,12 @@ export default function ProfitabilityPage() {
                 <tfoot className="border-t border-gray-200 bg-gray-50 font-semibold">
                   <tr>
                     <td className="px-3 py-2">Total ({data.currency})</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amount(data.total.revenue)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amount(data.total.cost)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{amount(data.total.profit)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{pct(data.total.margin)}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{data.total.hours}</td>
-                    <td className="px-3 py-2 text-end tabular-nums">{data.total.hours > 0 ? amount(data.total.revenue / data.total.hours) : '—'}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amount(data.total.revenue)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amount(data.total.cost)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{amount(data.total.profit)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{pct(data.total.margin)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{data.total.hours}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{data.total.hours > 0 ? amount(data.total.revenue / data.total.hours) : '—'}</td>
                   </tr>
                 </tfoot>
               )}

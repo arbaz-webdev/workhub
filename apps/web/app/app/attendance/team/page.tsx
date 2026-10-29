@@ -69,7 +69,7 @@ export default function TeamAttendancePage() {
           →
         </button>
         {data && <span className="text-sm font-medium text-gray-700">{prettyDate(data.date, { weekday: 'long', day: 'numeric', month: 'long' })}</span>}
-        <span className="ms-auto flex flex-wrap items-center gap-2">
+        <span className="ml-auto flex flex-wrap items-center gap-2">
           {data && (
             <>
               <a className={btn.secondary} href={`/api/attendance/export?month=${data.date.slice(0, 7)}&workspace=${workspace.id}`} download>
@@ -110,14 +110,14 @@ export default function TeamAttendancePage() {
 
           <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[720px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium uppercase tracking-wide text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Person</th>
                   <th className="px-3 py-2">Status</th>
                   <th className="px-3 py-2">Shift</th>
                   <th className="px-3 py-2">In</th>
                   <th className="px-3 py-2">Out</th>
-                  <th className="px-3 py-2 text-end">Worked</th>
+                  <th className="px-3 py-2 text-right">Worked</th>
                   <th className="px-3 py-2">Selfies</th>
                   <th className="px-3 py-2" />
                 </tr>
@@ -155,7 +155,7 @@ export default function TeamAttendancePage() {
                         )}
                       </td>
                       <td className="px-3 py-2 tabular-nums text-gray-600">{r.day.open ? <span className="text-green-700">Working</span> : clock(r.day.checkOutAt, tz)}</td>
-                      <td className="px-3 py-2 text-end tabular-nums">{r.day.workedMinutes > 0 ? duration(r.day.workedMinutes) : '—'}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.day.workedMinutes > 0 ? duration(r.day.workedMinutes) : '—'}</td>
                       <td className="px-3 py-2">
                         <span className="flex gap-1">
                           {selfies.map((e) => (
@@ -165,7 +165,7 @@ export default function TeamAttendancePage() {
                           ))}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-end">
+                      <td className="px-3 py-2 text-right">
                         {/* Nobody corrects their own day directly, except the owner. */}
                         {r.day.status !== 'not_started' && !r.day.open && (r.userId !== me.user.id || workspace.role === 'owner') && (
                           <button type="button" className="text-xs text-brand-700 hover:underline" onClick={() => setCorrecting(r)}>

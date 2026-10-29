@@ -86,9 +86,9 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
   const todayOffset = daysBetween(start, today);
 
   return (
-    <div className="pe-4 lg:pe-8">
+    <div className="pr-4 lg:pr-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="me-auto text-lg font-semibold">
+        <h2 className="mr-auto text-lg font-semibold">
           {dayMonth(start)} – {dayMonth(end)}
         </h2>
         <button type="button" className={btn.secondary} onClick={() => setStart(addDays(start, -14))} aria-label="Two weeks earlier">
@@ -105,11 +105,11 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
       {groups.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">No tasks have dates yet. Open a task and give it a start and due date to see it here.</p>
       ) : (
-        <div dir="ltr" className="overflow-x-auto rounded-2xl border border-gray-200 bg-white" onPointerMove={move} onPointerUp={finish} onPointerCancel={() => setDrag(null)}>
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white" onPointerMove={move} onPointerUp={finish} onPointerCancel={() => setDrag(null)}>
           <div style={{ width: 224 + DAYS * DAY }} className="relative select-none">
             {/* Dates */}
             <div className="sticky top-0 z-10 flex border-b border-gray-200 bg-gray-50 text-[11px] text-gray-500">
-              <div className="sticky start-0 z-10 w-56 shrink-0 border-e border-gray-200 bg-gray-50 px-3 py-2 font-medium">Task</div>
+              <div className="sticky left-0 z-10 w-56 shrink-0 border-r border-gray-200 bg-gray-50 px-3 py-2 font-medium">Task</div>
               {days.map((d) => {
                 const dow = new Date(`${d}T00:00:00Z`).getUTCDay();
                 return (
@@ -124,7 +124,7 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
 
             {groups.map((g) => (
               <div key={g.column.id} role="rowgroup" aria-label={g.column.name}>
-                <div className="sticky start-0 w-56 border-b border-gray-100 bg-white px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{g.column.name}</div>
+                <div className="sticky left-0 w-56 border-b border-gray-100 bg-white px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{g.column.name}</div>
                 {g.rows.map((t) => {
                   const s = drag?.id === t.id ? dragged(drag) : span(t)!;
                   const left = daysBetween(start, s.from) * DAY;
@@ -136,7 +136,7 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
                       <button
                         type="button"
                         onClick={() => onOpen(t.id)}
-                        className={`sticky start-0 z-[5] h-full w-56 shrink-0 truncate border-e border-gray-200 bg-white px-3 text-start text-sm hover:bg-gray-50 ${t.completed ? 'text-gray-400 line-through' : ''}`}
+                        className={`sticky left-0 z-[5] h-full w-56 shrink-0 truncate border-r border-gray-200 bg-white px-3 text-left text-sm hover:bg-gray-50 ${t.completed ? 'text-gray-400 line-through' : ''}`}
                         title={t.title}
                       >
                         {t.title}
@@ -155,9 +155,9 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
                               t.completed ? 'bg-gray-300' : late ? 'bg-red-500' : 'bg-brand-500'
                             } ${board.canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${drag?.id === t.id ? 'ring-2 ring-brand-200' : ''}`}
                           >
-                            {board.canEdit && <span onPointerDown={(e) => begin(e, t, 'start')} className="h-full w-2 shrink-0 cursor-ew-resize rounded-s-md hover:bg-black/10" aria-hidden="true" />}
+                            {board.canEdit && <span onPointerDown={(e) => begin(e, t, 'start')} className="h-full w-2 shrink-0 cursor-ew-resize rounded-l-md hover:bg-black/10" aria-hidden="true" />}
                             <span className="min-w-0 flex-1 truncate px-1">{width > 3 * DAY ? t.title : ''}</span>
-                            {board.canEdit && <span onPointerDown={(e) => begin(e, t, 'end')} className="h-full w-2 shrink-0 cursor-ew-resize rounded-e-md hover:bg-black/10" aria-hidden="true" />}
+                            {board.canEdit && <span onPointerDown={(e) => begin(e, t, 'end')} className="h-full w-2 shrink-0 cursor-ew-resize rounded-r-md hover:bg-black/10" aria-hidden="true" />}
                           </div>
                         )}
                       </div>

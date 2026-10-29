@@ -43,7 +43,7 @@ function Footer({ saving, onClose, onDelete, label }: { saving: boolean; onClose
         Cancel
       </button>
       {onDelete && (
-        <button type="button" className={`${btn.danger} ms-auto`} onClick={onDelete}>
+        <button type="button" className={`${btn.danger} ml-auto`} onClick={onDelete}>
           Delete
         </button>
       )}
@@ -128,7 +128,7 @@ export function LeadDialog({ lead, onClose, onSaved }: { lead: LeadDto | null; o
             </span>
           )}
           {lead && !converted && (
-            <button type="button" className={`${btn.secondary} ms-auto !py-1.5`} onClick={() => setConverting(true)}>
+            <button type="button" className={`${btn.secondary} ml-auto !py-1.5`} onClick={() => setConverting(true)}>
               Convert to contact
             </button>
           )}

@@ -3,9 +3,7 @@
 import type { TwoFactorSetupDto, TwoFactorStatusDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
-import { LanguageCard } from '@/components/settings/language-card';
 import { api, ApiError } from '@/lib/api';
-import { useT } from '@/lib/i18n';
 import { useWorkspace } from '@/lib/workspace';
 
 const message = (err: unknown, fallback: string) => (err instanceof ApiError ? (Object.values(err.fieldErrors)[0] ?? err.message) : fallback);
@@ -13,7 +11,6 @@ const message = (err: unknown, fallback: string) => (err instanceof ApiError ? (
 /** The signed-in person's own account: two-factor sign-in and recovery codes. */
 export default function AccountPage() {
   const { me, refresh } = useWorkspace();
-  const t = useT();
   const [status, setStatus] = useState<TwoFactorStatusDto>();
   const [setup, setSetup] = useState<TwoFactorSetupDto | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
@@ -77,9 +74,8 @@ export default function AccountPage() {
 
   return (
     <>
-      <PageHeader title={t('nav.account')} description={`${me.user.name} · ${me.user.email}`} />
+      <PageHeader title="Account" description={`${me.user.name} · ${me.user.email}`} />
       <div className="space-y-6" aria-live="polite">
-        <LanguageCard />
         {result && <Alert kind={result.kind}>{result.text}</Alert>}
 
         {codes && (
@@ -146,7 +142,7 @@ export default function AccountPage() {
             <div className="grid gap-6 sm:grid-cols-[auto_1fr]">
               <img src={setup.qr} alt="QR code to scan with your authenticator app" width={220} height={220} className="rounded-lg border border-gray-200" />
               <div className="space-y-3 text-sm">
-                <ol className="list-decimal space-y-1 ps-5 text-gray-700">
+                <ol className="list-decimal space-y-1 pl-5 text-gray-700">
                   <li>Open your authenticator app and add an account.</li>
                   <li>Scan the QR code, or type this key: <code className="break-all rounded bg-gray-100 px-1.5 py-0.5 font-mono">{setup.secret.replace(/(.{4})/g, '$1 ').trim()}</code></li>
                   <li>Enter the 6-digit code it shows.</li>

@@ -98,7 +98,7 @@ export default function BillingPage() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold">
               {PLAN_INFO[sub.plan].name}
-              {sub.status === 'trial' && <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 align-middle text-xs font-medium text-brand-700">Trial</span>}
+              {sub.status === 'trial' && <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 align-middle text-xs font-medium text-brand-700">Trial</span>}
             </h2>
             <p className="text-sm text-gray-600">
               {sub.seatsUsed} {sub.seatsUsed === 1 ? 'person' : 'people'}
@@ -176,7 +176,7 @@ export default function BillingPage() {
                     {PLAN_INFO[i.plan].name}, {i.billingCycle} · {date(i.issuedAt)}
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[i.status][1]}`}>{STATUS[i.status][0]}</span>
-                  <span className="ms-auto tabular-nums">{pkr(i.total)}</span>
+                  <span className="ml-auto tabular-nums">{pkr(i.total)}</span>
                 </li>
               ))}
             </ul>

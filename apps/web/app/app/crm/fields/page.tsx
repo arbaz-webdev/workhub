@@ -117,7 +117,7 @@ export default function FieldsPage() {
                         {f.type === 'select' && `: ${f.options.join(', ')}`}
                       </span>
                       <code className="text-xs text-gray-400">{f.key}</code>
-                      <button type="button" className={`${btn.danger} ms-auto`} onClick={() => void remove(f)}>
+                      <button type="button" className={`${btn.danger} ml-auto`} onClick={() => void remove(f)}>
                         Remove
                       </button>
                     </li>

@@ -75,7 +75,7 @@ function Contacts() {
           }}
           placeholder="Search name, email, phone, title"
         />
-        {data && <span className="ms-auto text-sm text-gray-500">{data.total.toLocaleString()} contacts</span>}
+        {data && <span className="ml-auto text-sm text-gray-500">{data.total.toLocaleString()} contacts</span>}
       </div>
       {!data ? (
         <p className="text-sm text-gray-500">Loading…</p>
@@ -88,7 +88,7 @@ function Contacts() {
         <>
           <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Company</th>
@@ -101,7 +101,7 @@ function Contacts() {
                 {data.items.map((c) => (
                   <tr key={c.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                     <td className="px-3 py-2">
-                      <button type="button" className="text-start font-medium text-gray-900 hover:underline" onClick={() => setEditing(c)}>
+                      <button type="button" className="text-left font-medium text-gray-900 hover:underline" onClick={() => setEditing(c)}>
                         {c.name}
                       </button>
                       {c.title && <span className="block text-xs text-gray-500">{c.title}</span>}

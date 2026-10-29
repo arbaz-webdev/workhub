@@ -106,7 +106,7 @@ function PipelineEditor({ pipeline, onSave, onRemove }: { pipeline: PipelineDto 
         <ol className="space-y-2">
           {stages.map((s, i) => (
             <li key={s.id ?? `new-${i}`} className="flex flex-wrap items-center gap-2">
-              <span className="w-5 text-end text-xs text-gray-400">{i + 1}</span>
+              <span className="w-5 text-right text-xs text-gray-400">{i + 1}</span>
               <input value={s.name} onChange={(e) => update(i, { name: e.target.value })} aria-label={`Stage ${i + 1} name`} maxLength={60} className={`${input} !w-48`} />
               <label className="flex items-center gap-1 text-sm text-gray-600">
                 <input type="number" min={0} max={100} value={s.probability} onChange={(e) => update(i, { probability: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} aria-label={`Stage ${i + 1} chance of winning`} className={`${input} !w-20`} />%
@@ -122,7 +122,7 @@ function PipelineEditor({ pipeline, onSave, onRemove }: { pipeline: PipelineDto 
               </button>
             </li>
           ))}
-          <li className="ps-7 text-sm text-gray-500">Then: Won (100%) and Lost (0%)</li>
+          <li className="pl-7 text-sm text-gray-500">Then: Won (100%) and Lost (0%)</li>
         </ol>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={btn.secondary} onClick={() => setStages([...stages, { name: '', probability: 50 }])} disabled={stages.length >= 15}>
@@ -132,7 +132,7 @@ function PipelineEditor({ pipeline, onSave, onRemove }: { pipeline: PipelineDto 
             {pipeline ? 'Save' : 'Add pipeline'}
           </button>
           {onRemove && (
-            <button type="button" className={`${btn.danger} ms-auto`} onClick={onRemove}>
+            <button type="button" className={`${btn.danger} ml-auto`} onClick={onRemove}>
               Remove pipeline
             </button>
           )}

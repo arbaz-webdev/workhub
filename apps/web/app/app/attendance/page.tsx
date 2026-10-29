@@ -3,13 +3,12 @@
 import type { AttendanceDayDto, AttendanceEventType, AttendanceTodayDto } from '@workhub/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AttendanceTabs } from '@/components/attendance/tabs';
-import { clock, duration, Flags, prettyDate, shiftHours, StatusBadge } from '@/components/attendance/labels';
+import { clock, duration, EVENT_LABEL, Flags, prettyDate, shiftHours, StatusBadge } from '@/components/attendance/labels';
 import { CorrectionDialog } from '@/components/attendance/correction-dialog';
 import { SelfieCamera } from '@/components/attendance/selfie-camera';
 import { Alert, Card, PageHeader, btn } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { deviceId, enqueue, flush, isNetworkError, queued, send, type QueuedEvent } from '@/lib/attendance-queue';
-import { useLocale, useT } from '@/lib/i18n';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 /** Best-effort location: a few seconds at most, and nothing if it's refused. */
@@ -25,8 +24,6 @@ type Pending = { type: AttendanceEventType; breakName?: string };
 export default function AttendancePage() {
   const { workspace } = useWorkspace();
   const api = useWorkspaceApi();
-  const t = useT();
-  const locale = useLocale();
   const [today, setToday] = useState<AttendanceTodayDto>();
   const [waiting, setWaiting] = useState<QueuedEvent[]>([]);
   const [camera, setCamera] = useState<Pending | null>(null);
@@ -42,9 +39,9 @@ export default function AttendancePage() {
     api<AttendanceTodayDto>('/attendance/today')
       .then(setToday)
       .catch((err) => {
-        if (!isNetworkError(err)) setError(t('att.loadError'));
+        if (!isNetworkError(err)) setError('Could not load your attendance.');
       });
-  }, [api, t]);
+  }, [api]);
 
   // Send anything recorded offline, then show the result.
   const sync = useCallback(async () => {
@@ -53,11 +50,11 @@ export default function AttendancePage() {
     if (!r) return;
     if (r.latest) setToday(r.latest);
     if (r.sent > 0) {
-      setNotice(r.sent === 1 ? t('att.syncedOne') : t('att.syncedMany', { n: r.sent }));
+      setNotice(`${r.sent} offline ${r.sent === 1 ? 'entry' : 'entries'} synced.`);
       setHistoryVersion((v) => v + 1);
     }
-    if (r.rejected.length > 0) setError(t('att.syncFailed', { message: r.rejected[0]!.message }));
-  }, [workspace.id, refreshQueue, t]);
+    if (r.rejected.length > 0) setError(`One offline entry couldn't be saved: ${r.rejected[0]!.message}`);
+  }, [workspace.id, refreshQueue]);
 
   useEffect(() => {
     load();
@@ -120,10 +117,10 @@ export default function AttendancePage() {
       if (isNetworkError(err)) {
         await enqueue(event);
         await refreshQueue();
-        setNotice(t('att.savedOffline'));
+        setNotice('No connection. This is saved on this device with the time you tapped, and will sync automatically.');
         void sync();
       } else {
-        setError(err instanceof ApiError ? err.message : t('att.genericError'));
+        setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
         load();
       }
     } finally {
@@ -136,11 +133,11 @@ export default function AttendancePage() {
 
   return (
     <>
-      <PageHeader title={t('att.title')} description={t('att.description')} />
+      <PageHeader title="Attendance" description="Check in and out, take breaks, and see your record." />
       <AttendanceTabs />
       {!online && (
         <div className="mb-4">
-          <Alert>{t('att.offline')}</Alert>
+          <Alert>You&apos;re offline. You can still check in; it will sync when you&apos;re back online.</Alert>
         </div>
       )}
       {error && (
@@ -155,20 +152,20 @@ export default function AttendancePage() {
       )}
 
       {!today ? (
-        <p className="text-sm text-gray-500">{online ? t('att.loading') : t('att.connectToLoad')}</p>
+        <p className="text-sm text-gray-500">{online ? 'Loading…' : 'Connect to the internet to load your attendance.'}</p>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <Card>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-sm text-gray-500">{prettyDate(today.date, { weekday: 'long', day: 'numeric', month: 'long' }, locale)}</p>
+                <p className="text-sm text-gray-500">{prettyDate(today.date, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                 <p className="text-sm text-gray-700">
                   {today.shift ? (
                     <>
-                      {today.shift.name} · {shiftHours(today.shift, locale)}
+                      {today.shift.name} · {shiftHours(today.shift)}
                     </>
                   ) : (
-                    t('att.noShift')
+                    'No shift assigned'
                   )}
                 </p>
               </div>
@@ -176,15 +173,15 @@ export default function AttendancePage() {
             </div>
 
             <div className="my-6 text-center">
-              <p className="text-4xl font-semibold tabular-nums">{duration(day!.workedMinutes, locale)}</p>
+              <p className="text-4xl font-semibold tabular-nums">{duration(day!.workedMinutes)}</p>
               <p className="mt-1 text-sm text-gray-500">
                 {state === 'on_break'
-                  ? t('att.onBreak', { name: day!.onBreak ?? waiting.at(-1)?.breakName ?? t('att.break') })
+                  ? `On break: ${day!.onBreak ?? waiting.at(-1)?.breakName ?? 'break'}`
                   : state === 'in'
-                    ? t('att.checkedInAt', { time: clock(day!.checkInAt ?? waiting.find((w) => w.type === 'check_in')?.occurredAt ?? null, tz, locale) })
+                    ? `Checked in at ${clock(day!.checkInAt ?? waiting.find((w) => w.type === 'check_in')?.occurredAt ?? null, tz)}`
                     : day!.checkOutAt
-                      ? t('att.checkedOutAt', { time: clock(day!.checkOutAt, tz, locale) })
-                      : t('att.notCheckedIn')}
+                      ? `Checked out at ${clock(day!.checkOutAt, tz)}`
+                      : 'Not checked in'}
               </p>
               {day!.flags.length > 0 && (
                 <div className="mt-2">
@@ -196,20 +193,20 @@ export default function AttendancePage() {
             <div className="flex flex-col gap-2">
               {state === 'out' && (
                 <button type="button" className={`${btn.primary} !py-3 text-base`} disabled={busy} onClick={() => start({ type: 'check_in' })}>
-                  {busy ? t('att.saving') : day!.checkInAt ? t('att.checkInAgain') : t('att.checkIn')}
+                  {busy ? 'Saving…' : day!.checkInAt ? 'Check in again' : 'Check in'}
                 </button>
               )}
               {state === 'in' && (
                 <>
                   <button type="button" className={`${btn.primary} !py-3 text-base`} disabled={busy} onClick={() => start({ type: 'check_out' })}>
-                    {busy ? t('att.saving') : t('att.checkOut')}
+                    {busy ? 'Saving…' : 'Check out'}
                   </button>
                   <div className="flex flex-wrap gap-2">
-                    {(today.breaks.length > 0 ? today.breaks.map((b) => b.name) : [t('att.break')]).map((name) => (
+                    {(today.breaks.length > 0 ? today.breaks.map((b) => b.name) : ['Break']).map((name) => (
                       <button key={name} type="button" className={`${btn.secondary} flex-1`} disabled={busy} onClick={() => start({ type: 'break_start', breakName: name })}>
                         {name}
                         {today.breaks.find((b) => b.name === name) && (
-                          <span className="ms-1 font-normal text-gray-500">{t('att.minutes', { n: today.breaks.find((b) => b.name === name)!.minutes })}</span>
+                          <span className="ml-1 font-normal text-gray-500">{today.breaks.find((b) => b.name === name)!.minutes}m</span>
                         )}
                       </button>
                     ))}
@@ -218,14 +215,14 @@ export default function AttendancePage() {
               )}
               {state === 'on_break' && (
                 <button type="button" className={`${btn.primary} !py-3 text-base`} disabled={busy} onClick={() => start({ type: 'break_end' })}>
-                  {busy ? t('att.saving') : t('att.endBreak')}
+                  {busy ? 'Saving…' : 'End break'}
                 </button>
               )}
             </div>
 
             {waiting.length > 0 && (
               <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
-                {waiting.length === 1 ? t('att.waitingOne') : t('att.waitingMany', { n: waiting.length })}
+                {waiting.length} {waiting.length === 1 ? 'entry is' : 'entries are'} saved on this device, waiting to sync.
               </p>
             )}
 
@@ -235,14 +232,14 @@ export default function AttendancePage() {
                   <li key={e.id} className="flex items-center gap-3">
                     {e.selfieUrl ? (
                       <a href={`/api${e.selfieUrl}`} target="_blank" rel="noopener" className="shrink-0">
-                        <img src={`/api${e.selfieUrl}`} alt={t('att.selfieAlt')} className="h-9 w-9 rounded-full object-cover" loading="lazy" />
+                        <img src={`/api${e.selfieUrl}`} alt="Your check-in selfie" className="h-9 w-9 rounded-full object-cover" loading="lazy" />
                       </a>
                     ) : (
                       <span className="h-9 w-9 shrink-0 rounded-full bg-gray-100" aria-hidden="true" />
                     )}
-                    <span className="w-20 shrink-0 tabular-nums text-gray-500">{clock(e.occurredAt, tz, locale)}</span>
+                    <span className="w-20 shrink-0 tabular-nums text-gray-500">{clock(e.occurredAt, tz)}</span>
                     <span className="flex-1">
-                      {t(`event.${e.type}`)}
+                      {EVENT_LABEL[e.type]}
                       {e.breakName && ` (${e.breakName})`}
                       {e.siteName && <span className="text-gray-500"> · {e.siteName}</span>}
                     </span>
@@ -259,7 +256,7 @@ export default function AttendancePage() {
 
       {camera && (
         <SelfieCamera
-          title={camera.type === 'check_in' ? t('att.selfieIn') : t('att.selfieOut')}
+          title={camera.type === 'check_in' ? 'Selfie to check in' : 'Selfie to check out'}
           onCancel={() => setCamera(null)}
           onCapture={(photo) => void record(camera, photo)}
         />
@@ -271,8 +268,6 @@ export default function AttendancePage() {
 function History({ timezone, currentMonth, version }: { timezone: string; currentMonth: string; version: number }) {
   const api = useWorkspaceApi();
   const { workspace } = useWorkspace();
-  const t = useT();
-  const locale = useLocale();
   const [month, setMonth] = useState(currentMonth);
   const [days, setDays] = useState<AttendanceDayDto[]>();
   const [fixing, setFixing] = useState<AttendanceDayDto | null>(null);
@@ -291,59 +286,55 @@ function History({ timezone, currentMonth, version }: { timezone: string; curren
   return (
     <Card>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">{t('att.history.title')}</h2>
-        <input type="month" value={month} max={currentMonth} onChange={(e) => e.target.value && setMonth(e.target.value)} aria-label={t('att.history.month')} className="rounded-lg border border-gray-300 px-2 py-1 text-sm" />
+        <h2 className="text-base font-semibold">History</h2>
+        <input type="month" value={month} max={currentMonth} onChange={(e) => e.target.value && setMonth(e.target.value)} aria-label="Month" className="rounded-lg border border-gray-300 px-2 py-1 text-sm" />
       </div>
       {!days ? (
-        <p className="text-sm text-gray-500">{t('att.loading')}</p>
+        <p className="text-sm text-gray-500">Loading…</p>
       ) : days.length === 0 ? (
-        <p className="text-sm text-gray-500">{t('att.history.empty')}</p>
+        <p className="text-sm text-gray-500">Nothing recorded for this month.</p>
       ) : (
         <>
           <p className="mb-3 text-sm text-gray-600">
-            {t('att.history.summary', {
-              worked: duration(worked, locale),
-              present: count((d) => d.status === 'present' || d.status === 'late'),
-              late: count((d) => d.status === 'late'),
-              absent: count((d) => d.status === 'absent'),
-            })}
+            {duration(worked)} worked · {count((d) => d.status === 'present' || d.status === 'late')} days present · {count((d) => d.status === 'late')} late ·{' '}
+            {count((d) => d.status === 'absent')} absent
           </p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-sm">
-              <thead className="text-start text-xs uppercase tracking-wide text-gray-500">
+              <thead className="text-left text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="py-2 pe-2 font-medium">{t('att.history.day')}</th>
-                  <th className="py-2 pe-2 font-medium">{t('att.history.status')}</th>
-                  <th className="py-2 pe-2 font-medium">{t('att.history.in')}</th>
-                  <th className="py-2 pe-2 font-medium">{t('att.history.out')}</th>
-                  <th className="py-2 text-end font-medium">{t('att.history.worked')}</th>
+                  <th className="py-2 pr-2 font-medium">Day</th>
+                  <th className="py-2 pr-2 font-medium">Status</th>
+                  <th className="py-2 pr-2 font-medium">In</th>
+                  <th className="py-2 pr-2 font-medium">Out</th>
+                  <th className="py-2 text-right font-medium">Worked</th>
                   <th className="py-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {days.map((d) => (
                   <tr key={d.date}>
-                    <td className="py-2 pe-2 text-gray-700">{prettyDate(d.date, undefined, locale)}</td>
-                    <td className="py-2 pe-2">
+                    <td className="py-2 pr-2 text-gray-700">{prettyDate(d.date)}</td>
+                    <td className="py-2 pr-2">
                       <span className="flex flex-wrap items-center gap-1">
                         <StatusBadge status={d.status} />
                         {d.holidayName && <span className="text-xs text-rose-700">{d.holidayName}</span>}
                         {d.leave && (
                           <span className="text-xs text-violet-700">
                             {d.leave.typeName}
-                            {d.leave.fraction < 1 && t('att.history.half')}
+                            {d.leave.fraction < 1 && ' (half)'}
                           </span>
                         )}
                         <Flags flags={d.flags} />
                       </span>
                     </td>
-                    <td className="py-2 pe-2 tabular-nums text-gray-600">{clock(d.checkInAt, timezone, locale)}</td>
-                    <td className="py-2 pe-2 tabular-nums text-gray-600">{d.open ? t('att.history.now') : clock(d.checkOutAt, timezone, locale)}</td>
-                    <td className="py-2 text-end tabular-nums">{d.workedMinutes > 0 ? duration(d.workedMinutes, locale) : '—'}</td>
-                    <td className="py-2 ps-2 text-end">
+                    <td className="py-2 pr-2 tabular-nums text-gray-600">{clock(d.checkInAt, timezone)}</td>
+                    <td className="py-2 pr-2 tabular-nums text-gray-600">{d.open ? 'Now' : clock(d.checkOutAt, timezone)}</td>
+                    <td className="py-2 text-right tabular-nums">{d.workedMinutes > 0 ? duration(d.workedMinutes) : '—'}</td>
+                    <td className="py-2 pl-2 text-right">
                       {!d.open && d.status !== 'not_started' && d.status !== 'holiday' && d.status !== 'on_leave' && (
-                        <button type="button" className="text-xs text-brand-700 hover:underline" onClick={() => setFixing(d)} aria-label={t('att.history.fixLabel', { date: d.date })}>
-                          {t('att.history.fix')}
+                        <button type="button" className="text-xs text-brand-700 hover:underline" onClick={() => setFixing(d)} aria-label={`Ask to correct ${d.date}`}>
+                          Fix
                         </button>
                       )}
                     </td>

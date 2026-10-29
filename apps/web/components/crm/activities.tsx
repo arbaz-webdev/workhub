@@ -59,7 +59,7 @@ export function ActivityRow({ a, onToggle, showTarget = false }: { a: CrmActivit
       <div className="min-w-0 flex-1 text-sm">
         <p className={`font-medium ${a.doneAt && a.dueAt ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
           {a.subject}
-          <span className="ms-2 text-xs font-normal text-gray-500">{ACTIVITY_LABELS[a.kind]}</span>
+          <span className="ml-2 text-xs font-normal text-gray-500">{ACTIVITY_LABELS[a.kind]}</span>
         </p>
         {a.body && <p className="mt-0.5 whitespace-pre-wrap break-words text-gray-700">{a.body}</p>}
         <p className="mt-0.5 text-xs text-gray-500">
@@ -142,7 +142,7 @@ function ActivityForm({ target, onSaved }: { target: ActivityTarget; onSaved: ()
           Follow up on
         </label>
         {later && <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Follow-up time" className={`${input} !w-auto !py-1.5`} />}
-        <button type="submit" disabled={saving} className={`${btn.primary} ms-auto !py-1.5`}>
+        <button type="submit" disabled={saving} className={`${btn.primary} ml-auto !py-1.5`}>
           {saving ? 'Saving…' : later ? 'Schedule' : 'Log it'}
         </button>
       </div>

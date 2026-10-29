@@ -115,7 +115,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
   const select = 'rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm';
 
   return (
-    <div className={`pe-4 lg:pe-8 ${selected.size > 0 ? 'pb-28' : ''}`}>
+    <div className={`pr-4 lg:pr-8 ${selected.size > 0 ? 'pb-28' : ''}`}>
       <div className="mb-3 flex flex-wrap items-center gap-2" role="search" aria-label="Filter tasks">
         <input
           type="search"
@@ -181,7 +181,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="w-full min-w-[760px] text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium uppercase tracking-wide text-gray-500">
+          <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
             <tr>
               {board.canEdit && (
                 <th className="w-10 px-3 py-2">
@@ -198,7 +198,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
               <th className="px-3 py-2">Assignees</th>
               <th className="px-3 py-2">Priority</th>
               <th className="px-3 py-2">Due</th>
-              <th className="px-3 py-2 text-end">Hours</th>
+              <th className="px-3 py-2 text-right">Hours</th>
             </tr>
           </thead>
           <tbody>
@@ -216,12 +216,12 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
                     <button
                       type="button"
                       onClick={() => onOpen(t.id)}
-                      className={`text-start hover:underline ${t.completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}
+                      className={`text-left hover:underline ${t.completed ? 'text-gray-400 line-through' : 'text-gray-900'}`}
                     >
                       {t.title}
                     </button>
                     {t.labelIds.length > 0 && (
-                      <span className="ms-2 inline-flex flex-wrap gap-1 align-middle">
+                      <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
                         {t.labelIds.map((id) => {
                           const l = labels.get(id);
                           return l ? (
@@ -264,7 +264,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
                     )}
                   </td>
                   <td className={`px-3 py-2 ${due?.overdue ? 'font-medium text-red-600' : 'text-gray-600'}`}>{due?.text ?? <span className="text-gray-400">—</span>}</td>
-                  <td className={`px-3 py-2 text-end tabular-nums ${over ? 'font-medium text-red-600' : 'text-gray-600'}`}>
+                  <td className={`px-3 py-2 text-right tabular-nums ${over ? 'font-medium text-red-600' : 'text-gray-600'}`}>
                     {t.actualHours > 0 || t.estimateHours !== null ? (
                       <>
                         {hoursText(t.actualHours)}
@@ -319,7 +319,7 @@ function BulkBar({
   return (
     // Floats over the bottom of the screen, so the table never shifts under the pointer while selecting.
     <div
-      className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-5xl flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm shadow-lg lg:start-64"
+      className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-5xl flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm shadow-lg lg:left-64"
       role="toolbar"
       aria-label="Bulk edit"
     >
@@ -384,7 +384,7 @@ function BulkBar({
       <button type="button" disabled={busy} className={btn.danger} onClick={() => onAction({ type: 'delete' })}>
         Delete
       </button>
-      <button type="button" className={`${btn.ghost} ms-auto`} onClick={onClear}>
+      <button type="button" className={`${btn.ghost} ml-auto`} onClick={onClear}>
         Clear selection
       </button>
     </div>

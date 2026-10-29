@@ -79,7 +79,7 @@ export default function ApprovalsPage() {
                 >
                   <p className="font-medium">
                     {r.user.name}{' '}
-                    <span className={`ms-1 rounded px-1.5 py-0.5 text-xs font-medium ${LEAVE_COLOR[r.leaveType.color]}`}>{r.leaveType.name}</span>
+                    <span className={`ml-1 rounded px-1.5 py-0.5 text-xs font-medium ${LEAVE_COLOR[r.leaveType.color]}`}>{r.leaveType.name}</span>
                   </p>
                   <p className="text-gray-600">
                     {rangeLabel(r.startDate, r.endDate, r.halfDay)} · {r.days} {r.days === 1 ? 'day' : 'days'}

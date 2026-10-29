@@ -31,7 +31,7 @@ export default function PortalDocPage() {
         <Link href={`/app/portal${preview ? `?company=${preview}` : ''}`} className="text-sm text-brand-700 underline">
           Back to the portal
         </Link>
-        <button type="button" className={`${btn.secondary} ms-auto`} onClick={() => window.print()}>
+        <button type="button" className={`${btn.secondary} ml-auto`} onClick={() => window.print()}>
           Print or save PDF
         </button>
       </div>

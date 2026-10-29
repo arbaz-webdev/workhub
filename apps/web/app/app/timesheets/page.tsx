@@ -82,7 +82,7 @@ function MyTimesheet() {
             </button>
             <SheetStatus status={sheet.status} />
             {(sheet.status === 'draft' || sheet.status === 'rejected') && (
-              <button type="button" className={`${btn.primary} ms-auto`} disabled={busy || sheet.total === 0} onClick={submit}>
+              <button type="button" className={`${btn.primary} ml-auto`} disabled={busy || sheet.total === 0} onClick={submit}>
                 {busy ? 'Submitting…' : sheet.status === 'rejected' ? 'Resubmit week' : 'Submit week'}
               </button>
             )}

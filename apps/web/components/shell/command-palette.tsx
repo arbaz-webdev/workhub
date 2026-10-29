@@ -3,7 +3,6 @@
 import { hasRole, type MemberDto, type ProjectSummaryDto, type TeamDto } from '@workhub/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { useT } from '@/lib/i18n';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 import { NAV } from './nav';
 
@@ -61,14 +60,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     [close, router],
   );
 
-  const t = useT();
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = NAV.filter((n) => !n.minRole || hasRole(workspace.role, n.minRole)).map((n) => ({
       id: `nav:${n.href}`,
       group: 'Go to',
-      label: t(n.labelKey),
-      // English words still find it.
-      keywords: `${n.label} ${n.keywords ?? ''}`,
+      label: n.label,
+      keywords: n.keywords,
       run: go(n.href),
     }));
     if (hasRole(workspace.role, 'admin')) {
@@ -172,7 +169,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   }`}
                 >
                   <span>{c.label}</span>
-                  {c.hint && <span className="truncate ps-4 text-xs text-gray-400">{c.hint}</span>}
+                  {c.hint && <span className="truncate pl-4 text-xs text-gray-400">{c.hint}</span>}
                 </div>
               </li>
             );

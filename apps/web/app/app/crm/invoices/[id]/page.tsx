@@ -86,10 +86,10 @@ export default function ClientDocPage() {
         <Link href="/app/crm/invoices" className="text-sm text-brand-700 underline">
           Quotes and invoices
         </Link>
-        <span className="ms-2">
+        <span className="ml-2">
           <DocStatus status={doc.status} overdue={doc.overdue} />
         </span>
-        <div className="ms-auto flex flex-wrap gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           {doc.status === 'draft' && (
             <button type="button" className={btn.secondary} onClick={() => setEditing(true)}>
               Edit

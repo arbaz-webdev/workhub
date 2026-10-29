@@ -145,8 +145,8 @@ function ProjectBoard() {
   const budgetUsed = budget ? actual / budget : 0;
 
   return (
-    <div className="-me-4 lg:-me-8">
-      <div className="mb-5 flex flex-wrap items-end gap-x-6 gap-y-2 pe-4 lg:pe-8">
+    <div className="-mr-4 lg:-mr-8">
+      <div className="mb-5 flex flex-wrap items-end gap-x-6 gap-y-2 pr-4 lg:pr-8">
         <div>
           <p className="text-sm text-gray-500">
             <Link href="/app/projects" className="hover:underline">
@@ -180,7 +180,7 @@ function ProjectBoard() {
             </div>
           </div>
         ) : null}
-        <div className="ms-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 text-sm" role="group" aria-label="View">
             {VIEWS.map((v) => (
               <button
@@ -207,12 +207,12 @@ function ProjectBoard() {
       </div>
 
       {notice && (
-        <div className="mb-4 pe-4 lg:pe-8">
+        <div className="mb-4 pr-4 lg:pr-8">
           <Alert kind="success">{notice}</Alert>
         </div>
       )}
       {error && (
-        <div className="mb-4 pe-4 lg:pe-8">
+        <div className="mb-4 pr-4 lg:pr-8">
           <Alert>{error}</Alert>
         </div>
       )}

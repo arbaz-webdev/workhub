@@ -84,7 +84,7 @@ function Groups({ data }: { data: MyWorkDto }) {
                 >
                   <span className="min-w-0 flex-1 font-medium text-gray-900">
                     {t.title}
-                    {t.parentTaskId && <span className="ms-1.5 text-xs font-normal text-gray-500">subtask</span>}
+                    {t.parentTaskId && <span className="ml-1.5 text-xs font-normal text-gray-500">subtask</span>}
                   </span>
                   <span className="text-xs text-gray-500">
                     {t.projectName} · {t.columnName}
@@ -94,7 +94,7 @@ function Groups({ data }: { data: MyWorkDto }) {
                   )}
                   {t.estimateHours !== null && <span className="text-xs text-gray-500">{hoursText(t.estimateHours)}</span>}
                   {t.dueDate && (
-                    <span className={`w-16 text-end text-xs ${g.key === 'overdue' ? 'font-medium text-red-600' : 'text-gray-500'}`}>
+                    <span className={`w-16 text-right text-xs ${g.key === 'overdue' ? 'font-medium text-red-600' : 'text-gray-500'}`}>
                       {new Date(`${t.dueDate}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                     </span>
                   )}

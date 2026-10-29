@@ -57,13 +57,13 @@ export function TimesheetGrid({ sheet }: { sheet: TimesheetDto }) {
       <table className="w-full min-w-[720px] text-sm">
         <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
           <tr>
-            <th className="px-3 py-2 text-start">Task</th>
+            <th className="px-3 py-2 text-left">Task</th>
             {sheet.days.map((d) => (
-              <th key={d} className="px-2 py-2 text-end">
+              <th key={d} className="px-2 py-2 text-right">
                 {dayLabel(d, { weekday: 'short', day: 'numeric' })}
               </th>
             ))}
-            <th className="px-3 py-2 text-end">Total</th>
+            <th className="px-3 py-2 text-right">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -80,11 +80,11 @@ export function TimesheetGrid({ sheet }: { sheet: TimesheetDto }) {
                 <span className="block text-xs text-gray-500">{r.projectName}</span>
               </td>
               {r.minutes.map((m, i) => (
-                <td key={i} className={`px-2 py-2 text-end tabular-nums ${m ? 'text-gray-900' : 'text-gray-300'}`}>
+                <td key={i} className={`px-2 py-2 text-right tabular-nums ${m ? 'text-gray-900' : 'text-gray-300'}`}>
                   {m ? hhmm(m) : '·'}
                 </td>
               ))}
-              <td className="px-3 py-2 text-end font-medium tabular-nums">{hhmm(r.total)}</td>
+              <td className="px-3 py-2 text-right font-medium tabular-nums">{hhmm(r.total)}</td>
             </tr>
           ))}
         </tbody>
@@ -92,11 +92,11 @@ export function TimesheetGrid({ sheet }: { sheet: TimesheetDto }) {
           <tr>
             <td className="px-3 py-2">Total</td>
             {sheet.dayTotals.map((m, i) => (
-              <td key={i} className="px-2 py-2 text-end tabular-nums">
+              <td key={i} className="px-2 py-2 text-right tabular-nums">
                 {m ? hhmm(m) : ''}
               </td>
             ))}
-            <td className="px-3 py-2 text-end tabular-nums">{hhmm(sheet.total)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{hhmm(sheet.total)}</td>
           </tr>
         </tfoot>
       </table>

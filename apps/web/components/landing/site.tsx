@@ -23,14 +23,14 @@ export function SiteHeader({ cta = { href: '/#beta', label: 'Join the beta' } }:
         <Link href="/" aria-label="WorkHub home">
           <Logo />
         </Link>
-        <div className="ms-auto hidden items-center gap-6 text-sm text-gray-600 md:flex">
+        <div className="ml-auto hidden items-center gap-6 text-sm text-gray-600 md:flex">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-gray-900">
               {l.label}
             </Link>
           ))}
         </div>
-        <div className="ms-auto flex items-center gap-2 md:ms-0">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
           <Link href="/sign-in" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
             Sign in
           </Link>

@@ -3,7 +3,6 @@
 import { hasRole } from '@workhub/shared';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useT } from '@/lib/i18n';
 import { useInbox } from '@/lib/inbox';
 import { useWorkspace } from '@/lib/workspace';
 import { NAV, SOON } from './nav';
@@ -12,9 +11,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { workspace } = useWorkspace();
   const { summary } = useInbox();
-  const t = useT();
   const items = [
-    ...(workspace.clientCompanyId ? [{ href: '/app/portal', labelKey: 'nav.clientPortal' as const, label: 'Client portal' }] : []),
+    ...(workspace.clientCompanyId ? [{ href: '/app/portal', label: 'Client portal' }] : []),
     ...NAV.filter((i) => !i.minRole || hasRole(workspace.role, i.minRole)),
   ];
   const counts = { inbox: summary.unread, announcements: summary.announcements };
@@ -40,21 +38,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               active ? 'bg-brand-50 text-brand-700' : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {t(item.labelKey)}
+            {item.label}
             {count > 0 && (
               <span className={`min-w-5 rounded-full px-1.5 text-center text-[11px] font-semibold leading-5 ${urgent ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}>
                 {count > 99 ? '99+' : count}
-                <span className="sr-only">{t('nav.unread')}</span>
+                <span className="sr-only"> unread</span>
               </span>
             )}
           </Link>
         );
       })}
-      {SOON.length > 0 && <p className="mt-6 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">{t('nav.comingSoon')}</p>}
+      {SOON.length > 0 && <p className="mt-6 px-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Coming soon</p>}
       {SOON.map((item) => (
         <span key={item.label} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-gray-400">
-          {t(item.labelKey)}
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">{t('nav.soon')}</span>
+          {item.label}
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">Soon</span>
         </span>
       ))}
     </nav>

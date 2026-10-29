@@ -18,7 +18,6 @@ import {
   type Industry,
   type ImportMode,
   type ImportProblem,
-  type Locale,
   type PayrollColumn,
   type ClientDocKind,
   type ClientDocStatus,
@@ -45,7 +44,6 @@ export const users = pgTable('users', {
   /** Null for accounts created with Google. */
   passwordHash: text('password_hash'),
   emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
-  locale: text('locale').$type<Locale>().notNull().default('en'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -307,7 +307,7 @@ function Column({
             <button type="button" onClick={() => setEditing(false)} className={btn.ghost}>
               Cancel
             </button>
-            <button type="button" onClick={deleteColumn} className={`${btn.danger} ms-auto`}>
+            <button type="button" onClick={deleteColumn} className={`${btn.danger} ml-auto`}>
               Delete
             </button>
           </div>
@@ -323,7 +323,7 @@ function Column({
             <button
               onClick={() => setEditing(true)}
               aria-label={`Edit column ${column.name}`}
-              className="ms-auto rounded px-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+              className="ml-auto rounded px-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
             >
               ⋯
             </button>
@@ -357,7 +357,7 @@ function Column({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="mt-2 rounded-lg px-2 py-1.5 text-start text-sm text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+            className="mt-2 rounded-lg px-2 py-1.5 text-left text-sm text-gray-500 hover:bg-gray-200 hover:text-gray-800"
           >
             + Add task
           </button>
@@ -397,7 +397,7 @@ function AddColumn({ projectId, setColumns, onError }: { projectId: string; setC
   ) : (
     <button
       onClick={() => setOpen(true)}
-      className="w-72 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 px-3 py-3 text-start text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
+      className="w-72 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 px-3 py-3 text-left text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
     >
       + Add column
     </button>

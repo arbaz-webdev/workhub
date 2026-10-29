@@ -204,3 +204,88 @@ export function DocEditor({
     </form>
   );
 }
+
+const date = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null);
+
+/** The quote or invoice as the client receives it; prints cleanly. */
+export function DocPaper({ doc }: { doc: ClientDocumentDto }) {
+  const label = KIND_LABEL[doc.kind];
+  return (
+    <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm print:border-0 print:p-0 print:shadow-none sm:p-8" aria-label={`${label} ${doc.number}`}>
+      <header className="flex flex-wrap justify-between gap-6">
+        <div>
+          <p className="text-lg font-semibold">{doc.from.name}</p>
+          {doc.from.address && <p className="whitespace-pre-line text-sm text-gray-600">{doc.from.address}</p>}
+          {doc.from.ntn && <p className="text-sm text-gray-600">NTN {doc.from.ntn}</p>}
+          {doc.from.email && <p className="text-sm text-gray-600">{doc.from.email}</p>}
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold tracking-tight">{label}</p>
+          <p className="text-sm text-gray-600">{doc.number}</p>
+          <p className="mt-2 text-sm text-gray-600">Date: {date(doc.issueDate)}</p>
+          {doc.dueDate && (
+            <p className="text-sm text-gray-600">
+              {doc.kind === 'quote' ? 'Valid until' : 'Payment due'}: {date(doc.dueDate)}
+            </p>
+          )}
+        </div>
+      </header>
+
+      <section className="mt-8">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{doc.kind === 'quote' ? 'Prepared for' : 'Bill to'}</p>
+        <p className="mt-1 font-medium">{doc.client.name}</p>
+        {doc.client.address && <p className="whitespace-pre-line text-sm text-gray-600">{doc.client.address}</p>}
+        {(doc.client.city || doc.client.country) && <p className="text-sm text-gray-600">{[doc.client.city, doc.client.country].filter(Boolean).join(', ')}</p>}
+        {doc.client.email && <p className="text-sm text-gray-600">{doc.client.email}</p>}
+      </section>
+
+      <div className="mt-8 overflow-x-auto">
+        <table className="w-full min-w-[30rem] text-sm">
+          <thead className="border-b border-gray-300 text-left text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th className="py-2 pr-3 font-medium">Description</th>
+              <th className="py-2 pl-4 text-right font-medium">Qty</th>
+              <th className="py-2 pl-4 text-right font-medium">Price</th>
+              <th className="py-2 pl-4 text-right font-medium">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {doc.lines.map((l) => (
+              <tr key={l.id} className="border-b border-gray-100 align-top">
+                <td className="py-3 pr-3">{l.description}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{l.quantity}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{docMoney(l.unitPrice, doc.currency)}</td>
+                <td className="whitespace-nowrap py-3 pl-4 text-right tabular-nums">{docMoney(l.amount, doc.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={3} className="pt-3 text-right text-gray-600">
+                Subtotal
+              </td>
+              <td className="whitespace-nowrap pt-3 pl-4 text-right tabular-nums">{docMoney(doc.subtotal, doc.currency)}</td>
+            </tr>
+            {doc.taxRate > 0 && (
+              <tr>
+                <td colSpan={3} className="pt-1 text-right text-gray-600">
+                  {doc.taxLabel || 'Tax'} ({doc.taxRate}%)
+                </td>
+                <td className="whitespace-nowrap pt-1 pl-4 text-right tabular-nums">{docMoney(doc.taxAmount, doc.currency)}</td>
+              </tr>
+            )}
+            <tr className="text-base font-semibold">
+              <td colSpan={3} className="pt-2 text-right">
+                Total
+              </td>
+              <td className="whitespace-nowrap pt-2 pl-4 text-right tabular-nums">{docMoney(doc.total, doc.currency)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {doc.notes && <p className="mt-8 whitespace-pre-line border-t border-gray-100 pt-4 text-sm text-gray-700">{doc.notes}</p>}
+      {doc.status === 'paid' && doc.paidAt && <p className="mt-6 text-sm font-semibold text-emerald-700">Paid {new Date(doc.paidAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}. Thank you.</p>}
+    </article>
+  );
+}

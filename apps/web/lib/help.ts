@@ -208,6 +208,32 @@ Open a company to see everything about that client in one place: contacts, deals
 Mark an invoice **sent** when it goes out, and **paid** when the money arrives. Sent invoices past their due date show as **overdue**, and the list shows how much is waiting to be paid. Only drafts can be edited; move one back to draft to change it.`,
   },
   {
+    slug: 'client-portal',
+    title: 'The client portal',
+    summary: 'Let clients follow their projects, see the hours worked, and find your quotes and invoices.',
+    category: 'Projects and clients',
+    keywords: 'client portal share customer contact guest progress hours invoices quotes preview',
+    body: `The client portal gives your clients one place to see how their work is going, without emails asking for updates.
+
+## What clients see
+
+- The projects you share with them: how many tasks are done, what's in each column, and what's due in the next two weeks.
+- Hours worked on those projects, from **approved** timesheets only, by month and against the planned hours.
+- The quotes and invoices you've sent them, ready to print or save as PDF. Drafts never show.
+
+They don't see your other clients, your other projects, people's costs, or anything you haven't shared.
+
+## Setting it up
+
+Open the client in **CRM → Companies**. In the **Client portal** box:
+
+1. Tick the projects to share. A project needs this client set on it.
+2. Invite contacts at the client by email (admins and the owner). They join as free guests and land on the portal.
+3. Choose **Preview** to see exactly what they'll see.
+
+To stop someone's access, choose **Remove** next to their name.`,
+  },
+  {
     slug: 'inbox-and-announcements',
     title: 'Team chat and announcements',
     summary: 'Channels, direct messages, mentions and company announcements with read receipts.',

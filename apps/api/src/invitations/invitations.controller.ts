@@ -42,7 +42,7 @@ import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { Track } from '../analytics/track';
 import { assertSeat } from '../billing/plans';
 
-const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
+export const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 interface TokenRow {
   id: string;
@@ -54,7 +54,7 @@ interface TokenRow {
   inviter_name: string | null;
 }
 
-function inviteUrl(token: string) {
+export function inviteUrl(token: string) {
   return `${config.appUrl}/invite/${token}`;
 }
 
@@ -291,11 +291,21 @@ export class InvitationsController {
         .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug })
         .from(workspaces)
         .where(eq(workspaces.id, inv.workspace_id));
+      // An invitation to be a client's contact (client portal) links the guest to that client.
+      const [{ clientCompanyId } = { clientCompanyId: null }] = await tx
+        .select({ clientCompanyId: invitations.clientCompanyId })
+        .from(invitations)
+        .where(eq(invitations.id, inv.id));
 
-      if (existing) return { ...w!, role: existing.role };
+      if (existing) {
+        if (clientCompanyId && existing.role === 'guest') {
+          await tx.update(memberships).set({ clientCompanyId }).where(and(eq(memberships.workspaceId, inv.workspace_id), eq(memberships.userId, auth.userId)));
+        }
+        return { ...w!, role: existing.role, clientCompanyId: existing.role === 'guest' ? clientCompanyId : null };
+      }
 
       if (inv.role !== 'guest') await assertSeat(tx, inv.workspace_id);
-      await tx.insert(memberships).values({ workspaceId: inv.workspace_id, userId: auth.userId, role: inv.role });
+      await tx.insert(memberships).values({ workspaceId: inv.workspace_id, userId: auth.userId, role: inv.role, clientCompanyId: inv.role === 'guest' ? clientCompanyId : null });
       await audit(tx, {
         workspaceId: inv.workspace_id,
         actorUserId: auth.userId,
@@ -312,7 +322,7 @@ export class InvitationsController {
         { type: 'member.joined', title: `${user.name} joined ${w!.name}`, body: `Role: ${inv.role}`, link: '/app/people' },
         auth.userId,
       );
-      return { ...w!, role: inv.role };
+      return { ...w!, role: inv.role, clientCompanyId: inv.role === 'guest' ? clientCompanyId : null };
     });
   }
 

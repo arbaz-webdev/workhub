@@ -53,6 +53,11 @@ export default function Home() {
   const router = useRouter();
   const [plan, setPlan] = useState<SubscriptionDto>();
 
+  // A client's contact starts on their portal.
+  useEffect(() => {
+    if (workspace.role === 'guest' && workspace.clientCompanyId) router.replace('/app/portal');
+  }, [workspace.role, workspace.clientCompanyId, router]);
+
   // A new workspace starts in the setup wizard; and admins hear about their plan here.
   useEffect(() => {
     if (!admin) return;

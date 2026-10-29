@@ -11,7 +11,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { workspace } = useWorkspace();
   const { summary } = useInbox();
-  const items = NAV.filter((i) => !i.minRole || hasRole(workspace.role, i.minRole));
+  const items = [
+    ...(workspace.clientCompanyId ? [{ href: '/app/portal', label: 'Client portal' }] : []),
+    ...NAV.filter((i) => !i.minRole || hasRole(workspace.role, i.minRole)),
+  ];
   const counts = { inbox: summary.unread, announcements: summary.announcements };
 
   return (
@@ -22,9 +25,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </Link>
       {items.map((item) => {
         const active = item.href === '/app' ? pathname === '/app' : pathname.startsWith(item.href);
-        const count = item.badge ? counts[item.badge] : 0;
+        const count = 'badge' in item && item.badge ? counts[item.badge] : 0;
         // Mentions make the inbox badge red; plain unread stays calm.
-        const urgent = item.badge === 'inbox' ? summary.mentions > 0 : count > 0;
+        const urgent = 'badge' in item && item.badge === 'inbox' ? summary.mentions > 0 : count > 0;
         return (
           <Link
             key={item.href}

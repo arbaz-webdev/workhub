@@ -82,6 +82,20 @@ export function inviteMessage(to: string, inviterName: string, workspaceName: st
   });
 }
 
+export function portalInviteMessage(to: string, inviterName: string, workspaceName: string, clientName: string, url: string): EmailMessage {
+  return layout({
+    to,
+    subject: `${inviterName} shared ${clientName}'s projects with you on WorkHub`,
+    greeting: 'Hi,',
+    lines: [
+      `${inviterName} at ${workspaceName} has given you access to ${clientName}'s client portal on WorkHub.`,
+      "There you can follow the progress of your projects, see the hours worked on them, and find the quotes and invoices we've sent you.",
+    ],
+    button: { label: 'Open the client portal', url },
+    footer: "This invitation expires in 7 days. If you weren't expecting it, you can ignore this email.",
+  });
+}
+
 export function waitlistWelcomeMessage(to: string, name: string): EmailMessage {
   return layout({
     to,

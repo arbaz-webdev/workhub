@@ -82,6 +82,8 @@ export interface WorkspaceDto {
   role: Role;
   /** Everyone must use two-factor sign-in (set on /auth/me). */
   requireTwoFactor?: boolean;
+  /** For a guest who is a client's contact: that client, whose portal they see (set on /auth/me). */
+  clientCompanyId?: string | null;
 }
 
 export interface MeResponse {
@@ -2016,3 +2018,42 @@ export interface UnbilledProjectDto {
   currency: Currency | null;
   amount: number | null;
 }
+
+// ---- Client portal (phase 2) -------------------------------------------------------------------
+
+export interface PortalProjectDto {
+  id: string;
+  name: string;
+  status: 'active' | 'on_hold' | 'completed' | 'archived';
+  tasks: { total: number; done: number; percent: number };
+  /** Open tasks in each column of the board, in board order. */
+  columns: { name: string; open: number }[];
+  budgetHours: number | null;
+  /** Approved timesheet hours, all time and this month. */
+  approvedHours: number;
+  hoursThisMonth: number;
+  /** Open tasks due in the next 14 days. */
+  upcoming: { title: string; dueDate: string }[];
+  updatedAt: string | null;
+}
+
+export interface PortalDto {
+  workspaceName: string;
+  company: { id: string; name: string };
+  projects: PortalProjectDto[];
+  /** Approved hours on the shared projects for the last 6 months, oldest first. */
+  hoursByMonth: { month: string; hours: number }[];
+  /** Quotes and invoices sent to the client (never drafts). */
+  documents: ClientDocSummaryDto[];
+}
+
+/** Staff view of a client's portal: who can see it and which projects are shared. */
+export interface CompanyPortalDto {
+  people: { userId: string; name: string; email: string }[];
+  invites: { id: string; email: string; expiresAt: string }[];
+  projects: { id: string; name: string; status: PortalProjectDto['status']; portalVisible: boolean }[];
+}
+
+export const portalInviteSchema = z.object({ email: z.string().trim().toLowerCase().email('Enter an email address').max(254) });
+export type PortalInviteInput = z.infer<typeof portalInviteSchema>;
+export const portalVisibilitySchema = z.object({ visible: z.boolean() });

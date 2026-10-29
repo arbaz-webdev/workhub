@@ -82,7 +82,7 @@ export async function requireFeature(tx: Tx, workspaceId: string, feature: PlanF
   if (!config.billingEnforced) return;
   const { plan } = effectivePlan(await loadSubscription(tx, workspaceId));
   if (!PLAN_INFO[plan].features.includes(feature)) {
-    const what = { profitability: 'Client profitability', custom_fields: 'Custom fields', pipelines: 'More than one sales pipeline' }[feature];
+    const what = { profitability: 'Client profitability', custom_fields: 'Custom fields', pipelines: 'More than one sales pipeline', api: 'The API' }[feature];
     throw new ForbiddenException(`${what} is part of the Business plan. Upgrade in Settings → Billing.`);
   }
 }

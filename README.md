@@ -322,12 +322,22 @@ Still to do, and yours:
 - [x] Payroll exports and fingerprint devices (#90), in **Attendance → Payroll and devices**:
   - Export layouts: three built in (full summary, payable days, hours), plus your own (choose, order and rename columns). Employee codes for payroll software.
   - ZKTeco import from attlog.dat or a ZKTime/ZKBio CSV. Device users are matched to people (remembered next time); each workday's first and last punch become check-in and check-out, using the shift rules. Days recorded in the app are kept, and re-importing changes nothing.
-- [x] 297 tests, plus 2 that run against Redis in CI
+- [x] 310 tests, plus 2 that run against Redis in CI
 - [ ] Urdu interface (#91): **parked**. Two parts were built and then taken out again; the work is kept in draft PR #121, which explains how to bring it back. The app is English only, left to right. Staging's `users` table still has an unused `locale` column from that work.
 
 - [x] Terms of service (`/terms`) and Privacy policy (`/privacy`), as **drafts** for a lawyer: accurate facts about the product and its data, with "For the lawyer" notes where a legal decision is needed. Both say they're drafts and stay out of search results and the sitemap while `LEGAL_DRAFT` in `apps/web/lib/legal.ts` is true. Linked from the site footer.
 
-Next, buildable without paid accounts: Phase 3 groundwork, such as the public API and webhooks (#96). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+## Phase 3 · Going global
+
+- [x] Public API, part 1 (#96): read access with API keys.
+  - Owners and admins create keys in **Settings → API** (read only, or read and write). A key is shown once; only its hash is stored (`api_keys`, migration 0020).
+  - A key acts as the admin who made it, with their current role, in that workspace only. It stops working if they leave or stop being an admin, or when it's revoked. Business plan only (open while billing is off).
+  - `GET /api/v1/…`: `me`, `people`, `attendance?month=` (the payroll export's numbers), `leave-requests`, `time-entries` (with `approved`), `projects`, `tasks`, `companies`, `contacts`, `leads`, `deals`, `invoices` and `invoices/{id}`. Lists are paged with a cursor; CRM and tasks take `updatedSince`.
+  - 600 requests a minute per key (`API_RATE_LIMIT_PER_MINUTE`). Key changes are in the audit log.
+  - OpenAPI description at `/api/v1/openapi.json`; guide at `/developers`; help article **Connect other software with the API**.
+  - Code: `apps/api/src/public-api/`. Tests: `apps/api/test/public-api.spec.ts`, including isolation between workspaces.
+
+Next: the public API, part 2 (writing tasks, leads, contacts and activities), then webhooks (#96). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

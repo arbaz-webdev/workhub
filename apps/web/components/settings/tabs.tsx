@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   { href: '/app/settings', label: 'Workspace' },
   { href: '/app/settings/billing', label: 'Plan and billing' },
+  { href: '/app/settings/api', label: 'API' },
 ];
 
 export function SettingsTabs() {

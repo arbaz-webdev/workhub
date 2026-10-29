@@ -1660,14 +1660,14 @@ export type PlanKey = (typeof PLANS)[number];
 export type PaidPlan = Exclude<PlanKey, 'free'>;
 
 /** Features beyond the core modules, on Business (and during the trial). */
-export const PLAN_FEATURES = ['profitability', 'custom_fields', 'pipelines'] as const;
+export const PLAN_FEATURES = ['profitability', 'custom_fields', 'pipelines', 'api'] as const;
 export type PlanFeature = (typeof PLAN_FEATURES)[number];
 
 /** Prices are per person (not guests) per month, in PKR. Change them here. */
 export const PLAN_INFO: Record<PlanKey, { name: string; pricePerUser: number; maxUsers: number | null; features: PlanFeature[]; blurb: string }> = {
   free: { name: 'Free', pricePerUser: 0, maxUsers: 10, features: [], blurb: 'Everything you need to run a small team, for up to 10 people.' },
   starter: { name: 'Starter', pricePerUser: 699, maxUsers: null, features: [], blurb: 'No limit on people. Attendance, projects, CRM, chat and reports.' },
-  business: { name: 'Business', pricePerUser: 1299, maxUsers: null, features: ['profitability', 'custom_fields', 'pipelines'], blurb: 'Adds client profitability, custom fields and more sales pipelines.' },
+  business: { name: 'Business', pricePerUser: 1299, maxUsers: null, features: ['profitability', 'custom_fields', 'pipelines', 'api'], blurb: 'Adds client profitability, custom fields, more sales pipelines and the API.' },
 };
 export const TRIAL_DAYS = 14;
 /** An annual plan costs this many months: two months free. */
@@ -2192,3 +2192,37 @@ export interface DeviceImportResultDto {
 
 /** Device user number → WorkHub person (or null to skip them), sent with the file. */
 export const deviceMappingSchema = z.record(z.string().max(40), uuid.nullable());
+
+// ---- Public API (phase 3) -------------------------------------------------------------
+
+/** Every API key starts with this, so it's easy to spot (and for secret scanners to find). */
+export const API_KEY_PREFIX = 'whk_';
+/** "read" keys can only GET; "write" keys can also change data. */
+export const API_KEY_ACCESS = ['read', 'write'] as const;
+export type ApiKeyAccess = (typeof API_KEY_ACCESS)[number];
+/** Requests a key may make per minute. */
+export const API_RATE_LIMIT_PER_MINUTE = 600;
+
+export const createApiKeySchema = z.object({
+  name: z.string().trim().min(1, 'Give the key a name').max(80, 'Keep the name under 80 characters'),
+  access: z.enum(API_KEY_ACCESS),
+});
+export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
+
+export interface ApiKeyDto {
+  id: string;
+  name: string;
+  /** The first few characters, to tell keys apart. The full key is shown only once. */
+  prefix: string;
+  access: ApiKeyAccess;
+  createdBy: { id: string; name: string } | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** False once the person who made it is no longer an admin: the key stops working. */
+  active: boolean;
+}
+
+export interface ApiKeyCreatedDto extends ApiKeyDto {
+  /** The full key. Shown once; WorkHub keeps only a hash. */
+  key: string;
+}

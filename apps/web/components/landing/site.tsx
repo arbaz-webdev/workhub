@@ -58,6 +58,9 @@ export function SiteFooter() {
           <Link href="/status" className="hover:text-gray-800">
             Status
           </Link>
+          <Link href="/developers" className="hover:text-gray-800">
+            API
+          </Link>
           <Link href="/sign-in" className="hover:text-gray-800">
             Sign in
           </Link>

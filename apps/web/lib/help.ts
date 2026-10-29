@@ -374,6 +374,30 @@ In **Settings → Security**, choose **Require two-factor sign-in**. You need it
 
 > Recommended for every owner and admin.`,
   },
+  {
+    slug: 'connect-other-software',
+    title: 'Connect other software with the API',
+    summary: 'Let payroll, accounting or your own tools read WorkHub data with an API key.',
+    category: 'Your account and billing',
+    keywords: 'api key integration developer payroll accounting export sync zapier connect',
+    body: `The WorkHub API lets other software read your workspace's data: people, attendance, leave, logged time, projects and tasks, your CRM, and invoices to clients. It's part of the Business plan.
+
+## Create a key (owners and admins)
+
+1. Open **Settings → API**.
+2. Give the key a name that says what it's for, such as "Payroll sync", and choose **Create key**.
+3. Copy the key and give it to whoever is setting up the connection. It's shown only once.
+
+## What a key can see
+
+A key acts as the person who created it, with their access, in this workspace only. If that person leaves or stops being an admin, the key stops working and **Settings → API** says so. Create keys from an account that will stay.
+
+## If a key leaks
+
+Choose **Revoke** next to it in **Settings → API**. Anything using it stops at once. Then create a new key.
+
+> For developers: see the [API documentation](/developers).`,
+  },
 ];
 
 export const helpArticle = (slug: string) => HELP_ARTICLES.find((a) => a.slug === slug);

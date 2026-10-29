@@ -7,6 +7,7 @@ import {
   REQUEST_STATUSES,
   ROLES,
   type ActivityKind,
+  type ApiKeyAccess,
   type AttendanceFlag,
   type BillingCycle,
   type CrmEntity,
@@ -927,4 +928,19 @@ export const payrollTemplates = pgTable('payroll_templates', {
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---- Public API (phase 3) ----------------------------------------------------------------
+
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  createdBy: uuid('created_by').notNull(),
+  name: text('name').notNull(),
+  prefix: text('prefix').notNull(),
+  tokenHash: text('token_hash').notNull(),
+  access: text('access').$type<ApiKeyAccess>().notNull(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

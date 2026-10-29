@@ -42,6 +42,7 @@ function describeActivity(type: string, data: Record<string, unknown>): string {
       if (data.subtask) parts.push(`subtask "${data.subtask}"`);
       if ('title' in data) parts.push(`renamed it to "${data.title}"`);
       if ('priority' in data) parts.push(`set priority to ${PRIORITY_LABEL[data.priority as Priority]}`);
+      if ('startDate' in data) parts.push(data.startDate ? `set the start date to ${data.startDate}` : 'removed the start date');
       if ('dueDate' in data) parts.push(data.dueDate ? `set the due date to ${data.dueDate}` : 'removed the due date');
       if ('estimateHours' in data) parts.push(data.estimateHours !== null ? `estimated ${data.estimateHours}h` : 'removed the estimate');
       if ('completed' in data) parts.push(data.completed ? 'marked it complete' : 'reopened it');
@@ -214,11 +215,25 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                 </select>
               </dd>
 
+              <dt className="text-gray-500">Start date</dt>
+              <dd>
+                <input
+                  type="date"
+                  value={task.startDate ?? ''}
+                  max={task.dueDate ?? undefined}
+                  disabled={!canEdit}
+                  onChange={(e) => update({ startDate: e.target.value || null })}
+                  aria-label="Start date"
+                  className="rounded-lg border border-gray-300 px-2 py-1"
+                />
+              </dd>
+
               <dt className="text-gray-500">Due date</dt>
               <dd>
                 <input
                   type="date"
                   value={task.dueDate ?? ''}
+                  min={task.startDate ?? undefined}
                   disabled={!canEdit}
                   onChange={(e) => update({ dueDate: e.target.value || null })}
                   aria-label="Due date"

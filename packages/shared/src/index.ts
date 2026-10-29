@@ -325,6 +325,8 @@ export interface TaskCardDto {
   columnId: string;
   title: string;
   priority: Priority;
+  /** When work is planned to start (for the timeline); the due date is when it ends. */
+  startDate: string | null;
   dueDate: string | null;
   estimateHours: number | null;
   /** Logged time on the task and its subtasks, in hours. */
@@ -372,6 +374,7 @@ export const updateTaskSchema = z
     title: name('a task title', 300),
     description: z.string().max(20_000).nullable(),
     priority: z.enum(PRIORITIES),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').nullable(),
     dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').nullable(),
     estimateHours: hours,
     assigneeIds: z.array(uuid).max(20),

@@ -248,6 +248,7 @@ export const tasks = pgTable('tasks', {
   title: text('title').notNull(),
   description: text('description'),
   priority: taskPriority('priority').notNull().default('none'),
+  startDate: date('start_date', { mode: 'string' }),
   dueDate: date('due_date', { mode: 'string' }),
   estimateHours: numeric('estimate_hours', { precision: 8, scale: 2, mode: 'number' }),
   position: doublePrecision('position').notNull(),

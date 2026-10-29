@@ -130,7 +130,7 @@ Pakistan's public holidays are added when you set up your workspace. Admins can 
     title: 'Projects, boards and timesheets',
     summary: 'Plan work on boards, record hours against tasks, and submit a weekly timesheet.',
     category: 'Projects and clients',
-    keywords: 'project board kanban task card estimate hours template timer timesheet submit approve client',
+    keywords: 'project board kanban task card estimate hours template timer timesheet submit approve client gantt timeline calendar schedule start date',
     body: `## Projects and boards
 
 Open **Projects** and create one, from scratch or from a template. Each project can belong to a client, so its hours count towards that client's profitability.
@@ -138,6 +138,15 @@ Open **Projects** and create one, from scratch or from a template. Each project 
 On the board, drag cards between columns. Open a card to add a description, people, a due date, an estimate in hours, comments and files. Changes appear for everyone looking at the board straight away.
 
 **My work** shows every task assigned to you across projects, with what's due today and what's overdue.
+
+## Calendar and timeline
+
+Switch a project between **Board**, **List**, **Calendar** and **Timeline** at the top right.
+
+- **Calendar** shows a month of tasks on their due dates. Drag a task to another day to move it; on a phone it's a list of days.
+- **Timeline** is a Gantt chart: each task is a bar from its start date to its due date, grouped by column. Drag a bar to move it, or drag either end to change the start or due date.
+
+Give a task a **start date** in its details to plan when work begins. The start can't be after the due date.
 
 ## Recording hours
 

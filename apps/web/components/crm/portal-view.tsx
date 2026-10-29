@@ -106,7 +106,7 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
                     {KIND_LABEL[d.kind]} {d.number}
                   </span>
                   <span className="text-gray-500">{shortDate(d.issueDate)}</span>
-                  <span className="ml-auto tabular-nums">{docMoney(d.total, d.currency)}</span>
+                  <span className="ms-auto tabular-nums">{docMoney(d.total, d.currency)}</span>
                   <DocStatus status={d.status} overdue={d.overdue} />
                 </Link>
               </li>

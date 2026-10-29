@@ -90,7 +90,7 @@ export function NotificationsBell() {
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
         </svg>
         {data.unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-red-500 px-1 text-center text-[11px] font-semibold leading-[18px] text-white">
+          <span className="absolute -end-0.5 -top-0.5 min-w-[18px] rounded-full bg-red-500 px-1 text-center text-[11px] font-semibold leading-[18px] text-white">
             {data.unreadCount > 9 ? '9+' : data.unreadCount}
           </span>
         )}
@@ -101,7 +101,7 @@ export function NotificationsBell() {
           ref={panel}
           role="region"
           aria-label="Notifications"
-          className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute end-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <p className="text-sm font-semibold">Notifications</p>
@@ -119,7 +119,7 @@ export function NotificationsBell() {
                 <li key={n.id}>
                   <button
                     onClick={() => openItem(n)}
-                    className="flex w-full gap-3 px-4 py-3 text-left hover:bg-gray-50"
+                    className="flex w-full gap-3 px-4 py-3 text-start hover:bg-gray-50"
                   >
                     <span
                       aria-hidden="true"

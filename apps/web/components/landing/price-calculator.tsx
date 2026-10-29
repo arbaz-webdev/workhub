@@ -61,7 +61,7 @@ export function PriceCalculator() {
                 ) : (
                   <>
                     <span className="text-3xl font-bold tabular-nums">{pkr(perPerson)}</span>
-                    {off > 0 && <span className="ml-2 text-sm text-gray-400 line-through tabular-nums">{pkr(listPerPerson)}</span>}
+                    {off > 0 && <span className="ms-2 text-sm text-gray-400 line-through tabular-nums">{pkr(listPerPerson)}</span>}
                   </>
                 )}
               </p>

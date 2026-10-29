@@ -126,7 +126,7 @@ export function PayrollTemplates({ templates, onChanged }: { templates: PayrollT
             <ol className="space-y-2">
               {editing.columns.map((c, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-2">
-                  <span className="w-5 text-right text-xs text-gray-400">{i + 1}</span>
+                  <span className="w-5 text-end text-xs text-gray-400">{i + 1}</span>
                   <select aria-label={`Column ${i + 1}`} value={c.field} onChange={(e) => setCol(i, { field: e.target.value as PayrollField, header: PAYROLL_FIELDS[e.target.value as PayrollField] })} className={`${input} !w-44`}>
                     {FIELDS.map(([f, label]) => (
                       <option key={f} value={f}>
@@ -194,7 +194,7 @@ export function MemberCodes({ codes, onChanged }: { codes: MemberCodesDto[]; onC
       )}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[28rem] text-sm">
-          <thead className="text-left text-xs text-gray-500">
+          <thead className="text-start text-xs text-gray-500">
             <tr>
               <th className="py-1.5 font-medium">Person</th>
               <th className="py-1.5 font-medium">Employee code</th>
@@ -204,11 +204,11 @@ export function MemberCodes({ codes, onChanged }: { codes: MemberCodesDto[]; onC
           <tbody>
             {codes.map((c) => (
               <tr key={c.userId} className="border-t border-gray-100">
-                <td className="py-1.5 pr-3">
+                <td className="py-1.5 pe-3">
                   {c.name}
                   <span className="block text-xs text-gray-500">{c.email}</span>
                 </td>
-                <td className="py-1.5 pr-3">
+                <td className="py-1.5 pe-3">
                   <input key={`e-${c.employeeCode}`} defaultValue={c.employeeCode ?? ''} aria-label={`${c.name}’s employee code`} maxLength={40} onBlur={(e) => void save(c, { employeeCode: e.target.value.trim() || null })} className={`${input} !w-32`} />
                 </td>
                 <td className="py-1.5">
@@ -305,7 +305,7 @@ export function DeviceImport({ codes, onImported }: { codes: MemberCodesDto[]; o
             </p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[26rem] text-sm">
-                <thead className="text-left text-xs text-gray-500">
+                <thead className="text-start text-xs text-gray-500">
                   <tr>
                     <th className="py-1.5 font-medium">Device number</th>
                     <th className="py-1.5 font-medium">Punches</th>
@@ -315,11 +315,11 @@ export function DeviceImport({ codes, onImported }: { codes: MemberCodesDto[]; o
                 <tbody>
                   {preview.people.map((p) => (
                     <tr key={p.deviceUserId} className="border-t border-gray-100">
-                      <td className="py-1.5 pr-3 font-mono">
+                      <td className="py-1.5 pe-3 font-mono">
                         {p.deviceUserId}
                         {p.name && <span className="block font-sans text-xs text-gray-500">{p.name}</span>}
                       </td>
-                      <td className="py-1.5 pr-3 tabular-nums">{p.punches}</td>
+                      <td className="py-1.5 pe-3 tabular-nums">{p.punches}</td>
                       <td className="py-1.5">
                         <select aria-label={`Who is device user ${p.deviceUserId}`} value={mapping[p.deviceUserId] ?? ''} onChange={(e) => setMapping({ ...mapping, [p.deviceUserId]: e.target.value })} className={`${input} !w-56`}>
                           <option value="">Skip</option>

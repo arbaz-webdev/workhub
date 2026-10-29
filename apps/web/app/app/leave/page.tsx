@@ -78,7 +78,7 @@ export default function MyLeavePage() {
                     <StatusPill status={r.status} />
                     {r.decisionNote && <span className="text-gray-500">“{r.decisionNote}”</span>}
                     {r.status === 'pending' && (
-                      <button type="button" className={`${btn.ghost} ml-auto`} onClick={() => cancel(r.id)}>
+                      <button type="button" className={`${btn.ghost} ms-auto`} onClick={() => cancel(r.id)}>
                         Withdraw
                       </button>
                     )}

@@ -133,7 +133,7 @@ function Incidents({ title, incidents, empty }: { title: string; incidents: Stat
                   {i.impact === 'maintenance' ? 'Planned maintenance' : i.impact === 'major' ? 'Major' : 'Minor'} · {when(i.startedAt)}
                 </span>
               </div>
-              <ol className="mt-3 space-y-2 border-l-2 border-gray-100 pl-3">
+              <ol className="mt-3 space-y-2 border-s-2 border-gray-100 ps-3">
                 {i.updates.map((u) => (
                   <li key={u.createdAt} className="text-sm">
                     <span className="font-medium">{UPDATE_LABEL[u.status]}</span> <span className="text-xs text-gray-500">{when(u.createdAt)}</span>

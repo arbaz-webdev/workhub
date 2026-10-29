@@ -132,8 +132,8 @@ function Holidays({ onDone, onError }: { onDone: (m: string) => void; onError: (
                   <span className="w-28 tabular-nums text-gray-600">{new Date(`${h.date}T00:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
                   <span className="flex-1">
                     {h.name}
-                    {h.estimated && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">Estimated</span>}
-                    {h.kind === 'company' && <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">Company</span>}
+                    {h.estimated && <span className="ms-2 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">Estimated</span>}
+                    {h.kind === 'company' && <span className="ms-2 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">Company</span>}
                   </span>
                   <button
                     type="button"

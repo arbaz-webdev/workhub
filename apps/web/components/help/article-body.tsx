@@ -45,7 +45,7 @@ export function ArticleBody({ body }: { body: string }) {
         }
         if (lines.every((l) => l.startsWith('- '))) {
           return (
-            <ul key={i} className="list-disc space-y-1.5 pl-6">
+            <ul key={i} className="list-disc space-y-1.5 ps-6">
               {lines.map((l, j) => (
                 <li key={j}>{inline(l.slice(2))}</li>
               ))}
@@ -54,7 +54,7 @@ export function ArticleBody({ body }: { body: string }) {
         }
         if (lines.every((l) => /^\d+\. /.test(l))) {
           return (
-            <ol key={i} className="list-decimal space-y-1.5 pl-6">
+            <ol key={i} className="list-decimal space-y-1.5 ps-6">
               {lines.map((l, j) => (
                 <li key={j}>{inline(l.replace(/^\d+\. /, ''))}</li>
               ))}

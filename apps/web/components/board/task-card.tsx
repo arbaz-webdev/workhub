@@ -54,7 +54,7 @@ export function CardBody({ task, labels, people }: Omit<Props, 'onOpen' | 'dragg
           </span>
         )}
         {task.assigneeIds.length > 0 && (
-          <span className="ml-auto flex -space-x-1.5">
+          <span className="ms-auto flex -space-x-1.5">
             {task.assigneeIds.slice(0, 3).map((id) => {
               const p = people.get(id);
               return (

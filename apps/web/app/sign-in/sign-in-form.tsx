@@ -7,17 +7,16 @@ import { useState } from 'react';
 import { AuthCard, Field, FormError, issuesToFields, SubmitButton } from '@/components/form';
 import { GoogleButton } from '@/components/google-button';
 import { api, ApiError } from '@/lib/api';
+import { useT } from '@/lib/i18n';
+import { LanguageSwitch } from '@/components/language-switch';
 import { safeNext } from '@/lib/workspace';
-
-const ERRORS: Record<string, string> = {
-  google: "Google sign-in didn't work. Please try again, or use your email and password.",
-};
 
 export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { initialError?: string; next?: string; email?: string; twoFactor?: string }) {
   const router = useRouter();
   const next = safeNext(rawNext);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | undefined>(initialError ? ERRORS[initialError] : undefined);
+  const t = useT();
+  const [error, setError] = useState<string | undefined>(initialError === 'google' ? t('auth.googleFailed') : undefined);
   const [fields, setFields] = useState<Record<string, string>>({});
   // After the password (or Google), the code from the authenticator app.
   const [challenge, setChallenge] = useState<string | null>(twoFactor ?? null);
@@ -42,7 +41,7 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
       }
       router.push(next ?? '/app');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach the server. Check your connection and try again.');
+      setError(err instanceof ApiError ? err.message : t('auth.network'));
       setPending(false);
     }
   }
@@ -50,7 +49,7 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
   async function onCode(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const code = String(new FormData(e.currentTarget).get('code') ?? '').trim();
-    if (code.replace(/\s/g, '').length < 6) return setFields({ code: useRecovery ? 'Enter a recovery code' : 'Enter the 6-digit code' });
+    if (code.replace(/\s/g, '').length < 6) return setFields({ code: useRecovery ? t('twoFactor.enterRecovery') : t('twoFactor.enterCode') });
     setFields({});
     setError(undefined);
     setPending(true);
@@ -59,7 +58,7 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
       router.push(next ?? '/app');
     } catch (err) {
       if (err instanceof ApiError && err.status === 401 && /expired/.test(err.message)) setChallenge(null);
-      setError(err instanceof ApiError ? err.message : 'Could not reach the server. Check your connection and try again.');
+      setError(err instanceof ApiError ? err.message : t('auth.network'));
       setPending(false);
     }
   }
@@ -67,18 +66,18 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
   if (challenge) {
     return (
       <AuthCard
-        title="Two-factor sign-in"
-        subtitle={useRecovery ? 'Enter one of the recovery codes you saved.' : 'Enter the 6-digit code from your authenticator app.'}
+        title={t('twoFactor.title')}
+        subtitle={useRecovery ? t('twoFactor.subtitleRecovery') : t('twoFactor.subtitleCode')}
         footer={
           <button type="button" className="font-medium text-brand-700 hover:underline" onClick={() => setChallenge(null)}>
-            Back to sign in
+            {t('twoFactor.back')}
           </button>
         }
       >
         <form onSubmit={onCode} noValidate className="space-y-4">
           <FormError message={error} />
           <label className="block">
-            <span className="text-sm font-medium text-gray-700">{useRecovery ? 'Recovery code' : 'Code'}</span>
+            <span className="text-sm font-medium text-gray-700">{useRecovery ? t('twoFactor.recoveryCode') : t('twoFactor.code')}</span>
             <input
               key={useRecovery ? 'recovery' : 'code'}
               name="code"
@@ -93,9 +92,11 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
             />
             {fields.code && <span className="mt-1 block text-xs text-red-600">{fields.code}</span>}
           </label>
-          <SubmitButton pending={pending}>Verify</SubmitButton>
+          <SubmitButton pending={pending} pendingLabel={t('auth.wait')}>
+            {t('twoFactor.verify')}
+          </SubmitButton>
           <button type="button" className="w-full text-center text-xs font-medium text-brand-700 hover:underline" onClick={() => setUseRecovery(!useRecovery)}>
-            {useRecovery ? 'Use the code from my app' : 'Lost your phone? Use a recovery code'}
+            {useRecovery ? t('twoFactor.useApp') : t('twoFactor.useRecovery')}
           </button>
         </form>
       </AuthCard>
@@ -104,28 +105,31 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
 
   return (
     <AuthCard
-      title="Sign in"
-      subtitle="Welcome back to your workspace."
+      title={t('signIn.title')}
+      subtitle={t('signIn.subtitle')}
       footer={
         <>
-          New to WorkHub?{' '}
+          {t('signIn.newTo')}{' '}
           <Link href={next ? `/sign-up?next=${encodeURIComponent(next)}` : '/sign-up'} className="font-medium text-brand-700 hover:underline">
-            Create a workspace
+            {t('signIn.createWorkspace')}
           </Link>
+          <LanguageSwitch />
         </>
       }
     >
       <GoogleButton />
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <FormError message={error} />
-        <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={email} error={fields.email} />
-        <Field label="Password" name="password" type="password" autoComplete="current-password" error={fields.password} />
-        <div className="-mt-2 text-right">
+        <Field label={t('auth.email')} name="email" type="email" autoComplete="email" defaultValue={email} error={fields.email} />
+        <Field label={t('auth.password')} name="password" type="password" autoComplete="current-password" error={fields.password} />
+        <div className="-mt-2 text-end">
           <Link href="/forgot-password" className="text-xs font-medium text-brand-700 hover:underline">
-            Forgot your password?
+            {t('signIn.forgot')}
           </Link>
         </div>
-        <SubmitButton pending={pending}>Sign in</SubmitButton>
+        <SubmitButton pending={pending} pendingLabel={t('auth.wait')}>
+          {t('signIn.submit')}
+        </SubmitButton>
       </form>
     </AuthCard>
   );

@@ -75,7 +75,7 @@ export default function UtilisationPage() {
             {o.label}
           </button>
         ))}
-        <label className="ml-2 text-sm">
+        <label className="ms-2 text-sm">
           <span className="sr-only">From</span>
           <input type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} className={`${input} !w-40 !py-1.5`} />
         </label>
@@ -84,7 +84,7 @@ export default function UtilisationPage() {
           <span className="sr-only">To</span>
           <input type="date" value={to} min={from} onChange={(e) => e.target.value && setTo(e.target.value)} className={`${input} !w-40 !py-1.5`} />
         </label>
-        <button type="button" className={`${btn.secondary} ml-auto`} onClick={csv} disabled={!data}>
+        <button type="button" className={`${btn.secondary} ms-auto`} onClick={csv} disabled={!data}>
           Download CSV
         </button>
       </div>
@@ -114,7 +114,7 @@ export default function UtilisationPage() {
                       {t.team?.name ?? 'No team'} <span className="font-normal text-gray-500">({t.people})</span>
                     </span>
                     <Meter value={t.utilisation} label={`${t.team?.name ?? 'No team'} utilisation`} />
-                    <span className="w-14 text-right tabular-nums">{pct(t.utilisation)}</span>
+                    <span className="w-14 text-end tabular-nums">{pct(t.utilisation)}</span>
                   </li>
                 ))}
               </ul>
@@ -123,13 +123,13 @@ export default function UtilisationPage() {
 
           <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
+              <thead className="border-b border-gray-200 bg-gray-50 text-start text-xs font-medium text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Person</th>
                   <th className="px-3 py-2">Team</th>
-                  <th className="px-3 py-2 text-right">Logged</th>
-                  <th className="px-3 py-2 text-right">Billable</th>
-                  <th className="px-3 py-2 text-right">Capacity</th>
+                  <th className="px-3 py-2 text-end">Logged</th>
+                  <th className="px-3 py-2 text-end">Billable</th>
+                  <th className="px-3 py-2 text-end">Capacity</th>
                   <th className="w-48 px-3 py-2">Utilisation</th>
                 </tr>
               </thead>
@@ -138,13 +138,13 @@ export default function UtilisationPage() {
                   <tr key={p.person.id} className="border-b border-gray-100 last:border-0">
                     <td className="px-3 py-2 font-medium">{p.person.name}</td>
                     <td className="px-3 py-2 text-gray-600">{p.team?.name ?? '—'}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{p.hours} h</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{p.billableHours} h</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-gray-600">{p.capacityHours} h</td>
+                    <td className="px-3 py-2 text-end tabular-nums">{p.hours} h</td>
+                    <td className="px-3 py-2 text-end tabular-nums">{p.billableHours} h</td>
+                    <td className="px-3 py-2 text-end tabular-nums text-gray-600">{p.capacityHours} h</td>
                     <td className="px-3 py-2">
                       <span className="flex items-center gap-2">
                         <Meter value={p.utilisation} label={`${p.person.name} utilisation`} warnAbove={100} />
-                        <span className="w-12 text-right tabular-nums">{pct(p.utilisation)}</span>
+                        <span className="w-12 text-end tabular-nums">{pct(p.utilisation)}</span>
                       </span>
                     </td>
                   </tr>

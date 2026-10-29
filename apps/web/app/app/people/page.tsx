@@ -91,7 +91,7 @@ export default function PeoplePage() {
             <div className="-mx-6 overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 text-left text-xs text-gray-500">
+                  <tr className="border-b border-gray-100 text-start text-xs text-gray-500">
                     <th className="px-6 pb-2 font-medium">Name</th>
                     <th className="pb-2 font-medium">Role</th>
                     <th className="pb-2 font-medium">Joined</th>
@@ -127,7 +127,7 @@ export default function PeoplePage() {
                         )}
                       </td>
                       <td className="py-3 text-gray-500">{new Date(m.joinedAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-3 text-right">
+                      <td className="px-6 py-3 text-end">
                         {canManage(m) && (
                           <button onClick={() => remove(m)} className={btn.danger}>
                             Remove
@@ -237,7 +237,7 @@ function InviteByEmail({ assignable, onDone }: { assignable: readonly Assignable
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as AssignableRole)}
-                className="ml-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                className="ms-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
               >
                 {assignable.map((r) => (
                   <option key={r} value={r}>
@@ -250,7 +250,7 @@ function InviteByEmail({ assignable, onDone }: { assignable: readonly Assignable
               Upload CSV
               <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} className="sr-only" />
             </label>
-            <button type="submit" disabled={pending || emails.length === 0} className={`${btn.primary} ml-auto`}>
+            <button type="submit" disabled={pending || emails.length === 0} className={`${btn.primary} ms-auto`}>
               {pending ? 'Sending…' : emails.length > 1 ? `Invite ${emails.length} people` : 'Send invite'}
             </button>
           </div>
@@ -297,7 +297,7 @@ function InviteLink({ onDone }: { onDone: () => void }) {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as typeof role)}
-            className="ml-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="ms-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
           >
             <option value="member">Member</option>
             <option value="manager">Manager</option>

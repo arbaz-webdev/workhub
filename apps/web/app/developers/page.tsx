@@ -1,4 +1,4 @@
-import { API_RATE_LIMIT_PER_MINUTE } from '@workhub/shared';
+import { API_RATE_LIMIT_PER_MINUTE, WEBHOOK_EVENT_LABELS, WEBHOOK_EVENTS } from '@workhub/shared';
 import type { Metadata } from 'next';
 import { ArticleBody } from '@/components/help/article-body';
 import { SiteFooter, SiteHeader } from '@/components/landing/site';
@@ -87,7 +87,42 @@ Every field is described in the [OpenAPI description](/api/v1/openapi.json). Imp
 - If a key might have leaked, revoke it in **Settings → API** and make a new one. It stops working at once.
 - Use **read only** keys unless the software needs to change data.
 
-> Coming next: webhooks that tell your system the moment something happens.`;
+## Webhooks: hear about changes at once
+
+Instead of asking WorkHub again and again, a webhook tells your system the moment something happens. An owner or admin adds one in **Settings → API**: an \`https://\` address and the events to send. WorkHub then sends a \`POST\` with JSON like this:
+
+\`\`\`json
+{
+  "id": "4f0c2a9e-…",
+  "event": "lead.created",
+  "createdAt": "2027-01-31T04:05:00.000Z",
+  "workspaceId": "…",
+  "data": { "id": "…", "name": "Zara Khan", "status": "new" }
+}
+\`\`\`
+
+\`data\` is the record in the same shape the lists above return. For check-ins and check-outs it's the person, their employee code, the date, the time, and whether they were inside an office zone.
+
+${WEBHOOK_EVENTS.map((e) => `- \`${e}\`: ${WEBHOOK_EVENT_LABELS[e].toLowerCase()}.`).join('\n')}
+
+**Check that it came from WorkHub.** Adding a webhook shows its signing secret once. Every delivery has a \`WorkHub-Signature\` header like \`t=1801000000,v1=5257a8…\`. Work out the HMAC-SHA256 of the time, a dot and the raw body, with the secret as the key, and compare it with \`v1\`. Turn away anything more than five minutes old. In Node.js:
+
+\`\`\`js
+const crypto = require('node:crypto');
+function fromWorkHub(rawBody, signatureHeader, secret) {
+  const { t, v1 } = Object.fromEntries(signatureHeader.split(',').map((part) => part.split('=')));
+  const expected = crypto.createHmac('sha256', secret).update(\`\${t}.\${rawBody}\`).digest('hex');
+  const recent = Math.abs(Date.now() / 1000 - Number(t)) < 300;
+  return recent && v1?.length === expected.length && crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+}
+\`\`\`
+
+**Answer quickly.** Reply with any \`2xx\` status within 10 seconds, then do slow work afterwards. Anything else counts as a failure, and WorkHub tries again after 1, 5 and 30 minutes, then 2, 6 and 15 hours. If it still fails after about a day, the webhook is paused and the workspace's owners get an email. Events that happen while it's paused wait, and are sent when someone chooses **Resume**.
+
+- Each delivery has a \`WorkHub-Delivery\` id, also in the body as \`id\`. Very rarely the same one can arrive twice, so ignore an id you've already handled.
+- Deliveries may arrive out of order. Use the times in the data.
+- WorkHub only sends to public \`https://\` addresses, and never follows redirects.
+- **Send a test** in Settings → API sends a \`ping\` event once, and shows you what your system answered.`;
 
   return (
     <div className="min-h-screen bg-white">

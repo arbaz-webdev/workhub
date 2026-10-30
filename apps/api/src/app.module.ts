@@ -43,6 +43,8 @@ import { OpenApiController } from './public-api/openapi';
 import { PublicApiV1WriteController } from './public-api/v1-write.controller';
 import { PublicApiV1Controller } from './public-api/v1.controller';
 import { WaitlistController } from './waitlist/waitlist.controller';
+import { WebhookService } from './webhooks/webhook.service';
+import { WebhooksController } from './webhooks/webhooks.controller';
 import { WorkspaceGuard } from './workspaces/workspace.guard';
 import { WorkspacesController } from './workspaces/workspaces.controller';
 
@@ -92,7 +94,8 @@ class HealthController {
     PublicApiV1Controller,
     PublicApiV1WriteController,
     OpenApiController,
+    WebhooksController,
   ],
-  providers: [WorkspaceGuard, ApiKeyGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
+  providers: [WorkspaceGuard, ApiKeyGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, WebhookService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })
 export class AppModule {}

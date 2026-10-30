@@ -39,6 +39,8 @@ import { peopleAttendance, workspaceInfo, type WorkspaceInfo } from '../attendan
 import { holidayMap, leaveMap, workingDaysOf } from '../attendance/calendar';
 import { addDays, zonedParts } from '../attendance/zoned';
 import { audit } from '../audit/audit';
+import { loadLeaveOut } from '../public-api/shapes';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
@@ -302,6 +304,7 @@ export class LeaveController {
         { type: 'leave.requested', title: `${me!.name} asked for ${days} ${days === 1 ? 'day' : 'days'} of ${type.name.toLowerCase()} leave`, body: rangeText(body.startDate, body.endDate), link: '/app/leave/approvals' },
         auth.userId,
       );
+      await emitWebhookEvent(tx, ws.id, 'leave.requested', () => loadLeaveOut(tx, ws.id, row!.id));
       return this.requestDto((await this.requestRows(tx, ws.id, eq(leaveRequests.id, row!.id)))[0]!, true);
     });
   }
@@ -430,6 +433,7 @@ export class LeaveController {
         body: body.note,
         link: '/app/leave',
       });
+      await emitWebhookEvent(tx, ws.id, `leave.${status}`, () => loadLeaveOut(tx, ws.id, id));
       return this.requestDto((await this.requestRows(tx, ws.id, eq(leaveRequests.id, id)))[0]!, true);
     });
   }

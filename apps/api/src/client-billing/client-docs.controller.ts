@@ -17,6 +17,8 @@ import { z } from 'zod';
 import { audit } from '../audit/audit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
+import { loadInvoiceOut } from '../public-api/shapes';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { assertCompany } from '../crm/crm';
 import { DbService } from '../db/db.service';
 import { clientDocumentLines, clientDocuments, companies } from '../db/schema';
@@ -182,6 +184,7 @@ export class ClientDocsController {
         .where(eq(clientDocuments.id, id));
       if (body.status === 'void') await releaseHours(tx, id);
       await audit(tx, { workspaceId: ws.id, actorUserId: auth.userId, action: `${doc.kind}.${body.status}`, entityType: doc.kind, entityId: id, metadata: { number: doc.number, from: doc.status }, ip });
+      if (doc.kind === 'invoice' && body.status === 'paid') await emitWebhookEvent(tx, ws.id, 'invoice.paid', () => loadInvoiceOut(tx, ws.id, id));
       return documentDto(tx, ws.id, await loadDoc(tx, ws.id, id));
     });
   }

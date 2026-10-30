@@ -6,8 +6,11 @@ import {
   CHANNEL_KINDS,
   REQUEST_STATUSES,
   ROLES,
+  WEBHOOK_EVENTS,
   type ActivityKind,
   type ApiKeyAccess,
+  type WebhookDeliveryStatus,
+  type WebhookEvent,
   type AttendanceFlag,
   type BillingCycle,
   type CrmEntity,
@@ -942,5 +945,33 @@ export const apiKeys = pgTable('api_keys', {
   access: text('access').$type<ApiKeyAccess>().notNull(),
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const webhooks = pgTable('webhooks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  createdBy: uuid('created_by'),
+  url: text('url').notNull(),
+  events: text('events').array().$type<(typeof WEBHOOK_EVENTS)[number][]>().notNull(),
+  secretEncrypted: text('secret_encrypted').notNull(),
+  pausedAt: timestamp('paused_at', { withTimezone: true }),
+  pausedReason: text('paused_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const webhookDeliveries = pgTable('webhook_deliveries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  webhookId: uuid('webhook_id').notNull(),
+  event: text('event').$type<WebhookEvent>().notNull(),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+  status: text('status').$type<WebhookDeliveryStatus>().notNull().default('pending'),
+  attempts: integer('attempts').notNull().default(0),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+  lastStatus: integer('last_status'),
+  lastError: text('last_error'),
+  deliveredAt: timestamp('delivered_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

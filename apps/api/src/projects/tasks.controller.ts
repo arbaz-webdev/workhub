@@ -62,6 +62,8 @@ import { notify } from '../notifications/notify';
 import { RealtimeService } from '../realtime/realtime.service';
 import { INLINE_IMAGE_TYPES, sendDownload, StorageService, uploadMeta } from '../storage/storage.service';
 import { assertWeekOpen } from '../timesheets/timesheets';
+import { loadTaskOut } from '../public-api/shapes';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { WorkspaceGuard } from '../workspaces/workspace.guard';
 import { canManage, cardsFor, checkBudget, GAP, loadColumn, loadProject, loadTask, recordActivity, requireEdit, taskPosition } from './board';
 import { Track } from '../analytics/track';
@@ -122,6 +124,7 @@ export class TasksController {
       await recordActivity(tx, ws.id, body.parentTaskId ?? task!.id, auth.userId, body.parentTaskId ? 'subtask.created' : 'task.created', {
         title: body.title,
       });
+      await emitWebhookEvent(tx, ws.id, 'task.created', () => loadTaskOut(tx, ws.id, task!.id));
       return { taskId: task!.id, cardId: body.parentTaskId ?? task!.id };
     });
     const card = await this.publishCard(ws, auth, projectId, cardId);
@@ -195,6 +198,7 @@ export class TasksController {
           ...(task.parentTaskId ? { subtask: body.title ?? task.title } : {}),
         });
       }
+      if (changes.completed === true) await emitWebhookEvent(tx, ws.id, 'task.completed', () => loadTaskOut(tx, ws.id, id));
       const [fresh] = await tx.select().from(tasks).where(eq(tasks.id, id));
       return { detail: await this.buildDetail(tx, fresh!), task: fresh! };
     });

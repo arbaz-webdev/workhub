@@ -1,6 +1,6 @@
 import { BadRequestException, Controller, Get, NotFoundException, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { CLIENT_INVOICE_STATUSES, LEAD_STATUSES, PROJECT_STATUSES, REQUEST_STATUSES, STAGE_KINDS } from '@workhub/shared';
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lte, not, sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, gte, isNotNull, isNull, lte, not, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { workspaceInfo } from '../attendance/attendance';
 import { monthReport } from '../attendance/export';
@@ -17,12 +17,8 @@ import {
   deals,
   leads,
   leaveRequests,
-  leaveTypes,
   memberships,
-  pipelines,
-  pipelineStages,
   projects,
-  taskAssignees,
   tasks,
   teams,
   timeEntries,
@@ -30,7 +26,8 @@ import {
   workspaces,
 } from '../db/schema';
 import { ApiKeyGuard } from './api-key.guard';
-import { date, iso, keyset, pageQuery, toPage, updatedSince, type Page } from './paging';
+import { date, keyset, pageQuery, toPage, updatedSince, type Page } from './paging';
+import { activityOut, assigneesOf, contactOut, dealOut, dealSelect, invoiceDto, leadOut, leaveOut, leaveSelect, taskOut, type InvoiceDto } from './shapes';
 
 const bool = z.enum(['true', 'false']).transform((v) => v === 'true');
 
@@ -149,11 +146,7 @@ export class PublicApiV1Controller {
   leave(@Query(new ZodPipe(leaveQuery)) q: z.infer<typeof leaveQuery>, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext) {
     return this.run(auth, ws, async (tx) => {
       const page = keyset(leaveRequests.createdAt, leaveRequests.id, q.cursor);
-      const rows = await tx
-        .select({ request: leaveRequests, userName: users.name, typeName: leaveTypes.name, paid: leaveTypes.paid })
-        .from(leaveRequests)
-        .innerJoin(users, eq(users.id, leaveRequests.userId))
-        .innerJoin(leaveTypes, eq(leaveTypes.id, leaveRequests.leaveTypeId))
+      const rows = await leaveSelect(tx)
         .where(
           where(
             eq(leaveRequests.workspaceId, ws.id),
@@ -169,22 +162,7 @@ export class PublicApiV1Controller {
       return toPage(
         rows.map((r) => ({ ...r, id: r.request.id, createdAt: r.request.createdAt })),
         q.limit,
-        ({ request: l, userName, typeName, paid }) => ({
-          id: l.id,
-          userId: l.userId,
-          userName,
-          leaveType: { id: l.leaveTypeId, name: typeName, paid },
-          startDate: l.startDate,
-          endDate: l.endDate,
-          halfDay: l.halfDay,
-          days: Number(l.days),
-          reason: l.reason,
-          status: l.status,
-          decidedBy: l.decidedBy,
-          decidedAt: iso(l.decidedAt),
-          decisionNote: l.decisionNote,
-          createdAt: l.createdAt.toISOString(),
-        }),
+        leaveOut,
       );
     });
   }
@@ -363,11 +341,7 @@ export class PublicApiV1Controller {
   deals(@Query(new ZodPipe(dealsQuery)) q: z.infer<typeof dealsQuery>, @CurrentAuth() auth: AuthContext, @CurrentWorkspace() ws: WorkspaceContext) {
     return this.run(auth, ws, async (tx) => {
       const page = keyset(deals.createdAt, deals.id, q.cursor);
-      const rows = await tx
-        .select({ deal: deals, pipeline: pipelines.name, stage: pipelineStages.name })
-        .from(deals)
-        .innerJoin(pipelines, eq(pipelines.id, deals.pipelineId))
-        .innerJoin(pipelineStages, eq(pipelineStages.id, deals.stageId))
+      const rows = await dealSelect(tx)
         .where(
           where(
             eq(deals.workspaceId, ws.id),
@@ -382,27 +356,7 @@ export class PublicApiV1Controller {
       return toPage(
         rows.map((r) => ({ ...r, id: r.deal.id, createdAt: r.deal.createdAt })),
         q.limit,
-        ({ deal: d, pipeline, stage }) => ({
-          id: d.id,
-          title: d.title,
-          value: d.value,
-          currency: d.currency,
-          pipeline: { id: d.pipelineId, name: pipeline },
-          stage: { id: d.stageId, name: stage },
-          status: d.status,
-          companyId: d.companyId,
-          contactId: d.contactId,
-          leadId: d.leadId,
-          ownerId: d.ownerId,
-          projectId: d.projectId,
-          expectedClose: d.expectedClose,
-          wonAt: iso(d.wonAt),
-          lostAt: iso(d.lostAt),
-          lostReason: d.lostReason,
-          notes: d.notes,
-          createdAt: d.createdAt.toISOString(),
-          updatedAt: d.updatedAt.toISOString(),
-        }),
+        dealOut,
       );
     });
   }
@@ -474,128 +428,4 @@ export class PublicApiV1Controller {
       };
     });
   }
-}
-
-// Record shapes shared by the read and write endpoints.
-
-export function taskOut(t: typeof tasks.$inferSelect, column: string, assigneeIds: string[]) {
-  return {
-    id: t.id,
-    projectId: t.projectId,
-    parentTaskId: t.parentTaskId,
-    column,
-    title: t.title,
-    description: t.description,
-    priority: t.priority,
-    startDate: t.startDate,
-    dueDate: t.dueDate,
-    estimateHours: t.estimateHours,
-    assigneeIds,
-    completed: t.completedAt !== null,
-    completedAt: iso(t.completedAt),
-    createdAt: t.createdAt.toISOString(),
-    updatedAt: t.updatedAt.toISOString(),
-  };
-}
-
-export function contactOut(c: typeof contacts.$inferSelect) {
-  return {
-    id: c.id,
-    companyId: c.companyId,
-    firstName: c.firstName,
-    lastName: c.lastName,
-    email: c.email,
-    phone: c.phone,
-    title: c.title,
-    notes: c.notes,
-    ownerId: c.ownerId,
-    leadId: c.leadId,
-    custom: c.custom,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
-  };
-}
-
-export function leadOut(l: typeof leads.$inferSelect) {
-  return {
-    id: l.id,
-    name: l.name,
-    companyName: l.companyName,
-    email: l.email,
-    phone: l.phone,
-    source: l.source,
-    sourceDetail: l.sourceDetail,
-    status: l.status,
-    value: l.value,
-    currency: l.currency,
-    notes: l.notes,
-    ownerId: l.ownerId,
-    custom: l.custom,
-    convertedContactId: l.convertedContactId,
-    convertedCompanyId: l.convertedCompanyId,
-    convertedAt: iso(l.convertedAt),
-    createdAt: l.createdAt.toISOString(),
-    updatedAt: l.updatedAt.toISOString(),
-  };
-}
-
-export function activityOut(a: typeof activities.$inferSelect) {
-  return {
-    id: a.id,
-    kind: a.kind,
-    subject: a.subject,
-    body: a.body,
-    dueAt: iso(a.dueAt),
-    done: a.doneAt !== null,
-    doneAt: iso(a.doneAt),
-    ownerId: a.ownerId,
-    dealId: a.dealId,
-    companyId: a.companyId,
-    contactId: a.contactId,
-    leadId: a.leadId,
-    createdBy: a.createdBy,
-    createdAt: a.createdAt.toISOString(),
-    updatedAt: a.updatedAt.toISOString(),
-  };
-}
-
-/** One task in the shape the API returns, or 404. */
-export async function loadTaskOut(tx: Tx, workspaceId: string, id: string) {
-  const [row] = await tx
-    .select({ task: tasks, column: boardColumns.name })
-    .from(tasks)
-    .innerJoin(boardColumns, eq(boardColumns.id, tasks.columnId))
-    .where(and(eq(tasks.id, id), eq(tasks.workspaceId, workspaceId), isNull(tasks.deletedAt)));
-  if (!row) throw new NotFoundException('Task not found');
-  return taskOut(row.task, row.column, (await assigneesOf(tx, [id])).get(id) ?? []);
-}
-
-type InvoiceDto = ReturnType<typeof invoiceDto>;
-
-function invoiceDto(d: typeof clientDocuments.$inferSelect) {
-  return {
-    id: d.id,
-    number: d.number,
-    companyId: d.companyId,
-    status: d.status,
-    currency: d.currency,
-    issueDate: d.issueDate,
-    dueDate: d.dueDate,
-    subtotal: d.subtotal,
-    taxLabel: d.taxLabel,
-    taxRate: d.taxRate,
-    taxAmount: d.taxAmount,
-    total: d.total,
-    sentAt: iso(d.sentAt),
-    paidAt: iso(d.paidAt),
-    createdAt: d.createdAt.toISOString(),
-  };
-}
-
-async function assigneesOf(tx: Tx, taskIds: string[]): Promise<Map<string, string[]>> {
-  const map = new Map<string, string[]>();
-  if (taskIds.length === 0) return map;
-  const rows = await tx.select().from(taskAssignees).where(inArray(taskAssignees.taskId, taskIds));
-  for (const r of rows) map.set(r.taskId, [...(map.get(r.taskId) ?? []), r.userId]);
-  return map;
 }

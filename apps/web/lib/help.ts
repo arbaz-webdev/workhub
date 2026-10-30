@@ -379,7 +379,7 @@ In **Settings → Security**, choose **Require two-factor sign-in**. You need it
     title: 'Connect other software with the API',
     summary: 'Let payroll, accounting or your own tools read WorkHub data with an API key.',
     category: 'Your account and billing',
-    keywords: 'api key integration developer payroll accounting export sync zapier connect',
+    keywords: 'api key integration developer payroll accounting export sync zapier connect webhook events notify',
     body: `The WorkHub API lets other software read your workspace's data: people, attendance, leave, logged time, projects and tasks, your CRM, and invoices to clients. Keys with **Read and write** access can also add and change tasks, leads, contacts and activities, for example to send your website's enquiries straight into your leads. It's part of the Business plan.
 
 ## Create a key (owners and admins)
@@ -395,6 +395,17 @@ A key acts as the person who created it, with their access, in this workspace on
 ## If a key leaks
 
 Choose **Revoke** next to it in **Settings → API**. Anything using it stops at once. Then create a new key.
+
+## Webhooks: tell another system when something happens
+
+A webhook sends a message to another system the moment something happens in WorkHub: someone checks in, leave is requested or decided, a task is created or completed, a lead is added, a deal is won or lost, or an invoice is paid.
+
+1. In **Settings → API**, choose **Add a webhook**.
+2. Paste the address the other system gave you (it starts with https://) and tick the events it needs.
+3. Copy the **signing secret** into the other system. It's shown once, and lets that system check each message really came from WorkHub.
+4. Choose **Send a test** to check it works.
+
+If the other system stops answering, WorkHub keeps trying for about a day, then pauses the webhook and emails the workspace's owners. Nothing is lost: events wait, and are sent when you choose **Resume**. **Deliveries** shows the last 25 messages and how each went.
 
 > For developers: see the [API documentation](/developers).`,
   },

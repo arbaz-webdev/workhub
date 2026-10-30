@@ -322,7 +322,7 @@ Still to do, and yours:
 - [x] Payroll exports and fingerprint devices (#90), in **Attendance → Payroll and devices**:
   - Export layouts: three built in (full summary, payable days, hours), plus your own (choose, order and rename columns). Employee codes for payroll software.
   - ZKTeco import from attlog.dat or a ZKTime/ZKBio CSV. Device users are matched to people (remembered next time); each workday's first and last punch become check-in and check-out, using the shift rules. Days recorded in the app are kept, and re-importing changes nothing.
-- [x] 314 tests, plus 2 that run against Redis in CI
+- [x] 328 tests, plus 2 that run against Redis in CI
 - [ ] Urdu interface (#91): **parked**. Two parts were built and then taken out again; the work is kept in draft PR #121, which explains how to bring it back. The app is English only, left to right. Staging's `users` table still has an unused `locale` column from that work.
 
 - [x] Terms of service (`/terms`) and Privacy policy (`/privacy`), as **drafts** for a lawyer: accurate facts about the product and its data, with "For the lawyer" notes where a legal decision is needed. Both say they're drafts and stay out of search results and the sitemap while `LEGAL_DRAFT` in `apps/web/lib/legal.ts` is true. Linked from the site footer.
@@ -342,7 +342,14 @@ Still to do, and yours:
   - Each write calls the app's own handler (`v1-write.controller.ts` gets them through `ModuleRef`), so validation, roles, activity history, notifications and live board updates are the app's. Answers use the read endpoints' shapes.
   - Read-only keys get 403 on anything but GET.
 
-Next: webhooks (#96). These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
+- [x] Webhooks (#96): WorkHub tells another system when something happens.
+  - Owners and admins add them in **Settings → API**: an https address and the events (check in/out, leave requested/approved/rejected, task created/completed, lead created, deal won/lost, invoice paid). The signing secret is shown once and stored encrypted (under `TOTP_ENCRYPTION_KEY`). Up to 10 per workspace.
+  - Outbox: `emitWebhookEvent` (in `apps/api/src/webhooks/`) queues a delivery in the same transaction as the change, so a rolled-back change sends nothing. The payload is the public API's shape of the record. Events come from the app's own handlers, so API writes send them too.
+  - `WebhookService` sends due deliveries every 10 seconds, signed (`WorkHub-Signature: t=…,v1=<HMAC-SHA256>`), with a 10-second timeout and no redirects. Retries after 1 and 5 minutes, 30 minutes, 2, 6 and 15 hours; then the webhook is paused and owners are emailed. Paused webhooks keep their events until resumed. Finished deliveries are kept 30 days.
+  - Safety: only public https addresses, checked when saved and again at every connection after DNS (`url-safety.ts`). `WEBHOOK_ALLOW_PRIVATE_URLS=true` allows http and private addresses outside production (tests use it).
+  - **Send a test** (one attempt), a delivery log, Pause/Resume. Migration 0021; tests in `apps/api/test/webhooks.spec.ts`.
+
+Next: more API endpoints if customers ask for them (deals and companies writes, deletes). Phase 3's other items (#92 Arabic, #93 regional hosting, #94 AI assistant, #95 SSO, #97 SOC 2) need decisions or accounts first. These need accounts or money first: video calls (#86), WhatsApp Business (#84), Gmail/Outlook (#85), app stores (#83), desktop agent code signing (#81, #82).
 
 ## Key decisions so far
 

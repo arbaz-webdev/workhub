@@ -4,6 +4,7 @@ import { createApiKeySchema, hasRole, type ApiKeyAccess, type ApiKeyCreatedDto, 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { SettingsTabs } from '@/components/settings/tabs';
+import { Webhooks } from '@/components/settings/webhooks';
 import { Alert, Card, PageHeader, btn, input, timeAgo } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -89,8 +90,10 @@ export default function ApiSettingsPage() {
           <CreateKey onCreated={(k) => (setCreated(k), setError(undefined), load())} onError={setError} />
         </Card>
 
+        <Webhooks />
+
         <p className="text-sm text-gray-600">
-          How to use a key, with examples:{' '}
+          How to use keys and webhooks, with examples:{' '}
           <Link href="/developers" className="font-medium text-brand-700 underline">
             WorkHub API documentation
           </Link>

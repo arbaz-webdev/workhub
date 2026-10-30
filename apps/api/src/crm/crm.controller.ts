@@ -35,6 +35,8 @@ import { audit } from '../audit/audit';
 import { isUniqueViolation } from '../common/db-errors';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
+import { leadOut } from '../public-api/shapes';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { DbService, Tx } from '../db/db.service';
 import { activities, attachments, companies, contacts, customFields, deals, leads, projects, tasks, workspaces } from '../db/schema';
 import { INLINE_IMAGE_TYPES } from '../storage/storage.service';
@@ -428,6 +430,7 @@ export class CrmController {
           createdBy: auth.userId,
         })
         .returning();
+      await emitWebhookEvent(tx, ws.id, 'lead.created', async () => leadOut(row!));
       return (await leadDtos(tx, [row!]))[0]!;
     });
   }

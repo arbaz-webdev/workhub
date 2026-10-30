@@ -181,6 +181,7 @@ describe('reading data', () => {
     expect(doc.openapi).toBe('3.1.0');
     expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/v1/me', '/v1/people', '/v1/attendance', '/v1/invoices/{id}', '/v1/tasks/{id}', '/v1/activities']));
     expect(Object.keys(doc.paths['/v1/leads'])).toEqual(['get', 'post']);
+    expect(Object.keys(doc.webhooks)).toEqual(expect.arrayContaining(['lead.created', 'attendance.checked_in', 'invoice.paid', 'ping']));
   });
 });
 

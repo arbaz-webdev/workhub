@@ -35,6 +35,7 @@ import type { Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { DbService } from '../db/db.service';
 import { attendanceDays, attendanceEvents, memberships, shifts, teams, users } from '../db/schema';
@@ -244,6 +245,16 @@ export class AttendanceController {
           flags,
           selfieKey: storedKey,
         });
+        if (punch) {
+          await emitWebhookEvent(tx, ws.id, body.type === 'check_in' ? 'attendance.checked_in' : 'attendance.checked_out', async () => {
+            const [person] = await tx
+              .select({ name: users.name, employeeCode: memberships.employeeCode })
+              .from(memberships)
+              .innerJoin(users, eq(users.id, memberships.userId))
+              .where(and(eq(memberships.workspaceId, ws.id), eq(memberships.userId, auth.userId)));
+            return { id: eventId, userId: auth.userId, name: person?.name ?? null, employeeCode: person?.employeeCode ?? null, date: day.workDate, at: at.toISOString(), offline, inZone: zone.inZone, flags };
+          });
+        }
         return todayFor(tx, info, auth.userId, new Date());
       });
       // Colleagues see them come in, step out for a break and leave.

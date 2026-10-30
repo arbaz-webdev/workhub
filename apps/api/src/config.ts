@@ -110,6 +110,13 @@ export const config = {
   get feedbackTo(): string | undefined {
     return process.env.FEEDBACK_TO || undefined;
   },
+  /**
+   * Lets webhooks call http:// and private addresses (localhost, 10.x…), for development and
+   * tests only: refused in production whatever the setting.
+   */
+  get webhookAllowPrivateUrls(): boolean {
+    return process.env.WEBHOOK_ALLOW_PRIVATE_URLS === 'true' && !config.isProduction;
+  },
   /** Public API requests each key may make per minute. */
   get apiRateLimit(): number {
     return Number(process.env.API_RATE_LIMIT_PER_MINUTE ?? API_RATE_LIMIT_PER_MINUTE);

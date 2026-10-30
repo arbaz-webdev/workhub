@@ -13,3 +13,5 @@ delete process.env.REDIS_URL;
 process.env.FOUNDING_OFFER_ENDS = '2000-01-01';
 // A small public API limit, so test/public-api.spec.ts can reach it.
 process.env.API_RATE_LIMIT_PER_MINUTE = '20';
+// Webhook tests deliver to a receiver on localhost; test/webhooks.spec.ts checks the real rules.
+process.env.WEBHOOK_ALLOW_PRIVATE_URLS = 'true';

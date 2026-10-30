@@ -11,7 +11,7 @@ import { DbService } from '../db/db.service';
 import { activities, contacts, leads } from '../db/schema';
 import { TasksController } from '../projects/tasks.controller';
 import { ApiKeyGuard } from './api-key.guard';
-import { activityOut, contactOut, leadOut, loadTaskOut } from './v1.controller';
+import { activityOut, contactOut, leadOut, loadTaskOut } from './shapes';
 
 const taskDetails = updateTaskSchema.omit({ labelIds: true });
 const createTaskBody = createTaskSchema.extend({ projectId: z.uuid() }).extend(taskDetails.omit({ title: true }).shape);

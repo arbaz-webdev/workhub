@@ -26,6 +26,8 @@ import { audit } from '../audit/audit';
 import { isUniqueViolation } from '../common/db-errors';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
 import { ZodPipe } from '../common/zod.pipe';
+import { loadDealOut } from '../public-api/shapes';
+import { emitWebhookEvent } from '../webhooks/emit';
 import { DbService, Tx } from '../db/db.service';
 import { activities, contacts, deals, leads, pipelines, pipelineStages, workspaces } from '../db/schema';
 import { createProject } from '../projects/create';
@@ -303,6 +305,8 @@ export class DealsController {
         })
         .where(eq(deals.id, dealId))
         .returning();
+      // Only when the outcome changes: moving between won stages isn't a new win.
+      if (stage.kind !== deal.status && stage.kind !== 'open') await emitWebhookEvent(tx, ws.id, stage.kind === 'won' ? 'deal.won' : 'deal.lost', () => loadDealOut(tx, ws.id, dealId));
       return (await dealDtos(tx, [row!]))[0]!;
     });
   }
@@ -342,6 +346,7 @@ export class DealsController {
         .set({ stageId: won!.id, status: 'won', wonAt: deal.wonAt ?? new Date(), lostAt: null, lostReason: null, projectId, position: deal.status === 'won' ? deal.position : await endOfStage(tx, won!.id) })
         .where(eq(deals.id, dealId))
         .returning();
+      if (deal.status !== 'won') await emitWebhookEvent(tx, ws.id, 'deal.won', () => loadDealOut(tx, ws.id, dealId));
       return (await dealDtos(tx, [row!]))[0]!;
     });
   }

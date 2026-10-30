@@ -2226,3 +2226,94 @@ export interface ApiKeyCreatedDto extends ApiKeyDto {
   /** The full key. Shown once; WorkHub keeps only a hash. */
   key: string;
 }
+
+// ---- Webhooks (phase 3) ----------------------------------------------------------------
+
+/** What a webhook can be told about. "ping" is only ever sent by "Send a test". */
+export const WEBHOOK_EVENTS = [
+  'attendance.checked_in',
+  'attendance.checked_out',
+  'leave.requested',
+  'leave.approved',
+  'leave.rejected',
+  'task.created',
+  'task.completed',
+  'lead.created',
+  'deal.won',
+  'deal.lost',
+  'invoice.paid',
+] as const;
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number] | 'ping';
+
+export const WEBHOOK_EVENT_LABELS: Record<(typeof WEBHOOK_EVENTS)[number], string> = {
+  'attendance.checked_in': 'Someone checks in',
+  'attendance.checked_out': 'Someone checks out',
+  'leave.requested': 'Leave is requested',
+  'leave.approved': 'Leave is approved',
+  'leave.rejected': 'Leave is rejected',
+  'task.created': 'A task is created',
+  'task.completed': 'A task is completed',
+  'lead.created': 'A lead is added',
+  'deal.won': 'A deal is won',
+  'deal.lost': 'A deal is lost',
+  'invoice.paid': 'An invoice to a client is marked paid',
+};
+
+/** Every webhook's signing secret starts with this. */
+export const WEBHOOK_SECRET_PREFIX = 'whsec_';
+
+const webhookUrl = z
+  .string()
+  .trim()
+  .max(500, 'Keep the address under 500 characters')
+  .url('Enter a full web address, starting with https://');
+
+export const createWebhookSchema = z.object({
+  url: webhookUrl,
+  events: z.array(z.enum(WEBHOOK_EVENTS)).min(1, 'Choose at least one event').max(WEBHOOK_EVENTS.length),
+});
+export type CreateWebhookInput = z.infer<typeof createWebhookSchema>;
+
+export const updateWebhookSchema = z
+  .object({
+    url: webhookUrl,
+    events: z.array(z.enum(WEBHOOK_EVENTS)).min(1, 'Choose at least one event').max(WEBHOOK_EVENTS.length),
+    /** true pauses deliveries; false resumes them (and sends what waited). */
+    paused: z.boolean(),
+  })
+  .partial();
+export type UpdateWebhookInput = z.infer<typeof updateWebhookSchema>;
+
+export type WebhookDeliveryStatus = 'pending' | 'delivered' | 'failed';
+
+export interface WebhookDeliveryDto {
+  id: string;
+  event: WebhookEvent;
+  status: WebhookDeliveryStatus;
+  attempts: number;
+  /** The receiver's HTTP status on the last attempt, if it answered. */
+  lastStatus: number | null;
+  lastError: string | null;
+  nextAttemptAt: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+}
+
+export interface WebhookDto {
+  id: string;
+  url: string;
+  events: (typeof WEBHOOK_EVENTS)[number][];
+  pausedAt: string | null;
+  /** Why it's paused: by someone, or because deliveries kept failing. */
+  pausedReason: string | null;
+  createdBy: { id: string; name: string } | null;
+  createdAt: string;
+  lastDelivery: WebhookDeliveryDto | null;
+  /** Deliveries waiting to be sent (or retried). */
+  pending: number;
+}
+
+export interface WebhookCreatedDto extends WebhookDto {
+  /** The signing secret. Shown once. */
+  secret: string;
+}

@@ -10,6 +10,8 @@ import {
   REQUEST_STATUSES,
   ROLES,
   STAGE_KINDS,
+  WEBHOOK_EVENT_LABELS,
+  WEBHOOK_EVENTS,
 } from '@workhub/shared';
 import { Public } from '../common/request';
 import { config } from '../config';
@@ -344,6 +346,55 @@ const change = (summary: string, input: string, output: string) => ({
   responses: { '200': json(ref(output)), ...errors, ...notFound },
 });
 
+schemas.AttendancePunch = obj({
+  id,
+  userId: id,
+  name: nullable(str()),
+  employeeCode: nullable(str()),
+  date: { ...day, description: 'The workday it counts towards (a night shift can start the day before).' },
+  at: dateTime,
+  offline: { type: 'boolean', description: 'Recorded without a connection and sent later.' },
+  inZone: nullable({ type: 'boolean', description: 'Inside an office zone, when the workspace uses them.' }),
+  flags: { type: 'array', items: str() },
+});
+
+/** What each webhook event's "data" holds. */
+const WEBHOOK_DATA: Record<string, string> = {
+  'attendance.checked_in': 'AttendancePunch',
+  'attendance.checked_out': 'AttendancePunch',
+  'leave.requested': 'LeaveRequest',
+  'leave.approved': 'LeaveRequest',
+  'leave.rejected': 'LeaveRequest',
+  'task.created': 'Task',
+  'task.completed': 'Task',
+  'lead.created': 'Lead',
+  'deal.won': 'Deal',
+  'deal.lost': 'Deal',
+  'invoice.paid': 'Invoice',
+};
+
+function webhookDocs() {
+  const delivery = (event: string, data: Schema) => ({
+    post: {
+      summary: event === 'ping' ? 'Sent by "Send a test" in Settings → API' : WEBHOOK_EVENT_LABELS[event as keyof typeof WEBHOOK_EVENT_LABELS],
+      description:
+        'Signed: the WorkHub-Signature header is "t=<unix seconds>,v1=<hex HMAC-SHA256 of "<t>.<raw body>" with the signing secret>". WorkHub-Event and WorkHub-Delivery name the event and the delivery.',
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: obj({ id: { ...id, description: 'The delivery; the same as WorkHub-Delivery.' }, event: str(undefined, { const: event }), createdAt: dateTime, workspaceId: id, data }),
+          },
+        },
+      },
+      responses: { '200': { description: 'Any 2xx within 10 seconds means it arrived. Anything else is retried for about a day.' } },
+    },
+  });
+  return {
+    ...Object.fromEntries(WEBHOOK_EVENTS.map((e) => [e, delivery(e, ref(WEBHOOK_DATA[e]!))])),
+    ping: delivery('ping', obj({ message: str() })),
+  };
+}
+
 export function openApiDocument() {
   return {
     openapi: '3.1.0',
@@ -359,6 +410,7 @@ export function openApiDocument() {
     servers: [{ url: `${config.appUrl}/api` }],
     security: [{ apiKey: [] }],
     components: { securitySchemes: { apiKey: { type: 'http', scheme: 'bearer', description: 'An API key from Settings → API.' } }, schemas },
+    webhooks: webhookDocs(),
     paths: {
       '/v1/me': { get: { summary: 'The workspace and person a key acts as', responses: { '200': json(ref('Me')), ...errors } } },
       '/v1/people': list('People in the workspace', 'Person', []),

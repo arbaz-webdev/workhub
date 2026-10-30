@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { docMoney } from '@/components/crm/client-docs';
-import { CrmTabs, errorText, Labelled } from '@/components/crm/shared';
+import { CrmTabs, errorText, Labelled, ManagersOnly } from '@/components/crm/shared';
 import { Alert, PageHeader, btn, input } from '@/components/ui';
 import { localToday } from '@/lib/time';
 import { useWorkspaceApi } from '@/lib/workspace';
@@ -20,6 +20,14 @@ function lastMonth(today: string) {
 
 /** Invoice a client for approved, billable hours that haven't been billed yet. */
 export default function BillHoursPage() {
+  return (
+    <ManagersOnly>
+      <BillHours />
+    </ManagersOnly>
+  );
+}
+
+function BillHours() {
   const api = useWorkspaceApi();
   const router = useRouter();
   const today = localToday();

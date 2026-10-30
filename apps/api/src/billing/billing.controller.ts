@@ -36,6 +36,7 @@ import { addDays, zonedParts } from '../attendance/zoned';
 import { platformAdmin } from '../common/platform-admin';
 import { config } from '../config';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
+import { readableDate } from '../common/dates';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import { invoices, subscriptions, workspaces } from '../db/schema';
@@ -180,7 +181,7 @@ export class BillingController {
       if (invoice.status !== 'open') throw new ConflictException('This invoice can’t be paid now.');
       await markPaid(tx, invoice, 'test', `test_${randomUUID().slice(0, 8)}`);
       await audit(tx, { workspaceId: ws.id, actorUserId: auth.userId, action: 'invoice.paid', entityType: 'invoice', entityId: id, metadata: { number: invoice.number, method: 'test' }, ip });
-      await notifyRoles(tx, ws.id, ['owner', 'admin'], { type: 'billing.paid', title: `Payment received for ${invoice.number}`, body: `${PLAN_INFO[invoice.plan].name} until ${invoice.periodEnd}`, link: `/app/settings/billing/invoices/${id}` });
+      await notifyRoles(tx, ws.id, ['owner', 'admin'], { type: 'billing.paid', title: `Payment received for ${invoice.number}`, body: `${PLAN_INFO[invoice.plan].name} until ${readableDate(invoice.periodEnd, true)}`, link: `/app/settings/billing/invoices/${id}` });
       return invoiceDto((await loadInvoice(tx, ws.id, id))!);
     });
     await this.receipt(dto);
@@ -312,7 +313,7 @@ export class PlatformController {
       if (invoice.status !== 'pending_review') throw new ConflictException('This transfer was already reviewed.');
       if (body.approve) {
         await markPaid(tx, invoice, 'bank_transfer', invoice.transferReference, reviewer);
-        await notifyRoles(tx, workspaceId, ['owner', 'admin'], { type: 'billing.paid', title: `Bank transfer confirmed for ${invoice.number}`, body: `${PLAN_INFO[invoice.plan].name} until ${invoice.periodEnd}`, link: `/app/settings/billing/invoices/${id}` });
+        await notifyRoles(tx, workspaceId, ['owner', 'admin'], { type: 'billing.paid', title: `Bank transfer confirmed for ${invoice.number}`, body: `${PLAN_INFO[invoice.plan].name} until ${readableDate(invoice.periodEnd, true)}`, link: `/app/settings/billing/invoices/${id}` });
       } else {
         await tx
           .update(invoices)
@@ -328,7 +329,7 @@ export class PlatformController {
         .send({
           to: dto.billTo.email,
           subject: `Payment received: ${dto.number}`,
-          text: `Thank you. We've confirmed your bank transfer of ${pkr(dto.total)} for invoice ${dto.number}. You're on ${PLAN_INFO[dto.plan].name} until ${dto.periodEnd}.`,
+          text: `Thank you. We've confirmed your bank transfer of ${pkr(dto.total)} for invoice ${dto.number}. You're on ${PLAN_INFO[dto.plan].name} until ${readableDate(dto.periodEnd, true)}.`,
           html: `<p>Thank you. We've confirmed your bank transfer of ${escapeHtml(pkr(dto.total))} for invoice ${escapeHtml(dto.number)}. You're on ${escapeHtml(PLAN_INFO[dto.plan].name)} until ${escapeHtml(dto.periodEnd)}.</p>`,
         })
         .catch(() => {});

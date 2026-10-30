@@ -13,6 +13,7 @@ import {
   type TimesheetSummaryDto,
 } from '@workhub/shared';
 import { addDays, zonedParts, zonedTime } from '../src/attendance/zoned';
+import { readableDate } from '../src/common/dates';
 import { weekStart } from '../src/leave/leave-rules';
 import { createApp, signUp, withAdmin } from './helpers';
 
@@ -220,7 +221,7 @@ describe('attendance corrections', () => {
   it('replaces the day when approved, keeping the original in the audit log', async () => {
     const asked = await member.agent.post('/attendance/corrections').set(H()).send({ date: yesterday, ...times(yesterday), reason: 'Forgot to check in on time' }).expect(201);
     expect(asked.body).toMatchObject({ status: 'pending', requestedByName: 'member' });
-    expect(await notificationTitles(manager.agent)).toContain(`member asked to correct ${yesterday}`);
+    expect(await notificationTitles(manager.agent)).toContain(`member asked to correct ${readableDate(yesterday)}`);
     await member.agent.post('/attendance/corrections').set(H()).send({ date: yesterday, ...times(yesterday), reason: 'again' }).expect(409);
     await member.agent.post(`/attendance/corrections/${asked.body.id}/approve`).set(H()).send({}).expect(403);
 

@@ -39,6 +39,7 @@ import { peopleAttendance, workspaceInfo, type WorkspaceInfo } from '../attendan
 import { holidayMap, leaveMap, workingDaysOf } from '../attendance/calendar';
 import { addDays, zonedParts } from '../attendance/zoned';
 import { audit } from '../audit/audit';
+import { readableDate } from '../common/dates';
 import { loadLeaveOut } from '../public-api/shapes';
 import { emitWebhookEvent } from '../webhooks/emit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
@@ -577,6 +578,5 @@ export class LeaveController {
 }
 
 function rangeText(start: string, end: string) {
-  const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
+  return start === end ? readableDate(start) : `${readableDate(start)} – ${readableDate(end)}`;
 }

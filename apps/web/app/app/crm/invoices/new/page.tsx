@@ -3,10 +3,18 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DocEditor } from '@/components/crm/client-docs';
-import { CrmTabs } from '@/components/crm/shared';
+import { CrmTabs, ManagersOnly } from '@/components/crm/shared';
 import { PageHeader } from '@/components/ui';
 
 export default function NewClientDocPage() {
+  return (
+    <ManagersOnly>
+      <NewClientDoc />
+    </ManagersOnly>
+  );
+}
+
+function NewClientDoc() {
   const params = useSearchParams();
   const router = useRouter();
   const kind = params.get('kind') === 'quote' ? 'quote' : 'invoice';

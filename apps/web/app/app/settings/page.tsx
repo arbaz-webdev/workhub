@@ -113,7 +113,7 @@ export default function SettingsPage() {
                         type="button"
                         aria-pressed={on}
                         onClick={() => toggleDay(d.value)}
-                        className={`w-12 rounded-lg border py-1.5 text-sm font-medium ${
+                        className={`w-12 rounded-lg border py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${
                           on ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-300 text-gray-600'
                         }`}
                       >

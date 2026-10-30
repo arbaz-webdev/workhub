@@ -4,7 +4,7 @@ import type { ClientDocKind, ClientDocSummaryDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { DocStatus, docMoney } from '@/components/crm/client-docs';
-import { CrmTabs } from '@/components/crm/shared';
+import { CrmTabs, ManagersOnly } from '@/components/crm/shared';
 import { Alert, PageHeader, btn } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
@@ -12,6 +12,14 @@ const date = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateS
 
 /** Quotes and invoices to clients. */
 export default function ClientDocsPage() {
+  return (
+    <ManagersOnly>
+      <ClientDocs />
+    </ManagersOnly>
+  );
+}
+
+function ClientDocs() {
   const api = useWorkspaceApi();
   const [kind, setKind] = useState<ClientDocKind>('invoice');
   const [docs, setDocs] = useState<ClientDocSummaryDto[]>();

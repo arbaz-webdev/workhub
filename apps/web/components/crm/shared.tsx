@@ -4,7 +4,7 @@ import { hasRole, type CrmEntity, type CustomFieldDto, type CustomValues, type D
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { input } from '@/components/ui';
+import { Alert, input, PageHeader } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -19,6 +19,19 @@ const TABS: { href: string; label: string; minRole: Role }[] = [
   { href: '/app/crm/pipelines', label: 'Pipelines', minRole: 'manager' },
   { href: '/app/crm/fields', label: 'Custom fields', minRole: 'manager' },
 ];
+
+/** Quotes and invoices to clients are for managers and up (as the API is); others get a plain message. */
+export function ManagersOnly({ children }: { children: React.ReactNode }) {
+  const { workspace } = useWorkspace();
+  if (hasRole(workspace.role, 'manager')) return <>{children}</>;
+  return (
+    <>
+      <PageHeader title="CRM" />
+      <CrmTabs />
+      <Alert>Only managers can see quotes and invoices to clients.</Alert>
+    </>
+  );
+}
 
 export function CrmTabs() {
   const pathname = usePathname();

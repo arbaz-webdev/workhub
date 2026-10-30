@@ -12,6 +12,7 @@ import { workspaceInfo } from '../attendance/attendance';
 import { zonedParts } from '../attendance/zoned';
 import { audit } from '../audit/audit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
+import { readableDate } from '../common/dates';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import { memberships, projects, taskTimers, tasks, timeEntries, timesheets, users } from '../db/schema';
@@ -152,7 +153,7 @@ export class TimesheetsController {
         tx,
         ws.id,
         ['owner', 'admin', 'manager'],
-        { type: 'timesheet.submitted', title: `${me!.name} submitted a timesheet (${Math.round(sheet.total / 6) / 10}h)`, body: `Week of ${sheet.weekStart}`, link: `/app/timesheets/approvals?week=${sheet.weekStart}` },
+        { type: 'timesheet.submitted', title: `${me!.name} submitted a timesheet (${Math.round(sheet.total / 6) / 10}h)`, body: `Week of ${readableDate(sheet.weekStart)}`, link: `/app/timesheets/approvals?week=${sheet.weekStart}` },
         auth.userId,
       );
       return buildTimesheet(tx, ws.id, auth.userId, sheet.weekStart);
@@ -186,7 +187,7 @@ export class TimesheetsController {
       await audit(tx, { workspaceId: ws.id, actorUserId: auth.userId, action: `timesheet.${status}`, entityType: 'timesheet', entityId: id, metadata: { userId: sheet.userId, weekStart: sheet.weekStart, note: body.note }, ip });
       await notify(tx, ws.id, [sheet.userId], {
         type: `timesheet.${status}`,
-        title: status === 'approved' ? `Your timesheet for the week of ${sheet.weekStart} was approved` : `Your timesheet for the week of ${sheet.weekStart} was sent back`,
+        title: `Your timesheet for the week of ${readableDate(sheet.weekStart)} was ${status === 'approved' ? 'approved' : 'sent back'}`,
         body: body.note,
         link: `/app/timesheets?week=${sheet.weekStart}`,
       });

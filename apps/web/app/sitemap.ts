@@ -1,10 +1,13 @@
 import type { MetadataRoute } from 'next';
+import { connection } from 'next/server';
 import { HELP_ARTICLES } from '@/lib/help';
 import { LEGAL_DOCUMENTS, LEGAL_DRAFT } from '@/lib/legal';
 import { siteUrl } from '@/lib/site-url';
 
 /** The public pages, for search engines. The app itself (/app) is behind sign-in. */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Built per request: APP_URL is only known when the server runs, not when the image is built.
+  await connection();
   const base = siteUrl();
   return [
     { url: `${base}/`, changeFrequency: 'weekly', priority: 1 },

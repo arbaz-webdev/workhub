@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { DocEditor, DocPaper, DocStatus, KIND_LABEL } from '@/components/crm/client-docs';
-import { errorText } from '@/components/crm/shared';
+import { errorText, ManagersOnly } from '@/components/crm/shared';
 import { Alert, btn } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
@@ -29,6 +29,14 @@ const ACTIONS: Record<string, { to: ClientDocStatus; label: string; style: keyof
 };
 
 export default function ClientDocPage() {
+  return (
+    <ManagersOnly>
+      <ClientDoc />
+    </ManagersOnly>
+  );
+}
+
+function ClientDoc() {
   const { id } = useParams<{ id: string }>();
   const api = useWorkspaceApi();
   const router = useRouter();

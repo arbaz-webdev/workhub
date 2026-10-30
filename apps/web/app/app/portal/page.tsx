@@ -7,21 +7,39 @@ import { useEffect, useState } from 'react';
 import { errorText } from '@/components/crm/shared';
 import { PortalView } from '@/components/crm/portal-view';
 import { Alert, PageHeader } from '@/components/ui';
-import { useWorkspaceApi } from '@/lib/workspace';
+import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 /** The client portal: a client contact's own, or a manager's preview with ?company=. */
 export default function PortalPage() {
   const api = useWorkspaceApi();
+  const { workspace } = useWorkspace();
   const preview = useSearchParams().get('company');
+  // Staff have no portal of their own: they preview a client's from the client's page.
+  const staffWithoutClient = workspace.role !== 'guest' && !preview;
   const [portal, setPortal] = useState<PortalDto>();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
+    if (staffWithoutClient) return;
     api<PortalDto>(preview ? `/portal?companyId=${encodeURIComponent(preview)}` : '/portal')
       .then(setPortal)
       .catch((err) => setError(errorText(err, 'Could not load the portal.')));
-  }, [api, preview]);
+  }, [api, preview, staffWithoutClient]);
 
+  if (staffWithoutClient) {
+    return (
+      <>
+        <PageHeader title="Client portal" description="What a client's contacts see when they sign in: their projects, hours, quotes and invoices." />
+        <p className="text-sm text-gray-600">
+          To preview a client&apos;s portal, open the client in{' '}
+          <Link href="/app/crm/companies" className="text-brand-700 underline">
+            CRM → Companies
+          </Link>{' '}
+          and choose <strong>Preview</strong>.
+        </p>
+      </>
+    );
+  }
   if (error) return <Alert>{error}</Alert>;
   if (!portal) return <p className="text-sm text-gray-500">Loading…</p>;
   return (

@@ -11,16 +11,18 @@ import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 export default function PayrollPage() {
   const api = useWorkspaceApi();
   const { workspace } = useWorkspace();
+  const manager = hasRole(workspace.role, 'manager');
   const admin = hasRole(workspace.role, 'admin');
   const [templates, setTemplates] = useState<PayrollTemplateDto[]>();
   const [codes, setCodes] = useState<MemberCodesDto[]>([]);
   const [error, setError] = useState<string>();
 
   const loadTemplates = useCallback(() => {
+    if (!manager) return;
     api<PayrollTemplateDto[]>('/attendance/payroll/templates')
       .then(setTemplates)
       .catch(() => setError('Could not load the export layouts.'));
-  }, [api]);
+  }, [api, manager]);
   const loadCodes = useCallback(() => {
     if (!admin) return;
     api<MemberCodesDto[]>('/attendance/payroll/codes')
@@ -29,6 +31,16 @@ export default function PayrollPage() {
   }, [api, admin]);
   useEffect(loadTemplates, [loadTemplates]);
   useEffect(loadCodes, [loadCodes]);
+
+  if (!manager) {
+    return (
+      <>
+        <PageHeader title="Attendance" />
+        <AttendanceTabs />
+        <Alert>Only managers can export attendance for payroll.</Alert>
+      </>
+    );
+  }
 
   return (
     <>

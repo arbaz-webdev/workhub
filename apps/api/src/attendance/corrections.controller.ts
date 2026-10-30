@@ -3,6 +3,7 @@ import { correctionSchema, decisionSchema, hasRole, type CorrectionDto, type Cor
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { audit } from '../audit/audit';
 import { AuthContext, ClientIp, CurrentAuth, CurrentWorkspace, MinRole, WorkspaceContext } from '../common/request';
+import { readableDate } from '../common/dates';
 import { ZodPipe } from '../common/zod.pipe';
 import { DbService, Tx } from '../db/db.service';
 import { attendanceCorrections, attendanceEvents, memberships, users } from '../db/schema';
@@ -103,11 +104,11 @@ export class CorrectionsController {
       if (direct) {
         await applyCorrection(tx, info, row!, auth.userId, ip);
         if (userId !== auth.userId) {
-          await notify(tx, ws.id, [userId], { type: 'attendance.corrected', title: `Your attendance for ${body.date} was corrected`, body: body.reason, link: '/app/attendance' });
+          await notify(tx, ws.id, [userId], { type: 'attendance.corrected', title: `Your attendance for ${readableDate(body.date)} was corrected`, body: body.reason, link: '/app/attendance' });
         }
       } else {
         const [me] = await tx.select({ name: users.name }).from(users).where(eq(users.id, auth.userId));
-        await notifyRoles(tx, ws.id, ['owner', 'admin', 'manager'], { type: 'attendance.correction_requested', title: `${me!.name} asked to correct ${body.date}`, body: body.reason, link: '/app/attendance/team' }, auth.userId);
+        await notifyRoles(tx, ws.id, ['owner', 'admin', 'manager'], { type: 'attendance.correction_requested', title: `${me!.name} asked to correct ${readableDate(body.date)}`, body: body.reason, link: '/app/attendance/team' }, auth.userId);
       }
       return (await this.dtos(tx, ws.id, eq(attendanceCorrections.id, row!.id)))[0]!;
     });
@@ -166,7 +167,7 @@ export class CorrectionsController {
         .returning();
       if (status === 'approved') await applyCorrection(tx, await workspaceInfo(tx, ws.id), updated!, auth.userId, ip);
       else await audit(tx, { workspaceId: ws.id, actorUserId: auth.userId, action: 'attendance.correction_rejected', entityType: 'attendance_correction', entityId: id, metadata: { note: body.note }, ip });
-      await notify(tx, ws.id, [c.userId], { type: `attendance.correction_${status}`, title: `Your correction for ${c.workDate} was ${status}`, body: body.note, link: '/app/attendance' });
+      await notify(tx, ws.id, [c.userId], { type: `attendance.correction_${status}`, title: `Your correction for ${readableDate(c.workDate)} was ${status}`, body: body.note, link: '/app/attendance' });
       return (await this.dtos(tx, ws.id, eq(attendanceCorrections.id, id)))[0]!;
     });
   }

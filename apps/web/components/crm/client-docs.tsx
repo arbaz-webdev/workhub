@@ -220,7 +220,7 @@ export function DocPaper({ doc }: { doc: ClientDocumentDto }) {
           {doc.from.email && <p className="text-sm text-gray-600">{doc.from.email}</p>}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold tracking-tight">{label}</p>
+          <h1 className="text-2xl font-bold tracking-tight">{label}</h1>
           <p className="text-sm text-gray-600">{doc.number}</p>
           <p className="mt-2 text-sm text-gray-600">Date: {date(doc.issueDate)}</p>
           {doc.dueDate && (

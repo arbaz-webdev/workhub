@@ -43,7 +43,7 @@ export function InstallButton() {
         await prompt.userChoice;
         setPrompt(null);
       }}
-      className="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50 md:inline"
+      className="hidden h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition hover:text-ink hover:shadow-md md:inline-flex"
     >
       Install app
     </button>

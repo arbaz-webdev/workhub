@@ -31,13 +31,13 @@ function Cell({ value }: { value: boolean | string }) {
 
 export default function PricingPage() {
   return (
-    <div className="bg-white">
+    <div>
       <SiteHeader />
       <main>
-        <section className="bg-gray-50 px-4 py-16">
+        <section className="px-4 py-16">
           <div className="mx-auto max-w-6xl">
             <div className="text-center">
-              <h1 className="text-4xl font-bold tracking-tight">Simple pricing in rupees</h1>
+              <h1 className="text-5xl font-light tracking-tight">Simple pricing in rupees</h1>
               <p className="mx-auto mt-3 max-w-2xl text-gray-600">Pay per person, monthly or yearly. Free for small teams, and every feature on the Business trial.</p>
               <p className="mx-auto mt-4 inline-block rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800">
                 Founding customers: {FOUNDING_DISCOUNT.percent}% off for life when you join before {LAUNCH}
@@ -50,7 +50,7 @@ export default function PricingPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="text-2xl font-bold tracking-tight">Compare plans</h2>
+          <h2 className="text-3xl font-light tracking-tight">Compare plans</h2>
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[36rem] text-sm">
               <thead>
@@ -91,7 +91,7 @@ export default function PricingPage() {
         </section>
 
         <section className="mx-auto max-w-3xl px-4 pb-20">
-          <h2 className="text-2xl font-bold tracking-tight">Pricing questions</h2>
+          <h2 className="text-3xl font-light tracking-tight">Pricing questions</h2>
           <dl className="mt-6 divide-y divide-gray-200">
             {FAQ.map((f) => (
               <div key={f.q} className="py-5">

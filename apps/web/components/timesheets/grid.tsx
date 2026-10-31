@@ -32,13 +32,13 @@ export function TimesheetTabs() {
   ];
   if (tabs.length < 2) return null;
   return (
-    <nav aria-label="Timesheets" className="mb-6 flex gap-1 border-b border-gray-200">
+    <nav aria-label="Timesheets" className="mb-8 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-white p-1 shadow-sm [scrollbar-width:none]">
       {tabs.map((t) => (
         <Link
           key={t.href}
           href={t.href}
           aria-current={pathname === t.href ? 'page' : undefined}
-          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${pathname === t.href ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
+          className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors duration-200 ${pathname === t.href ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-ink'}`}
         >
           {t.label}
         </Link>
@@ -50,10 +50,10 @@ export function TimesheetTabs() {
 /** Tasks down the side, days across, hours in each cell. */
 export function TimesheetGrid({ sheet }: { sheet: TimesheetDto }) {
   if (sheet.rows.length === 0) {
-    return <p className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">No time logged this week. Use the timer or “Log time” on a task.</p>;
+    return <p className="rounded-3xl border border-dashed border-gray-300 bg-white/60 p-8 text-center text-sm text-gray-500">No time logged this week. Use the timer or “Log time” on a task.</p>;
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+    <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
       <table className="w-full min-w-[720px] text-sm">
         <thead className="border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-500">
           <tr>

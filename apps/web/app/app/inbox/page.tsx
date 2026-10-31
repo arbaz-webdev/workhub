@@ -281,11 +281,11 @@ function Inbox() {
   const soloPresence = solo ? presence.get(solo.id) : undefined;
 
   return (
-    <div className="flex h-[calc(100dvh-3.6rem)] min-h-[26rem] overflow-hidden border-gray-200 bg-white sm:h-[calc(100dvh-5.6rem)] sm:rounded-2xl sm:border">
+    <div className="flex h-[calc(100dvh-4rem)] min-h-[26rem] animate-rise overflow-hidden bg-white sm:h-[calc(100dvh-6rem)] sm:rounded-3xl sm:shadow-sm">
       {/* Conversations */}
       <nav aria-label="Conversations" className={`${openId ? 'hidden md:flex' : 'flex'} w-full shrink-0 flex-col border-r border-gray-200 md:w-64 lg:w-72`}>
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <h1 className="flex items-center gap-2 text-base font-semibold">
+          <h1 className="flex items-center gap-2 text-xl font-light tracking-tight">
             Inbox
             <span title={live ? 'Live' : 'Reconnecting…'} className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-500' : 'bg-gray-300'}`}>
               <span className="sr-only">{live ? 'Live' : 'Reconnecting'}</span>

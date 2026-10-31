@@ -64,7 +64,7 @@ export default function TeamAttendancePage() {
         <button type="button" className={btn.ghost} onClick={() => date && setDate(shift(date, -1))} aria-label="Previous day">
           ←
         </button>
-        <input type="date" value={date ?? ''} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Date" className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm" />
+        <input type="date" value={date ?? ''} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Date" className="rounded-xl border border-gray-200 px-2 py-1.5 text-sm" />
         <button type="button" className={btn.ghost} onClick={() => date && setDate(shift(date, 1))} aria-label="Next day">
           →
         </button>
@@ -108,7 +108,7 @@ export default function TeamAttendancePage() {
             </Chip>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <table className="w-full min-w-[720px] text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                 <tr>

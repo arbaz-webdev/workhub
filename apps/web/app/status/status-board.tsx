@@ -72,7 +72,7 @@ export function StatusBoard() {
         <h2 id="components" className="text-base font-semibold">
           Last 90 days
         </h2>
-        <ul className="mt-3 divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
+        <ul className="mt-3 divide-y divide-gray-100 rounded-3xl bg-white">
           {page.components.map((c) => {
             const s = STATE[c.state];
             return (
@@ -126,7 +126,7 @@ function Incidents({ title, incidents, empty }: { title: string; incidents: Stat
       ) : (
         <ul className="mt-3 space-y-3">
           {incidents.map((i) => (
-            <li key={i.id} className="rounded-2xl border border-gray-200 bg-white p-4">
+            <li key={i.id} className="rounded-3xl bg-white p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="font-semibold">{i.title}</h3>
                 <span className="text-xs text-gray-500">

@@ -9,7 +9,7 @@ import {
   type WebhookDto,
 } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Card, btn, input, timeAgo } from '@/components/ui';
+import { Alert, Card, btn, input, timeAgo, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspaceApi } from '@/lib/workspace';
 
@@ -90,7 +90,7 @@ export function Webhooks() {
         {created && <NewSecret created={created} onDone={() => setCreated(null)} />}
 
         {!hooks ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <Loading />
         ) : hooks.length === 0 ? (
           <p className="text-sm text-gray-500">No webhooks yet.</p>
         ) : (

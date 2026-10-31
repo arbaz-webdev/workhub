@@ -38,21 +38,21 @@ export function ArticleBody({ body }: { body: string }) {
         // A code example: ``` on its own line before and after (no blank lines inside).
         if (lines.length > 1 && lines[0]!.startsWith('```') && lines.at(-1) === '```') {
           return (
-            <pre key={i} className="overflow-x-auto rounded-xl bg-gray-900 p-4 font-mono text-[13px] leading-6 text-gray-100">
+            <pre key={i} className="overflow-x-auto rounded-2xl bg-ink p-5 font-mono text-[13px] leading-6 text-gray-100">
               <code>{lines.slice(1, -1).join('\n')}</code>
             </pre>
           );
         }
         if (block.startsWith('## ')) {
           return (
-            <h2 key={i} className="pt-4 text-xl font-semibold text-gray-900">
+            <h2 key={i} className="pt-6 text-2xl font-light tracking-tight text-ink">
               {block.slice(3)}
             </h2>
           );
         }
         if (block.startsWith('> ')) {
           return (
-            <p key={i} className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+            <p key={i} className="rounded-2xl bg-lime-pale/60 px-5 py-4 text-sm text-brand-800">
               {inline(lines.map((l) => l.replace(/^> ?/, '')).join(' '))}
             </p>
           );

@@ -6,7 +6,7 @@ import { AttendanceTabs } from '@/components/attendance/tabs';
 import { clock, duration, EVENT_LABEL, Flags, prettyDate, shiftHours, StatusBadge } from '@/components/attendance/labels';
 import { CorrectionDialog } from '@/components/attendance/correction-dialog';
 import { SelfieCamera } from '@/components/attendance/selfie-camera';
-import { Alert, Card, PageHeader, btn } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { deviceId, enqueue, flush, isNetworkError, queued, send, type QueuedEvent } from '@/lib/attendance-queue';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -287,10 +287,10 @@ function History({ timezone, currentMonth, version }: { timezone: string; curren
     <Card>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold">History</h2>
-        <input type="month" value={month} max={currentMonth} onChange={(e) => e.target.value && setMonth(e.target.value)} aria-label="Month" className="rounded-lg border border-gray-300 px-2 py-1 text-sm" />
+        <input type="month" value={month} max={currentMonth} onChange={(e) => e.target.value && setMonth(e.target.value)} aria-label="Month" className="rounded-xl border border-gray-200 px-2 py-1 text-sm" />
       </div>
       {!days ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : days.length === 0 ? (
         <p className="text-sm text-gray-500">Nothing recorded for this month.</p>
       ) : (

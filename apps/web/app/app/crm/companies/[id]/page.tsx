@@ -9,7 +9,7 @@ import { DealDialog, money, moneyList } from '@/components/crm/deals';
 import { CompanyDialog, ContactDialog } from '@/components/crm/dialogs';
 import { ClientPortalCard } from '@/components/crm/portal-card';
 import { errorText, useFields } from '@/components/crm/shared';
-import { Alert, btn, timeAgo } from '@/components/ui';
+import { Alert, btn, timeAgo, Loading } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 const PROJECT_STATUS: Record<string, string> = { active: 'Active', on_hold: 'On hold', completed: 'Completed', archived: 'Archived' };
@@ -26,7 +26,7 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
       <p className="text-xs text-gray-500">{label}</p>
       <p className="mt-0.5 truncate text-lg font-semibold text-gray-900" title={value}>
         {value}
@@ -78,7 +78,7 @@ export default function CompanyPage() {
         <Link href="/app/crm/companies" className="text-sm text-brand-700 hover:underline">
           ← Companies
         </Link>
-        <div className="mt-4">{error ? <Alert>{error}</Alert> : <p className="text-sm text-gray-500">Loading…</p>}</div>
+        <div className="mt-4">{error ? <Alert>{error}</Alert> : <Loading />}</div>
       </>
     );
   }
@@ -136,7 +136,7 @@ export default function CompanyPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-1">
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-sm font-semibold">Details</h2>
             <dl className="space-y-2 text-sm">
               {details
@@ -152,7 +152,7 @@ export default function CompanyPage() {
           </section>
 
           {hasRole(workspace.role, 'manager') && <ClientPortalCard companyId={c.id} companyName={c.name} />}
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold">People ({data.contacts.length})</h2>
               <button type="button" className={btn.ghost} onClick={() => setContact('new')}>
@@ -176,7 +176,7 @@ export default function CompanyPage() {
           </section>
 
           {data.files.length > 0 && (
-            <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="mb-2 text-sm font-semibold">Files</h2>
               <ul className="divide-y divide-gray-100">
                 {data.files.map((f) => (
@@ -195,7 +195,7 @@ export default function CompanyPage() {
         </div>
 
         <div className="space-y-6 lg:col-span-2">
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold">
                 Deals ({openDeals.length} open of {data.deals.length})
@@ -221,7 +221,7 @@ export default function CompanyPage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-2 text-sm font-semibold">Projects</h2>
             {data.projects.length === 0 ? (
               <p className="text-sm text-gray-500">No projects yet. Win a deal to start one, or pick this client when you create a project.</p>
@@ -253,7 +253,7 @@ export default function CompanyPage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-sm font-semibold">Activity</h2>
             <ActivityPanel key={data.activities.map((a) => a.id).join()} target={{ companyId: c.id }} initial={data.activities} />
           </section>

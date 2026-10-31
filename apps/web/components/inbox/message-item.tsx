@@ -86,12 +86,12 @@ export function MessageItem({
                   f.isImage ? (
                     <li key={f.id}>
                       <a href={`/api${f.url}`} target="_blank" rel="noopener" title={f.fileName}>
-                        <img src={`/api${f.url}`} alt={f.fileName} loading="lazy" className="max-h-56 max-w-[min(20rem,100%)] rounded-lg border border-gray-200 object-cover" />
+                        <img src={`/api${f.url}`} alt={f.fileName} loading="lazy" className="max-h-56 max-w-[min(20rem,100%)] rounded-2xl object-cover shadow-sm" />
                       </a>
                     </li>
                   ) : (
                     <li key={f.id}>
-                      <a href={`/api${f.url}`} download={f.fileName} className="flex max-w-72 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50">
+                      <a href={`/api${f.url}`} download={f.fileName} className="flex max-w-72 items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition hover:bg-gray-50">
                         <svg aria-hidden="true" className="shrink-0 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                           <path d="M14 2v6h6" />
@@ -127,7 +127,7 @@ export function MessageItem({
 
       {!message.deleted && !editing && (
         // Shown on hover, or once the message is tapped or tabbed to (phones have no hover).
-        <div className="invisible absolute -top-3 right-2 flex rounded-lg border border-gray-200 bg-white shadow-sm group-hover:visible group-focus-within:visible">
+        <div className="invisible absolute -top-3 right-2 flex rounded-full border border-gray-100 bg-white p-0.5 shadow-md group-hover:visible group-focus-within:visible">
           {onReply && (
             <IconButton label="Reply in thread" onClick={onReply}>
               <path d="M9 17 4 12l5-5" />

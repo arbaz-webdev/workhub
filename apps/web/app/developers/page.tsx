@@ -125,10 +125,10 @@ function fromWorkHub(rawBody, signatureHeader, secret) {
 - **Send a test** in Settings → API sends a \`ping\` event once, and shows you what your system answered.`;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="text-3xl font-bold tracking-tight">WorkHub API</h1>
+      <main className="mx-4 my-8 animate-rise rounded-[2rem] bg-white px-6 py-10 shadow-sm sm:mx-auto sm:max-w-3xl sm:px-12 sm:py-14">
+        <h1 className="text-4xl font-light tracking-tight">WorkHub API</h1>
         <p className="mt-2 text-lg text-gray-600">Connect your workspace to your own software: payroll, accounting, your website, dashboards or anything else.</p>
         <article className="mt-8 min-w-0">
           <ArticleBody body={body} />

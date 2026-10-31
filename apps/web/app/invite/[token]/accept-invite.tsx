@@ -69,13 +69,13 @@ export function AcceptInvite({ token }: { token: string }) {
         <div className="space-y-3">
           <Link
             href={`/sign-up?${qs}`}
-            className="block w-full rounded-lg bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-700"
+            className="block w-full rounded-lg bg-ink px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-black"
           >
             Create an account and join
           </Link>
           <Link
             href={`/sign-in?${qs}`}
-            className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-semibold text-gray-800 hover:bg-gray-50"
+            className="block w-full rounded-xl border border-gray-200 px-4 py-2.5 text-center text-sm font-semibold text-gray-800 hover:bg-gray-50"
           >
             I already have an account
           </Link>
@@ -97,7 +97,7 @@ export function AcceptInvite({ token }: { token: string }) {
                 await api('/auth/sign-out', { method: 'POST' }).catch(() => {});
                 router.push(`/sign-in?next=${encodeURIComponent(next)}&email=${encodeURIComponent(preview.email!)}`);
               }}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
             >
               Sign out and switch account
             </button>

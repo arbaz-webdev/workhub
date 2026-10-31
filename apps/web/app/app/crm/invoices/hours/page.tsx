@@ -94,7 +94,7 @@ function BillHours() {
           Back to quotes and invoices
         </Link>
       </p>
-      <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm" aria-live="polite">
+      <div className="space-y-5 rounded-3xl bg-white p-5 shadow-sm" aria-live="polite">
         {error && <Alert>{error}</Alert>}
         <div className="grid gap-4 sm:grid-cols-3">
           <Labelled label="Client">

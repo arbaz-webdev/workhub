@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { errorText } from '@/components/crm/shared';
 import { PortalView } from '@/components/crm/portal-view';
-import { Alert, PageHeader } from '@/components/ui';
+import { Alert, PageHeader, Loading } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 /** The client portal: a client contact's own, or a manager's preview with ?company=. */
@@ -41,7 +41,7 @@ export default function PortalPage() {
     );
   }
   if (error) return <Alert>{error}</Alert>;
-  if (!portal) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (!portal) return <Loading />;
   return (
     <>
       {preview && (

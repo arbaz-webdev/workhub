@@ -6,7 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DocPaper } from '@/components/crm/client-docs';
 import { errorText } from '@/components/crm/shared';
-import { Alert, btn } from '@/components/ui';
+import { Alert, btn, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 /** A quote or invoice, as its client sees it. */
@@ -24,7 +24,7 @@ export default function PortalDocPage() {
   }, [api, id, preview]);
 
   if (error) return <Alert>{error}</Alert>;
-  if (!doc) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (!doc) return <Loading />;
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">

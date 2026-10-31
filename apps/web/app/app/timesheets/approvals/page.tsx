@@ -4,14 +4,14 @@ import { hasRole, type TimesheetDto, type TimesheetSummaryDto } from '@workhub/s
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { SheetStatus, TimesheetGrid, TimesheetTabs } from '@/components/timesheets/grid';
-import { Alert, PageHeader, btn, input } from '@/components/ui';
+import { Alert, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { addDays, dayLabel, hhmm, localToday, mondayOf } from '@/lib/time';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 export default function TimesheetApprovalsPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<Loading />}>
       <Approvals />
     </Suspense>
   );
@@ -89,7 +89,7 @@ function Approvals() {
         {waiting > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">{waiting} waiting</span>}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
             <tr>

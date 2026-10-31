@@ -3,7 +3,7 @@
 import type { NotificationDto, NotificationsResponse } from '@workhub/shared';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { timeAgo } from '@/components/ui';
+import { btn, timeAgo } from '@/components/ui';
 import { useInboxEvents } from '@/lib/inbox';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -83,7 +83,7 @@ export function NotificationsBell() {
         aria-label={label}
         aria-expanded={open}
         aria-haspopup="true"
-        className="relative grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100"
+        className={`${btn.icon} relative bg-white shadow-sm`}
       >
         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
@@ -101,7 +101,7 @@ export function NotificationsBell() {
           ref={panel}
           role="region"
           aria-label="Notifications"
-          className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] origin-top-right animate-pop overflow-hidden rounded-3xl bg-white shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <p className="text-sm font-semibold">Notifications</p>

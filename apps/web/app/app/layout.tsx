@@ -1,6 +1,7 @@
 'use client';
 
 import type { MeResponse, WorkspaceDto } from '@workhub/shared';
+import { LogOut, Menu, Search } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CommandPalette } from '@/components/shell/command-palette';
@@ -8,7 +9,7 @@ import { FeedbackButton } from '@/components/shell/feedback-button';
 import { InstallButton } from '@/components/shell/service-worker';
 import { FirstWorkspace } from '@/components/shell/first-workspace';
 import { NotificationsBell } from '@/components/shell/notifications-bell';
-import { Sidebar } from '@/components/shell/sidebar';
+import { Logo, Sidebar } from '@/components/shell/sidebar';
 import { TimerChip } from '@/components/shell/timer-chip';
 import { VerifyBanner } from '@/components/shell/verify-banner';
 import { btn, roleLabel } from '@/components/ui';
@@ -16,6 +17,11 @@ import Link from 'next/link';
 import { api, ApiError } from '@/lib/api';
 import { InboxProvider } from '@/lib/inbox';
 import { readStoredWorkspace, storeWorkspace, WorkspaceContext } from '@/lib/workspace';
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')).toUpperCase() || '?';
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -82,9 +88,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!me) {
     return (
-      <p role="status" className="p-8 text-sm text-gray-500">
-        {unreachable ? 'WorkHub is starting up. This can take up to a minute; it will open by itself.' : 'Loading your workspace…'}
-      </p>
+      <div role="status" className="grid min-h-full place-items-center p-8">
+        <div className="flex animate-fade flex-col items-center gap-4 text-center">
+          <span className="animate-pulse">
+            <Logo size={48} />
+          </span>
+          <p className="max-w-xs text-sm text-gray-500">
+            {unreachable ? 'WorkHub is starting up. This can take up to a minute; it will open by itself.' : 'Loading your workspace…'}
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -104,34 +117,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <WorkspaceContext.Provider value={context}>
       <InboxProvider key={workspace.id}>
         <div className="flex min-h-full">
-          {/* Desktop sidebar */}
-          <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:block print:hidden">
-            <div className="sticky top-0 h-screen overflow-y-auto">
-              <Sidebar />
+          {/* Desktop sidebar: a white panel floating on the canvas */}
+          <aside className="hidden w-64 shrink-0 lg:block print:hidden">
+            <div className="sticky top-0 h-screen p-3 pr-0">
+              <div className="h-full overflow-y-auto rounded-3xl bg-white shadow-sm">
+                <Sidebar />
+              </div>
             </div>
           </aside>
 
           {/* Mobile drawer */}
           {menuOpen && (
             <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-              <div className="absolute inset-0 bg-gray-900/30" onClick={() => setMenuOpen(false)} />
-              <aside className="relative h-full w-64 overflow-y-auto bg-white shadow-xl">
+              <div className="absolute inset-0 animate-fade bg-ink/30 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+              <aside className="relative m-2 h-[calc(100%-1rem)] w-64 animate-[wh-rise_0.35s_var(--ease-out-soft)_both] overflow-y-auto rounded-3xl bg-white shadow-lg">
                 <Sidebar onNavigate={() => setMenuOpen(false)} />
               </aside>
             </div>
           )}
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="sticky top-0 z-20 border-b border-gray-200 bg-white print:hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 lg:px-8">
-                <button
-                  onClick={() => setMenuOpen(true)}
-                  aria-label="Open menu"
-                  className="grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden"
-                >
-                  <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
+            <header className="sticky top-0 z-20 bg-canvas/80 backdrop-blur-md print:hidden">
+              <div className="flex items-center gap-2 px-4 py-3 lg:px-8">
+                <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className={`${btn.icon} bg-white shadow-sm lg:hidden`}>
+                  <Menu aria-hidden="true" size={18} strokeWidth={1.75} />
                 </button>
 
                 {me.workspaces.length > 1 ? (
@@ -145,7 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         router.push('/app');
                       }
                     }}
-                    className="max-w-[45vw] truncate rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-medium"
+                    className="max-w-[45vw] cursor-pointer truncate rounded-full border-0 bg-white py-2 pl-4 pr-8 text-sm font-medium shadow-sm"
                   >
                     {me.workspaces.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -154,25 +163,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     ))}
                   </select>
                 ) : (
-                  <span className="truncate text-sm font-semibold">{workspace.name}</span>
+                  <span className="max-w-[40vw] shrink-0 truncate rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">{workspace.name}</span>
                 )}
 
                 <button
                   onClick={() => setSearchOpen(true)}
-                  className="ml-auto hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 sm:flex"
+                  className="ml-auto hidden w-40 items-center gap-2 rounded-full bg-white xl:w-64 py-2 pl-3.5 pr-2 text-sm text-gray-400 shadow-sm transition hover:text-gray-600 hover:shadow-md sm:flex"
                 >
-                  Search
-                  <kbd className="rounded border border-gray-200 bg-gray-50 px-1.5 text-[11px] text-gray-500">Ctrl K</kbd>
+                  <Search aria-hidden="true" size={16} strokeWidth={1.75} />
+                  <span className="flex-1 text-left">Search</span>
+                  <kbd className="rounded-full bg-gray-100 px-2 py-0.5 font-sans text-[11px] text-gray-500">Ctrl K</kbd>
                 </button>
-                <button
-                  onClick={() => setSearchOpen(true)}
-                  aria-label="Search"
-                  className="ml-auto grid h-9 w-9 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 sm:hidden"
-                >
-                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="m20 20-3.5-3.5" />
-                  </svg>
+                <button onClick={() => setSearchOpen(true)} aria-label="Search" className={`${btn.icon} ml-auto bg-white shadow-sm sm:hidden`}>
+                  <Search aria-hidden="true" size={18} strokeWidth={1.75} />
                 </button>
 
                 <span className="hidden sm:inline">
@@ -182,11 +185,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <FeedbackButton />
                 <NotificationsBell key={workspace.id} />
 
-                <Link href="/app/account" title="Account and security" className="hidden rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 md:inline">
-                  {me.user.name} · {roleLabel(workspace.role)}
+                <Link
+                  href="/app/account"
+                  title="Account and security"
+                  className="flex items-center gap-2.5 rounded-full bg-white p-1 shadow-sm transition hover:shadow-md md:pr-4"
+                >
+                  <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-lime text-xs font-semibold text-ink">
+                    {initials(me.user.name)}
+                  </span>
+                  <span className="hidden text-left leading-tight md:block">
+                    <span className="block whitespace-nowrap text-sm font-medium">{me.user.name}</span>
+                    <span className="block text-[11px] text-gray-500">{roleLabel(workspace.role)}</span>
+                  </span>
+                  <span className="sr-only md:hidden">Account</span>
                 </Link>
-                <button onClick={signOut} className="whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 sm:px-3">
-                  Sign out
+                <button onClick={signOut} aria-label="Sign out" title="Sign out" className={`${btn.icon} bg-white shadow-sm`}>
+                  <LogOut aria-hidden="true" size={17} strokeWidth={1.75} />
                 </button>
               </div>
             </header>
@@ -194,10 +208,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {!me.user.emailVerified && <VerifyBanner email={me.user.email} />}
 
             {/* The inbox uses the whole width and height for its panes. */}
-            <main key={workspace.id} className={pathname.startsWith('/app/inbox') ? 'w-full flex-1 px-0 py-0 sm:px-4 sm:py-4 lg:px-6' : 'w-full max-w-5xl flex-1 px-4 py-8 lg:px-8'}>
+            <main key={workspace.id} className={pathname.startsWith('/app/inbox') ? 'w-full flex-1 px-0 py-0 sm:px-4 sm:py-4 lg:px-6' : 'w-full max-w-6xl flex-1 px-4 pb-12 pt-6 lg:px-8'}>
               {/* A workspace that requires two-factor sign-in waits until it's on (the API refuses too). */}
               {workspace.requireTwoFactor && !me.user.twoFactorEnabled && !pathname.startsWith('/app/account') ? (
-                <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+                <div className="mx-auto max-w-md rounded-3xl bg-white p-6 text-center shadow-sm">
                   <h1 className="text-lg font-semibold">Turn on two-factor sign-in</h1>
                   <p className="mt-2 text-sm text-gray-600">{workspace.name} asks everyone to sign in with a code from an authenticator app as well as their password. It takes a minute.</p>
                   <Link href="/app/account" className={`${btn.primary} mt-4`}>
@@ -205,7 +219,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </div>
               ) : (
-                children
+                // Keyed by section (CRM, Projects…), so its blocks rise in when you arrive, but not
+                // again on every tab inside it.
+                <div key={pathname.split('/')[2] ?? 'home'} className="page-enter contents">
+                  {children}
+                </div>
               )}
             </main>
           </div>

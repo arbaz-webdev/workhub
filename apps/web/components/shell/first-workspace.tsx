@@ -29,7 +29,7 @@ export function FirstWorkspace({ name, onCreated }: { name: string; onCreated: (
 
   return (
     <main className="flex min-h-full items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-sm">
         <h1 className="text-xl font-semibold">Welcome, {name.split(' ')[0]}</h1>
         <p className="mt-1 text-sm text-gray-500">
           Name your company&apos;s workspace. If a colleague invited you, open the link from their email instead.

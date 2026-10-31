@@ -95,7 +95,7 @@ export function TaskCard({ task, labels, people, onOpen, draggable }: Props) {
         if (e.key === 'Enter') onOpen(task.id);
         else listeners?.onKeyDown?.(e);
       }}
-      className={`cursor-pointer select-none rounded-xl border border-gray-200 bg-white p-3 shadow-sm outline-none hover:border-gray-300 focus-visible:ring-2 focus-visible:ring-brand-500 ${
+      className={`cursor-pointer select-none rounded-2xl bg-white p-3.5 shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ink ${
         isDragging ? 'opacity-40' : ''
       }`}
     >

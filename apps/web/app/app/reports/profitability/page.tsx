@@ -4,7 +4,7 @@ import { hasRole, type ProfitabilityDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { amount, downloadCsv, pct, ReportTabs, Stat } from '@/components/reports/shared';
-import { Alert, PageHeader, btn, input } from '@/components/ui';
+import { Alert, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { localToday } from '@/lib/time';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -80,7 +80,7 @@ export default function ProfitabilityPage() {
         </div>
       )}
       {!data ? (
-        !error && <p className="text-sm text-gray-500">Loading…</p>
+        !error && <Loading />
       ) : (
         <div className="space-y-6">
           {(data.missingRates.length > 0 || data.peopleWithoutCost.length > 0) && (
@@ -111,22 +111,22 @@ export default function ProfitabilityPage() {
             <Stat label="Margin" value={pct(data.total.margin)} hint={data.total.billableHours ? `${data.total.billableHours} h billable` : undefined} />
           </div>
 
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-1 text-sm font-semibold">By month</h2>
+          <section className="rounded-3xl bg-white p-5 shadow-sm">
+            <h2 className="mb-1 text-lg font-normal tracking-tight">By month</h2>
             <p className="mb-4 flex gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-brand-500" /> Revenue
+                <span className="h-2.5 w-2.5 rounded-full bg-lime" /> Revenue
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-rose-300" /> Cost
+                <span className="h-2.5 w-2.5 rounded-full bg-ink" /> Cost
               </span>
             </p>
             <div className="flex h-40 items-end gap-2 overflow-x-auto" role="img" aria-label="Revenue and cost by month">
               {data.total.byMonth.map((m) => (
                 <div key={m.month} className="flex min-w-12 flex-1 flex-col items-center gap-1">
                   <div className="flex h-32 w-full items-end justify-center gap-1" title={`${monthLabel(m.month)}: revenue ${amount(m.revenue, data.currency)}, cost ${amount(m.cost, data.currency)}`}>
-                    <div className="w-1/3 rounded-t bg-brand-500" style={{ height: `${(m.revenue / max) * 100}%` }} />
-                    <div className="w-1/3 rounded-t bg-rose-300" style={{ height: `${(m.cost / max) * 100}%` }} />
+                    <div className="w-1/3 origin-bottom animate-grow-y rounded-xl bg-lime" style={{ height: `${(m.revenue / max) * 100}%` }} />
+                    <div className="w-1/3 origin-bottom animate-grow-y rounded-xl bg-ink" style={{ height: `${(m.cost / max) * 100}%` }} />
                   </div>
                   <span className="text-[11px] text-gray-500">{monthLabel(m.month)}</span>
                 </div>
@@ -134,7 +134,7 @@ export default function ProfitabilityPage() {
             </div>
           </section>
 
-          <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <section className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <table className="w-full min-w-[640px] text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>

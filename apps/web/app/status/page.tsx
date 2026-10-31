@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function StatusPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="text-3xl font-bold tracking-tight">WorkHub status</h1>
+      <main className="mx-auto max-w-3xl animate-rise px-4 py-12">
+        <h1 className="text-4xl font-light tracking-tight">WorkHub status</h1>
         <StatusBoard />
       </main>
       <SiteFooter />

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StatusIncidents } from '@/components/settings/status-incidents';
 import { pkr } from '@/components/settings/tabs';
 import { TestEmail } from '@/components/settings/test-email';
-import { Alert, PageHeader, btn, input } from '@/components/ui';
+import { Alert, PageHeader, btn, input, Loading } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 
 /** WorkHub staff only: bank transfers to confirm against the bank statement, and the status page. */
@@ -48,12 +48,12 @@ export default function PlatformPage() {
       <div className="space-y-4" aria-live="polite">
         {result && <Alert kind={result.kind}>{result.text}</Alert>}
         {!list ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <Loading />
         ) : list.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500">Nothing waiting.</p>
+          <p className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-10 text-center text-sm text-gray-500">Nothing waiting.</p>
         ) : (
           list.map((t) => (
-            <section key={t.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section key={t.id} className="rounded-3xl bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-semibold">
                   {t.workspaceName} <span className="font-normal text-gray-500">· {t.number}</span>

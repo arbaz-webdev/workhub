@@ -89,7 +89,7 @@ export function SignInForm({ initialError, next: rawNext, email, twoFactor }: { 
               maxLength={useRecovery ? 11 : 7}
               placeholder={useRecovery ? 'xxxxx-xxxxx' : '123 456'}
               aria-invalid={fields.code ? true : undefined}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-center font-mono text-lg tracking-widest outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2 text-center font-mono text-lg tracking-widest outline-none focus:border-ink focus:ring-4 focus:ring-lime/40"
             />
             {fields.code && <span className="mt-1 block text-xs text-red-600">{fields.code}</span>}
           </label>

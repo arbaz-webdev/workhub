@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { DocEditor, DocPaper, DocStatus, KIND_LABEL } from '@/components/crm/client-docs';
 import { errorText, ManagersOnly } from '@/components/crm/shared';
-import { Alert, btn } from '@/components/ui';
+import { Alert, btn, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 /** The next steps offered for each status (the server checks them too). */
@@ -66,7 +66,7 @@ function ClientDoc() {
       setDoc(await api<ClientDocumentDto>(`/client-docs/${id}/status`, { method: 'POST', body: { status: to } }));
     });
 
-  if (!doc) return error ? <Alert>{error}</Alert> : <p className="text-sm text-gray-500">Loading…</p>;
+  if (!doc) return error ? <Alert>{error}</Alert> : <Loading />;
   const label = KIND_LABEL[doc.kind];
 
   if (editing) {

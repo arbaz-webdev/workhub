@@ -3,7 +3,7 @@
 import { leaveRequestSchema, type HalfDay, type MyLeaveDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { LEAVE_COLOR, LeaveTabs, rangeLabel, StatusPill } from '@/components/leave/tabs';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspaceApi } from '@/lib/workspace';
 
@@ -42,12 +42,12 @@ export default function MyLeavePage() {
         {notice && <Alert kind="success">{notice}</Alert>}
       </div>
       {!data ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : (
         <div className="space-y-6">
           <section aria-label="Balances" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.balances.map((b) => (
-              <div key={b.leaveType.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div key={b.leaveType.id} className="rounded-3xl bg-white p-4 shadow-sm">
                 <p className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <span className={`h-2.5 w-2.5 rounded-full ${LEAVE_COLOR[b.leaveType.color]?.split(' ')[0]}`} aria-hidden="true" />
                   {b.leaveType.name}

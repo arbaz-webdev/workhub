@@ -4,7 +4,7 @@ import { announcementSchema, hasRole, type AnnouncementDto, type AnnouncementRec
 import { useCallback, useEffect, useState } from 'react';
 import { Avatar } from '@/components/inbox/bits';
 import { Modal } from '@/components/inbox/dialogs';
-import { Alert, btn, input, PageHeader, timeAgo } from '@/components/ui';
+import { Alert, btn, input, PageHeader, timeAgo, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useInbox, useInboxEvents } from '@/lib/inbox';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -80,9 +80,9 @@ export default function AnnouncementsPage() {
         </div>
       )}
       {!list ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : list.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-12 text-center">
           <p className="font-medium text-gray-800">No announcements yet</p>
           <p className="mt-1 text-sm text-gray-500">{canPost ? 'Post holiday notices, policy changes and news here. You’ll see who has read each one.' : 'When your managers post news, it shows up here.'}</p>
         </div>
@@ -231,7 +231,7 @@ function Receipts({ announcement, onClose }: { announcement: AnnouncementDto; on
           <p className="truncate text-sm text-gray-500">{announcement.title}</p>
         </div>
         {error && <Alert>{error}</Alert>}
-        {!data && !error && <p className="text-sm text-gray-500">Loading…</p>}
+        {!data && !error && <Loading />}
         {data && (
           <>
             <section>

@@ -4,7 +4,7 @@ import { CURRENCIES, INDUSTRIES, INDUSTRY_LABELS, onboardingSchema, WEEKDAYS, ty
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, btn, input } from '@/components/ui';
+import { Alert, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -92,7 +92,7 @@ export default function OnboardingPage() {
     }
   }
 
-  if (!status) return error ? <Alert>{error}</Alert> : <p className="text-sm text-gray-500">Loading…</p>;
+  if (!status) return error ? <Alert>{error}</Alert> : <Loading />;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -108,7 +108,7 @@ export default function OnboardingPage() {
           </li>
         ))}
       </ol>
-      <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
         {error && (
           <div className="mb-4">
             <Alert>{error}</Alert>

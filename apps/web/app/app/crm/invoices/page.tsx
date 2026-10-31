@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { DocStatus, docMoney } from '@/components/crm/client-docs';
 import { CrmTabs, ManagersOnly } from '@/components/crm/shared';
-import { Alert, PageHeader, btn } from '@/components/ui';
+import { Alert, PageHeader, btn, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 const date = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—');
@@ -54,9 +54,9 @@ function ClientDocs() {
       />
       <CrmTabs />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex rounded-lg border border-gray-300 p-0.5 text-sm" role="radiogroup" aria-label="Show">
+        <div className="flex rounded-full bg-white p-1 text-sm shadow-sm" role="radiogroup" aria-label="Show">
           {(['invoice', 'quote'] as const).map((k) => (
-            <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`rounded-md px-3 py-1 font-medium ${kind === k ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
+            <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`rounded-full px-4 py-1.5 transition-colors duration-200 ${kind === k ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:text-ink'}`}>
               {k === 'invoice' ? 'Invoices' : 'Quotes'}
             </button>
           ))}
@@ -69,9 +69,9 @@ function ClientDocs() {
       </div>
       {error && <Alert>{error}</Alert>}
       {!docs ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : docs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-10 text-center text-sm text-gray-600">
           {kind === 'invoice' ? (
             <>
               No invoices yet. <Link href="/app/crm/invoices/hours" className="text-brand-700 underline">Bill a client’s approved hours</Link>, or write one by hand.
@@ -81,7 +81,7 @@ function ClientDocs() {
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+        <div className="overflow-x-auto rounded-3xl bg-white">
           <table className="w-full min-w-[40rem] text-sm">
             <thead className="border-b border-gray-200 text-left text-xs text-gray-500">
               <tr>

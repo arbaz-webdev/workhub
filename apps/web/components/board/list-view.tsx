@@ -112,7 +112,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
     }
   }
 
-  const select = 'rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm';
+  const select = 'rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-sm';
 
   return (
     <div className={`pr-4 lg:pr-8 ${selected.size > 0 ? 'pb-28' : ''}`}>
@@ -179,7 +179,7 @@ export function ListView({ board, tasks, onOpen, onError }: Props) {
 
       {board.canEdit && selected.size > 0 && <BulkBar board={board} count={selected.size} busy={busy} onAction={bulk} onClear={() => setSelected(new Set())} />}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[760px] text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
             <tr>
@@ -309,7 +309,7 @@ function BulkBar({
   onClear: () => void;
 }) {
   const [due, setDue] = useState('');
-  const select = 'rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm disabled:opacity-60';
+  const select = 'rounded-xl border border-gray-200 bg-white px-2 py-1 text-sm disabled:opacity-60';
   // Each menu fires once on choice, then resets to its placeholder.
   const pick = (e: React.ChangeEvent<HTMLSelectElement>, make: (v: string) => BulkTasksInput['action']) => {
     const v = e.target.value;

@@ -121,7 +121,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-gray-900/20" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-40 flex animate-fade justify-end bg-ink/20 backdrop-blur-[2px]" onMouseDown={onClose}>
       <div
         ref={panel}
         tabIndex={-1}
@@ -129,7 +129,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
         aria-modal="true"
         aria-label={task?.title ?? 'Task'}
         onMouseDown={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-2xl outline-none"
+        className="flex h-full w-full max-w-xl animate-[wh-slide-in_0.4s_var(--ease-out-soft)_both] flex-col overflow-y-auto bg-white shadow-lg outline-none sm:m-2 sm:h-[calc(100%-1rem)] sm:rounded-3xl"
       >
         <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-100 bg-white px-5 py-3">
           {task && (
@@ -171,7 +171,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
               value={task.title}
               disabled={!canEdit}
               label="Title"
-              className="w-full rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-gray-200 focus:border-brand-500 focus:outline-none"
+              className="w-full rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-gray-200 focus:border-ink focus:outline-none"
               onSave={(title) => title.trim() && title !== task.title && update({ title: title.trim() })}
             />
 
@@ -183,7 +183,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                   disabled={!canEdit}
                   onChange={(e) => move(e.target.value)}
                   aria-label="Column"
-                  className="rounded-lg border border-gray-300 bg-white px-2 py-1"
+                  className="rounded-xl border border-gray-200 bg-white px-2 py-1"
                 >
                   {board.columns.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -205,7 +205,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                   disabled={!canEdit}
                   onChange={(e) => update({ priority: e.target.value as Priority })}
                   aria-label="Priority"
-                  className="rounded-lg border border-gray-300 bg-white px-2 py-1"
+                  className="rounded-xl border border-gray-200 bg-white px-2 py-1"
                 >
                   {PRIORITIES.map((p) => (
                     <option key={p} value={p}>
@@ -224,7 +224,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                   disabled={!canEdit}
                   onChange={(e) => update({ startDate: e.target.value || null })}
                   aria-label="Start date"
-                  className="rounded-lg border border-gray-300 px-2 py-1"
+                  className="rounded-xl border border-gray-200 px-2 py-1"
                 />
               </dd>
 
@@ -237,7 +237,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                   disabled={!canEdit}
                   onChange={(e) => update({ dueDate: e.target.value || null })}
                   aria-label="Due date"
-                  className="rounded-lg border border-gray-300 px-2 py-1"
+                  className="rounded-xl border border-gray-200 px-2 py-1"
                 />
               </dd>
 
@@ -249,7 +249,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
                   disabled={!canEdit}
                   label="Estimate in hours"
                   inputMode="decimal"
-                  className="w-20 rounded-lg border border-gray-300 px-2 py-1"
+                  className="w-20 rounded-xl border border-gray-200 px-2 py-1"
                   onSave={(v) => {
                     const n = v.trim() === '' ? null : Number(v);
                     if (n === null || (Number.isFinite(n) && n >= 0)) return update({ estimateHours: n });
@@ -522,8 +522,8 @@ function Labels({
       {!disabled &&
         (creating ? (
           <form onSubmit={create} className="flex items-center gap-1.5">
-            <input name="name" autoFocus placeholder="Label" aria-label="New label name" className="w-24 rounded-lg border border-gray-300 px-2 py-0.5 text-xs" />
-            <select value={color} onChange={(e) => setColor(e.target.value as LabelColor)} aria-label="Label colour" className="rounded-lg border border-gray-300 px-1 py-0.5 text-xs">
+            <input name="name" autoFocus placeholder="Label" aria-label="New label name" className="w-24 rounded-xl border border-gray-200 px-2 py-0.5 text-xs" />
+            <select value={color} onChange={(e) => setColor(e.target.value as LabelColor)} aria-label="Label colour" className="rounded-xl border border-gray-200 px-1 py-0.5 text-xs">
               {LABEL_COLORS.map((c) => (
                 <option key={c}>{c}</option>
               ))}

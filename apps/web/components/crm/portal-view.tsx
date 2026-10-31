@@ -18,18 +18,18 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
           Projects
         </h2>
         {portal.projects.length === 0 ? (
-          <p className="mt-2 rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-8 text-center text-sm text-gray-600">{portal.workspaceName} hasn’t shared any projects here yet.</p>
+          <p className="mt-2 rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-8 text-center text-sm text-gray-600">{portal.workspaceName} hasn’t shared any projects here yet.</p>
         ) : (
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             {portal.projects.map((p) => (
-              <article key={p.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <article key={p.id} className="rounded-3xl bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{p.name}</h3>
                   <span className="text-xs text-gray-500">{STATUS[p.status]}</span>
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-valuenow={p.tasks.percent} aria-valuemin={0} aria-valuemax={100} aria-label={`${p.name} progress`}>
-                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${p.tasks.percent}%` }} />
+                    <div className="h-full origin-left animate-grow-x rounded-full bg-lime" style={{ width: `${p.tasks.percent}%` }} />
                   </div>
                   <span className="text-sm font-medium tabular-nums">{p.tasks.percent}%</span>
                 </div>
@@ -80,11 +80,11 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
           Hours worked
         </h2>
         <p className="text-xs text-gray-500">Approved hours on the projects above, by month.</p>
-        <div className="mt-3 flex h-40 items-end gap-3 rounded-2xl border border-gray-200 bg-white p-4" role="img" aria-label={portal.hoursByMonth.map((m) => `${monthName(m.month)}: ${m.hours} hours`).join(', ')}>
+        <div className="mt-3 flex h-40 items-end gap-3 rounded-3xl bg-white p-4" role="img" aria-label={portal.hoursByMonth.map((m) => `${monthName(m.month)}: ${m.hours} hours`).join(', ')}>
           {portal.hoursByMonth.map((m) => (
             <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
               <span className="text-xs tabular-nums text-gray-600">{m.hours}</span>
-              <div className="w-full max-w-12 rounded-t bg-brand-500" style={{ height: `${(m.hours / most) * 70}%`, minHeight: m.hours > 0 ? 2 : 0 }} />
+              <div className="w-full max-w-12 origin-bottom animate-grow-y rounded-t-xl bg-lime" style={{ height: `${(m.hours / most) * 70}%`, minHeight: m.hours > 0 ? 2 : 0 }} />
               <span className="text-xs text-gray-500">{monthName(m.month)}</span>
             </div>
           ))}
@@ -98,7 +98,7 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
         {portal.documents.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">None yet.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
+          <ul className="mt-3 divide-y divide-gray-100 rounded-3xl bg-white">
             {portal.documents.map((d) => (
               <li key={d.id}>
                 <Link href={docHref(d.id)} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50">

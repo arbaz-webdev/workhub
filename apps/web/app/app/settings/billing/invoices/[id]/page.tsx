@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { pkr } from '@/components/settings/tabs';
-import { Alert, btn, input } from '@/components/ui';
+import { Alert, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspaceApi } from '@/lib/workspace';
 
@@ -43,7 +43,7 @@ export default function InvoicePage() {
     }
   }
 
-  if (!invoice) return error ? <Alert>{error}</Alert> : <p className="text-sm text-gray-500">Loading…</p>;
+  if (!invoice) return error ? <Alert>{error}</Alert> : <Loading />;
   const open = invoice.status === 'open';
 
   return (
@@ -64,11 +64,11 @@ export default function InvoicePage() {
         {invoice.status === 'void' && <Alert>This invoice was replaced by a newer one.</Alert>}
       </div>
 
-      <article className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm print:mt-0 print:border-0 print:p-0 print:shadow-none sm:p-8" aria-label={`Invoice ${invoice.number}`}>
+      <article className="mt-4 rounded-3xl bg-white p-6 shadow-sm print:mt-0 print:border-0 print:p-0 print:shadow-none sm:p-8" aria-label={`Invoice ${invoice.number}`}>
         <header className="flex flex-wrap justify-between gap-6">
           <div>
             <p className="flex items-center gap-2 text-lg font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">W</span>
+              <span className="grid h-8 w-8 place-items-center rounded-[30%] bg-ink text-sm font-semibold text-lime">W</span>
               {invoice.seller.name}
             </p>
             <p className="mt-1 text-sm text-gray-600">
@@ -180,7 +180,7 @@ export default function InvoicePage() {
       {open && sub && (
         <div className="mt-6 grid gap-4 print:hidden md:grid-cols-2">
           {sub.payments.online && (
-            <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="font-semibold">Pay online</h2>
               <p className="mt-1 text-sm text-gray-600">Card, JazzCash or Easypaisa.{sub.payments.onlineLabel && ` ${sub.payments.onlineLabel}.`}</p>
               <button type="button" className={`${btn.primary} mt-4`} disabled={paying} onClick={() => void payOnline()}>
@@ -222,7 +222,7 @@ function BankTransfer({ invoice, bank, onSent }: { invoice: InvoiceDto; bank: No
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <section className="rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="font-semibold">Pay by bank transfer (IBFT)</h2>
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
         <dt className="text-gray-500">Bank</dt>

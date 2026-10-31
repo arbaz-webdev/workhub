@@ -181,7 +181,7 @@ function ProjectBoard() {
           </div>
         ) : null}
         <div className="ml-auto flex items-center gap-3">
-          <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 text-sm" role="group" aria-label="View">
+          <div className="inline-flex rounded-xl border border-gray-200 bg-white p-0.5 text-sm" role="group" aria-label="View">
             {VIEWS.map((v) => (
               <button
                 key={v}

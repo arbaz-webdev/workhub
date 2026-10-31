@@ -12,7 +12,7 @@ const TABS = [
 export function SettingsTabs() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Settings" className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200">
+    <nav aria-label="Settings" className="mb-8 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-white p-1 shadow-sm [scrollbar-width:none]">
       {TABS.map((t) => {
         const active = t.href === '/app/settings' ? pathname === t.href : pathname.startsWith(t.href);
         return (
@@ -20,7 +20,7 @@ export function SettingsTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? 'page' : undefined}
-            className={`-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium ${active ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors duration-200 ${active ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-ink'}`}
           >
             {t.label}
           </Link>

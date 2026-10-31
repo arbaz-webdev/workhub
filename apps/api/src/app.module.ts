@@ -15,6 +15,7 @@ import { DealsController } from './crm/deals.controller';
 import { FollowUpRemindersService } from './crm/reminders.service';
 import { CrmImportController } from './crm/import.controller';
 import { DbModule } from './db/db.module';
+import { EmailController } from './email/email.controller';
 import { EmailModule } from './email/email.module';
 import { FeedbackController } from './feedback/feedback.controller';
 import { AnnouncementsController } from './inbox/announcements.controller';
@@ -95,6 +96,7 @@ class HealthController {
     PublicApiV1WriteController,
     OpenApiController,
     WebhooksController,
+    EmailController,
   ],
   providers: [WorkspaceGuard, ApiKeyGuard, RealtimeService, StorageService, SelfieCleanupService, FollowUpRemindersService, StatusService, AnalyticsService, WebhookService, { provide: APP_INTERCEPTOR, useClass: TrackInterceptor }],
 })

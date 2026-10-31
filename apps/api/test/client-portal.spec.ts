@@ -53,7 +53,7 @@ async function setup() {
   const sent = await doc(a.id, 'INV-0001', 'sent');
   const draft = await doc(a.id, 'INV-0002', 'draft');
   const betaDoc = await doc(b.id, 'INV-0003', 'sent');
-  return { owner, ws, a: a.id as string, b: b.id as string, a1, a2, b1, sent, draft, betaDoc };
+  return { owner, ws, a: a.id as string, b: b.id as string, a1, a2, b1, sent, draft, betaDoc, thisMonday };
 }
 
 describe('Client portal', () => {
@@ -89,7 +89,8 @@ describe('Client portal', () => {
       upcoming: [expect.objectContaining({ title: 'Build pages' })],
     });
     expect(portal.hoursByMonth).toHaveLength(6);
-    expect(portal.hoursByMonth.at(-1)!.hours).toBe(2.5); // not the hidden project's 10 hours
+    // This week's Monday can fall in last month, early in a month.
+    expect(portal.hoursByMonth.find((m) => m.month === s.thisMonday.slice(0, 7))!.hours).toBe(2.5); // not the hidden project's 10 hours
 
     // Sent documents only, and only Alpha's; asking for Beta changes nothing.
     expect(portal.documents.map((d) => d.number)).toEqual(['INV-0001']);

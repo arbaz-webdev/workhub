@@ -67,7 +67,7 @@ Both work locally with no accounts:
 
 To switch them on (see `apps/api/.env.example`):
 
-1. **Resend** (recommended email provider): create an account at resend.com, verify your sending domain (SPF and DKIM DNS records), create an API key, then set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM` (an address on the verified domain).
+1. **Resend** (recommended email provider): create an account at resend.com, verify your sending domain (SPF and DKIM DNS records), create an API key, then set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM` (an address on the verified domain), and optionally `EMAIL_REPLY_TO`. Step by step: [docs/EMAIL.md](docs/EMAIL.md). The API refuses to start with a missing key or a placeholder sender, retries once when Resend is busy, and platform admins can send a test email from `/app/platform`.
 2. **Google**: in Google Cloud Console → APIs & Services → Credentials, create an OAuth client ID of type *Web application* with the authorised redirect URI `http://localhost:3000/api/auth/google/callback` (plus your production URL later). Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 Security notes: verification and reset links are single-use, stored only as SHA-256 hashes, and expire (24 hours / 30 minutes). A password reset signs the user out everywhere. Google sign-in uses PKCE and a state cookie. If a Google user's email matches an existing account that never verified its email, that account's password and sessions are removed before linking, to block account pre-hijacking.

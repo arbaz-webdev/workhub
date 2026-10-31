@@ -114,8 +114,9 @@ deploys after CI passes.
   messages you, and post incidents from **/app/platform**.
 - **More than one API copy:** add a Render Key Value (Redis) instance and set `REDIS_URL` on the
   API, so rate limits are shared and live chat and board updates reach every copy.
-- **Real emails:** buy the domain and add it to Resend. Then set `EMAIL_TRANSPORT=resend`,
-  `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@yourdomain>`, and delete `ALLOW_CONSOLE_EMAIL`.
+- **Real emails:** buy the domain and add it to Resend, step by step in [EMAIL.md](EMAIL.md).
+  Then set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY` and `EMAIL_FROM=WorkHub <no-reply@mail.yourdomain>`,
+  delete `ALLOW_CONSOLE_EMAIL`, and use **Send me a test email** on `/app/platform`.
 - **Your own address:** point `staging.yourdomain.com` at the site in Render's **Custom domains**,
   and update `WEB_ORIGIN` and `APP_URL`.
 - **Feedback by email:** set `FEEDBACK_TO` to your address. Until then feedback is saved in the

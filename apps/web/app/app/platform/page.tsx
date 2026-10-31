@@ -4,6 +4,7 @@ import { PLAN_INFO, type TransferReviewDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusIncidents } from '@/components/settings/status-incidents';
 import { pkr } from '@/components/settings/tabs';
+import { TestEmail } from '@/components/settings/test-email';
 import { Alert, PageHeader, btn, input } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 
@@ -87,6 +88,7 @@ export default function PlatformPage() {
         )}
       </div>
       <StatusIncidents />
+      <TestEmail />
     </>
   );
 }

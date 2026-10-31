@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function HelpPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold tracking-tight">Help centre</h1>
+      <main className="mx-auto max-w-4xl animate-rise px-4 py-12">
+        <h1 className="text-4xl font-light tracking-tight">Help centre</h1>
         <p className="mt-2 text-gray-600">Short guides to everything in WorkHub. Can’t find it? Message us on WhatsApp.</p>
         <HelpSearch />
       </main>

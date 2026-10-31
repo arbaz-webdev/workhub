@@ -74,7 +74,7 @@ export default function ProjectsPage() {
                 </div>
                 <p className="mt-0.5 text-sm text-gray-500">{p.client?.name ?? 'No client'}</p>
                 <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
-                  <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+                  <div className="h-full origin-left animate-grow-x rounded-full bg-lime" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
                   {p.doneTasks} of {total} tasks done

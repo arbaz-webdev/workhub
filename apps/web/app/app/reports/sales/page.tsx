@@ -107,7 +107,7 @@ export default function SalesReportPage() {
                         </span>
                       </div>
                       <div className="mt-1 h-2 rounded-full bg-gray-100">
-                        <div className="h-full rounded-full bg-brand-500" style={{ width: `${(s.count / maxStage) * 100}%` }} />
+                        <div className="h-full origin-left animate-grow-x rounded-full bg-lime" style={{ width: `${(s.count / maxStage) * 100}%` }} />
                       </div>
                     </li>
                   ))}

@@ -22,16 +22,16 @@ export default async function HelpArticlePage({ params }: Props) {
   const related = HELP_ARTICLES.filter((a) => a.category === article.category && a.slug !== article.slug);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-12">
+      <main className="mx-4 my-8 animate-rise rounded-[2rem] bg-white px-6 py-10 shadow-sm sm:mx-auto sm:max-w-3xl sm:px-12 sm:py-14">
         <nav aria-label="Breadcrumb" className="text-sm text-gray-500">
           <Link href="/help" className="hover:text-gray-800">
             Help centre
           </Link>{' '}
           / {article.category}
         </nav>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight">{article.title}</h1>
+        <h1 className="mt-3 text-4xl font-light tracking-tight">{article.title}</h1>
         <p className="mt-2 text-lg text-gray-600">{article.summary}</p>
         <article className="mt-8">
           <ArticleBody body={article.body} />

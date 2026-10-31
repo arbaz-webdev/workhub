@@ -17,9 +17,9 @@ export function PriceCalculator() {
   return (
     <div>
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <div className="flex rounded-xl border border-gray-200 bg-white p-0.5 text-sm" role="radiogroup" aria-label="Billing">
+        <div className="flex rounded-full bg-white p-1 text-sm shadow-sm" role="radiogroup" aria-label="Billing">
           {(['monthly', 'annual'] as const).map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={cycle === c} onClick={() => setCycle(c)} className={`rounded-md px-3 py-1.5 font-medium ${cycle === c ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
+            <button key={c} type="button" role="radio" aria-checked={cycle === c} onClick={() => setCycle(c)} className={`rounded-full px-4 py-1.5 transition-colors duration-200 ${cycle === c ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:text-ink'}`}>
               {c === 'monthly' ? 'Monthly' : 'Yearly · 2 months free'}
             </button>
           ))}
@@ -53,14 +53,14 @@ export function PriceCalculator() {
             <div key={key} className={`flex flex-col rounded-2xl border bg-white p-6 ${key === 'business' ? 'border-brand-500 ring-2 ring-brand-100' : 'border-gray-200'}`}>
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{plan.name}</h3>
-                {key === 'business' && <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">Most popular</span>}
+                {key === 'business' && <span className="rounded-full bg-lime px-3 py-1 text-xs font-medium text-ink">Most popular</span>}
               </div>
               <p className="mt-4">
                 {plan.pricePerUser === 0 ? (
-                  <span className="text-3xl font-bold">Free</span>
+                  <span className="text-4xl font-light tracking-tight">Free</span>
                 ) : (
                   <>
-                    <span className="text-3xl font-bold tabular-nums">{pkr(perPerson)}</span>
+                    <span className="text-4xl font-light tracking-tight tabular-nums">{pkr(perPerson)}</span>
                     {off > 0 && <span className="ml-2 text-sm text-gray-400 line-through tabular-nums">{pkr(listPerPerson)}</span>}
                   </>
                 )}

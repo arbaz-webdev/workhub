@@ -1,7 +1,7 @@
 // WorkHub's service worker: lets the installed app open without a connection, so people
 // can still check in (the attendance page queues it and syncs later). It never touches
 // /api: data always comes from the server, and nothing private is cached here.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC = `workhub-static-${VERSION}`;
 const PAGES = `workhub-pages-${VERSION}`;
 const OFFLINE = '/offline.html';

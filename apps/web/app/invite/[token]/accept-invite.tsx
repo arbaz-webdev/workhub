@@ -69,7 +69,7 @@ export function AcceptInvite({ token }: { token: string }) {
         <div className="space-y-3">
           <Link
             href={`/sign-up?${qs}`}
-            className="block w-full rounded-lg bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-700"
+            className="block w-full rounded-lg bg-ink px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-black"
           >
             Create an account and join
           </Link>

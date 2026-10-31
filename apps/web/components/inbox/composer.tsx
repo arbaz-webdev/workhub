@@ -192,7 +192,7 @@ export function Composer({
       }}
     >
       {suggest && hits > 0 && (
-        <ul role="listbox" aria-label={suggest.kind === 'person' ? 'Mention someone' : 'Link a task'} className="absolute bottom-full left-0 z-20 mb-1 w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+        <ul role="listbox" aria-label={suggest.kind === 'person' ? 'Mention someone' : 'Link a task'} className="absolute bottom-full left-0 z-20 mb-2 w-full max-w-sm origin-bottom-left animate-pop overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg">
           {suggest.kind === 'person'
             ? personHits.map((p, i) => (
                 <li key={p.id} role="option" aria-selected={i === active}>
@@ -227,7 +227,7 @@ export function Composer({
         </ul>
       )}
 
-      <div className="rounded-xl border border-gray-300 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+      <div className="rounded-3xl border border-gray-200 bg-gray-50 transition focus-within:border-ink focus-within:bg-white focus-within:ring-4 focus-within:ring-lime/40">
         {files.length > 0 && (
           <ul className="flex flex-wrap gap-2 px-3 pt-2" aria-label="Files to send">
             {files.map((f, i) => (
@@ -257,13 +257,13 @@ export function Composer({
           maxLength={8000}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="block max-h-[200px] w-full resize-none bg-transparent px-3 py-2.5 text-sm outline-none"
+          className="block max-h-[200px] w-full resize-none bg-transparent px-4 py-3 text-sm outline-none"
         />
         <div className="flex items-center gap-1 px-2 pb-2">
           {allowFiles && (
             <>
               <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && (addFiles(e.target.files), (e.target.value = ''))} />
-              <button type="button" onClick={() => fileInput.current?.click()} aria-label="Attach files" title="Attach files" className="grid h-8 w-8 place-items-center rounded-lg text-gray-500 hover:bg-gray-100">
+              <button type="button" onClick={() => fileInput.current?.click()} aria-label="Attach files" title="Attach files" className="grid h-8 w-8 place-items-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-ink">
                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
                 </svg>
@@ -281,7 +281,7 @@ export function Composer({
               type="button"
               onClick={() => void submit()}
               disabled={sending || (!body.trim() && files.length === 0)}
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-40"
+              className="rounded-full bg-ink px-3 py-1.5 text-sm font-medium text-white transition hover:bg-black active:scale-[0.97] disabled:opacity-40"
             >
               {sending ? (initial ? 'Saving…' : 'Sending…') : initial ? 'Save' : 'Send'}
             </button>

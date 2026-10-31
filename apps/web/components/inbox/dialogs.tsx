@@ -97,7 +97,7 @@ export function NewChannelDialog({ people, meId, onClose, onCreated }: { people:
         {error && <Alert>{error}</Alert>}
         <label className="block text-sm">
           <span className="text-gray-700">Name</span>
-          <span className="mt-1 flex items-center rounded-xl border border-gray-200 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+          <span className="mt-1 flex items-center rounded-xl border border-gray-200 bg-white focus-within:border-ink focus-within:ring-4 focus-within:ring-lime/40">
             <span className="pl-3 text-gray-400">#</span>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. sales" maxLength={80} required autoFocus className="w-full bg-transparent px-1.5 py-2 text-sm outline-none" />
           </span>

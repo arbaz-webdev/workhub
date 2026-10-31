@@ -171,7 +171,7 @@ export function TaskPanel({ taskId, board, onClose, onLabelsChanged, version }: 
               value={task.title}
               disabled={!canEdit}
               label="Title"
-              className="w-full rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-gray-200 focus:border-brand-500 focus:outline-none"
+              className="w-full rounded-lg border border-transparent px-2 py-1 text-xl font-semibold hover:border-gray-200 focus:border-ink focus:outline-none"
               onSave={(title) => title.trim() && title !== task.title && update({ title: title.trim() })}
             />
 

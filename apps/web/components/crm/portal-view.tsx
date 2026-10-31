@@ -29,7 +29,7 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-valuenow={p.tasks.percent} aria-valuemin={0} aria-valuemax={100} aria-label={`${p.name} progress`}>
-                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${p.tasks.percent}%` }} />
+                    <div className="h-full origin-left animate-grow-x rounded-full bg-lime" style={{ width: `${p.tasks.percent}%` }} />
                   </div>
                   <span className="text-sm font-medium tabular-nums">{p.tasks.percent}%</span>
                 </div>
@@ -84,7 +84,7 @@ export function PortalView({ portal, docHref }: { portal: PortalDto; docHref: (i
           {portal.hoursByMonth.map((m) => (
             <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
               <span className="text-xs tabular-nums text-gray-600">{m.hours}</span>
-              <div className="w-full max-w-12 rounded-t bg-brand-500" style={{ height: `${(m.hours / most) * 70}%`, minHeight: m.hours > 0 ? 2 : 0 }} />
+              <div className="w-full max-w-12 origin-bottom animate-grow-y rounded-t-xl bg-lime" style={{ height: `${(m.hours / most) * 70}%`, minHeight: m.hours > 0 ? 2 : 0 }} />
               <span className="text-xs text-gray-500">{monthName(m.month)}</span>
             </div>
           ))}

@@ -15,15 +15,15 @@ export function LegalPage({ slug }: { slug: LegalDocument['slug'] }) {
   const doc = legalDocument(slug);
   const other = legalDocument(slug === 'terms' ? 'privacy' : 'terms');
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-12">
+      <main className="mx-4 my-8 animate-rise rounded-[2rem] bg-white px-6 py-10 shadow-sm sm:mx-auto sm:max-w-3xl sm:px-12 sm:py-14">
         {LEGAL_DRAFT && (
           <p role="note" className="mb-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <strong>Draft.</strong> This document hasn’t been reviewed by a lawyer yet and isn’t in effect. The final version will replace it.
           </p>
         )}
-        <h1 className="text-3xl font-bold tracking-tight">{doc.title}</h1>
+        <h1 className="text-4xl font-light tracking-tight">{doc.title}</h1>
         <p className="mt-2 text-lg text-gray-600">{doc.summary}</p>
         {doc.effectiveDate && <p className="mt-1 text-sm text-gray-500">In effect from {doc.effectiveDate}.</p>}
         <article className="mt-8">

@@ -6,7 +6,7 @@ import { issuesToFields } from '@/components/form';
 import { api, ApiError } from '@/lib/api';
 
 const inputClass =
-  'mt-1 block w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 border-gray-300 focus:border-brand-500 focus:ring-brand-100';
+  'mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none transition hover:border-gray-300 focus:border-ink focus:ring-4 focus:ring-lime/40';
 
 function Label({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
@@ -58,9 +58,9 @@ export function BetaForm() {
 
   if (done) {
     return (
-      <div role="status" className="rounded-2xl border border-brand-100 bg-brand-50 p-8 text-center">
-        <p className="text-lg font-semibold text-brand-700">You&apos;re on the list.</p>
-        <p className="mt-2 text-sm text-gray-600">
+      <div role="status" className="animate-pop rounded-3xl bg-lime p-10 text-center text-ink">
+        <p className="text-2xl font-light tracking-tight">You&apos;re on the list.</p>
+        <p className="mt-2 text-sm text-ink/75">
           We&apos;ve sent you a confirmation email. We&apos;ll invite you as soon as your workspace is ready.
         </p>
       </div>
@@ -68,7 +68,7 @@ export function BetaForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4 rounded-3xl bg-white p-6 shadow-sm sm:grid-cols-2">
+    <form onSubmit={onSubmit} noValidate className="grid gap-5 rounded-[2rem] bg-white p-6 shadow-sm sm:grid-cols-2 sm:p-8">
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2">
           {error}
@@ -119,7 +119,7 @@ export function BetaForm() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+          className="w-full rounded-full bg-ink px-4 py-3.5 text-sm font-medium text-white transition hover:bg-black active:scale-[0.99] disabled:opacity-60"
         >
           {pending ? 'Please wait…' : 'Join the free beta'}
         </button>

@@ -49,9 +49,9 @@ export const pct = (v: number | null) => (v === null ? '—' : `${v}%`);
 
 export function Stat({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: 'good' | 'bad' }) {
   return (
-    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className={`mt-0.5 truncate text-lg font-semibold ${tone === 'good' ? 'text-emerald-700' : tone === 'bad' ? 'text-red-600' : 'text-gray-900'}`} title={value}>
+    <div className="rounded-3xl bg-white p-5 shadow-sm">
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className={`mt-3 truncate text-2xl font-light tracking-tight ${tone === 'good' ? 'text-emerald-700' : tone === 'bad' ? 'text-red-600' : 'text-ink'}`} title={value}>
         {value}
       </p>
       {hint && <p className="truncate text-xs text-gray-500">{hint}</p>}
@@ -65,7 +65,7 @@ export function Meter({ value, label, warnAbove }: { value: number | null; label
   const color = warnAbove !== undefined && (value ?? 0) > warnAbove ? 'bg-amber-400' : 'bg-brand-500';
   return (
     <div className="h-2 w-full min-w-16 overflow-hidden rounded-full bg-gray-100" role="meter" aria-valuenow={value ?? 0} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-      <div className={`h-full ${color}`} style={{ width: `${v}%` }} />
+      <div className={`h-full origin-left animate-grow-x rounded-full ${color}`} style={{ width: `${v}%` }} />
     </div>
   );
 }

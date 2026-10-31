@@ -113,6 +113,15 @@
       transform: none;
     }
   }
+  @keyframes wh-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
   @keyframes wh-shimmer {
     from {
       background-position: 200% 0;
@@ -198,6 +207,20 @@ body {
   .hatch {
     background-color: var(--color-gray-100);
     background-image: repeating-linear-gradient(135deg, var(--color-gray-300) 0 1.5px, transparent 1.5px 7px);
+  }
+
+  /* Rises in as it scrolls into view (public pages). Browsers without scroll timelines just show it. */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: wh-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+
+  /* A slow drift, for the hero's floating cards. */
+  .float {
+    animation: wh-float 7s ease-in-out infinite;
   }
 
   /* Cards that respond to the pointer. */

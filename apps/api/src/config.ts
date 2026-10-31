@@ -77,6 +77,10 @@ export const config = {
   get emailFrom() {
     return process.env.EMAIL_FROM ?? 'WorkHub <no-reply@localhost>';
   },
+  /** Where replies to WorkHub's emails go; unset, replies go to the From address. */
+  get emailReplyTo(): string | undefined {
+    return process.env.EMAIL_REPLY_TO || undefined;
+  },
   get resendApiKey() {
     return required('RESEND_API_KEY');
   },

@@ -51,21 +51,21 @@ export function FeedbackButton() {
 
   return (
     <>
-      <button onClick={show} aria-label="Send feedback" className="grid h-9 place-items-center rounded-lg px-2 text-sm font-medium text-gray-600 hover:bg-gray-100 sm:px-3">
+      <button onClick={show} aria-label="Send feedback" className="grid h-10 place-items-center rounded-full bg-white px-3 text-sm font-medium text-gray-700 shadow-sm transition hover:text-ink hover:shadow-md sm:px-4">
         <span className="hidden sm:inline">Feedback</span>
         <svg aria-hidden="true" className="sm:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-gray-900/40 p-4" onMouseDown={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 grid animate-fade place-items-center bg-ink/30 p-4 backdrop-blur-sm" onMouseDown={() => setOpen(false)}>
           <form
             onSubmit={submit}
             onMouseDown={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Send feedback"
-            className="w-full max-w-md space-y-4 rounded-2xl bg-white p-5 shadow-xl"
+            className="w-full max-w-md animate-pop space-y-4 rounded-3xl bg-white p-6 shadow-lg"
           >
             <div>
               <h2 className="text-base font-semibold">Tell us what you think</h2>

@@ -206,7 +206,7 @@ export function Board({ board, tasks, setTasks, setColumns, onOpen, onError, rel
       </div>
       <DragOverlay>
         {active ? (
-          <div className="w-72 rotate-2 rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
+          <div className="w-72 rotate-2 rounded-2xl bg-white p-3.5 shadow-lg">
             <CardBody task={active} labels={labels} people={people} />
           </div>
         ) : null}
@@ -286,7 +286,7 @@ function Column({
   return (
     <section
       aria-label={column.name}
-      className={`flex w-72 shrink-0 flex-col rounded-2xl p-2 ${isOver ? 'bg-brand-50' : 'bg-gray-100'}`}
+      className={`flex w-72 shrink-0 flex-col rounded-3xl p-2.5 transition-colors duration-200 ${isOver ? 'bg-brand-50 ring-2 ring-lime' : 'bg-white/55'}`}
     >
       {editing ? (
         <form onSubmit={saveColumn} className="mb-2 space-y-2 rounded-xl bg-white p-2">
@@ -383,7 +383,7 @@ function AddColumn({ projectId, setColumns, onError }: { projectId: string; setC
   }
 
   return open ? (
-    <form onSubmit={onSubmit} className="w-72 shrink-0 rounded-2xl bg-gray-100 p-2">
+    <form onSubmit={onSubmit} className="w-72 shrink-0 rounded-3xl bg-white/55 p-2.5">
       <input name="name" autoFocus placeholder="Column name" aria-label="New column name" className={input} />
       <div className="mt-2 flex gap-2">
         <button type="submit" className={btn.primary}>
@@ -397,7 +397,7 @@ function AddColumn({ projectId, setColumns, onError }: { projectId: string; setC
   ) : (
     <button
       onClick={() => setOpen(true)}
-      className="w-72 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 px-3 py-3 text-left text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
+      className="w-72 shrink-0 rounded-3xl border-2 border-dashed border-gray-300 px-4 py-3 text-left text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
     >
       + Add column
     </button>

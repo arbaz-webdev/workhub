@@ -103,9 +103,9 @@ export function TimelineView({ board, tasks, onOpen, onReschedule }: Props) {
       </div>
 
       {groups.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">No tasks have dates yet. Open a task and give it a start and due date to see it here.</p>
+        <p className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-10 text-center text-sm text-gray-600">No tasks have dates yet. Open a task and give it a start and due date to see it here.</p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white" onPointerMove={move} onPointerUp={finish} onPointerCancel={() => setDrag(null)}>
+        <div className="overflow-x-auto rounded-3xl bg-white" onPointerMove={move} onPointerUp={finish} onPointerCancel={() => setDrag(null)}>
           <div style={{ width: 224 + DAYS * DAY }} className="relative select-none">
             {/* Dates */}
             <div className="sticky top-0 z-10 flex border-b border-gray-200 bg-gray-50 text-[11px] text-gray-500">

@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { pkr, SettingsTabs } from '@/components/settings/tabs';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -70,7 +70,7 @@ export default function BillingPage() {
       <>
         <PageHeader title="Settings" />
         <SettingsTabs />
-        {error ? <Alert>{error}</Alert> : <p className="text-sm text-gray-500">Loading…</p>}
+        {error ? <Alert>{error}</Alert> : <Loading />}
       </>
     );
   }
@@ -94,7 +94,7 @@ export default function BillingPage() {
       <SettingsTabs />
       <div className="space-y-6">
         {error && <Alert>{error}</Alert>}
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-3xl bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold">
               {PLAN_INFO[sub.plan].name}
@@ -118,9 +118,9 @@ export default function BillingPage() {
           <section>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-semibold">Plans</h2>
-              <div className="flex rounded-lg border border-gray-300 p-0.5 text-sm" role="radiogroup" aria-label="Billing">
+              <div className="flex rounded-full bg-white p-1 text-sm shadow-sm" role="radiogroup" aria-label="Billing">
                 {(['monthly', 'annual'] as const).map((c) => (
-                  <button key={c} type="button" role="radio" aria-checked={cycle === c} onClick={() => setCycle(c)} className={`rounded-md px-3 py-1 font-medium ${cycle === c ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
+                  <button key={c} type="button" role="radio" aria-checked={cycle === c} onClick={() => setCycle(c)} className={`rounded-full px-4 py-1.5 transition-colors duration-200 ${cycle === c ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:text-ink'}`}>
                     {c === 'monthly' ? 'Monthly' : `Yearly (${12 - ANNUAL_MONTHS_CHARGED} months free)`}
                   </button>
                 ))}

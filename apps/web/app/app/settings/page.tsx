@@ -10,7 +10,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { SettingsTabs } from '@/components/settings/tabs';
 import { TwoFactorRule } from '@/components/settings/two-factor-rule';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -72,7 +72,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" description="These settings apply to everyone in the workspace." />
       <SettingsTabs />
       {!settings ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : (
         <Card>
           <form onSubmit={onSubmit} className="space-y-5">

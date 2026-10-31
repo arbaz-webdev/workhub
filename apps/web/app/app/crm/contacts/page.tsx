@@ -6,12 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { ContactDialog } from '@/components/crm/dialogs';
 import { CrmTabs, Pager, SearchBox } from '@/components/crm/shared';
-import { Alert, PageHeader, btn } from '@/components/ui';
+import { Alert, PageHeader, btn, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 export default function ContactsPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<Loading />}>
       <Contacts />
     </Suspense>
   );
@@ -78,15 +78,15 @@ function Contacts() {
         {data && <span className="ml-auto text-sm text-gray-500">{data.total.toLocaleString()} contacts</span>}
       </div>
       {!data ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : data.items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+        <div className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-12 text-center">
           <p className="font-medium text-gray-800">{q ? 'No contacts match' : 'No contacts yet'}</p>
           <p className="mt-1 text-sm text-gray-500">Converted leads land here too.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <table className="w-full min-w-[640px] text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>

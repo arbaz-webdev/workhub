@@ -3,7 +3,7 @@
 import { hasRole, type UtilisationDto } from '@workhub/shared';
 import { useEffect, useState } from 'react';
 import { downloadCsv, Meter, pct, ReportTabs, Stat } from '@/components/reports/shared';
-import { Alert, PageHeader, btn, input } from '@/components/ui';
+import { Alert, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { addDays, localToday, mondayOf } from '@/lib/time';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -94,7 +94,7 @@ export default function UtilisationPage() {
         </div>
       )}
       {!data ? (
-        !error && <p className="text-sm text-gray-500">Loading…</p>
+        !error && <Loading />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -105,7 +105,7 @@ export default function UtilisationPage() {
           </div>
 
           {data.teams.length > 1 && (
-            <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold">By team</h2>
               <ul className="space-y-3">
                 {data.teams.map((t) => (
@@ -121,7 +121,7 @@ export default function UtilisationPage() {
             </section>
           )}
 
-          <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <section className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <table className="w-full min-w-[640px] text-sm">
               <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
                 <tr>

@@ -113,7 +113,7 @@ export function DocEditor({
   }
 
   return (
-    <form onSubmit={save} className="space-y-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <form onSubmit={save} className="space-y-5 rounded-3xl bg-white p-5 shadow-sm">
       {error && <Alert>{error}</Alert>}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Labelled label="Client">
@@ -211,7 +211,7 @@ const date = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateS
 export function DocPaper({ doc }: { doc: ClientDocumentDto }) {
   const label = KIND_LABEL[doc.kind];
   return (
-    <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm print:border-0 print:p-0 print:shadow-none sm:p-8" aria-label={`${label} ${doc.number}`}>
+    <article className="rounded-3xl bg-white p-6 shadow-sm print:border-0 print:p-0 print:shadow-none sm:p-8" aria-label={`${label} ${doc.number}`}>
       <header className="flex flex-wrap justify-between gap-6">
         <div>
           <p className="text-lg font-semibold">{doc.from.name}</p>

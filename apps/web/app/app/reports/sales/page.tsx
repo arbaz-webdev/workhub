@@ -3,7 +3,7 @@
 import { hasRole, LEAD_SOURCE_LABELS, type SalesReportDto } from '@workhub/shared';
 import { useEffect, useState } from 'react';
 import { amounts, downloadCsv, pct, ReportTabs, Stat } from '@/components/reports/shared';
-import { Alert, PageHeader, btn } from '@/components/ui';
+import { Alert, PageHeader, btn, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { addDays, localToday } from '@/lib/time';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
@@ -79,7 +79,7 @@ export default function SalesReportPage() {
         </div>
       )}
       {!data ? (
-        !error && <p className="text-sm text-gray-500">Loading…</p>
+        !error && <Loading />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -90,7 +90,7 @@ export default function SalesReportPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold">Open deals by stage</h2>
               {data.stages.length === 0 ? (
                 <p className="text-sm text-gray-500">No open deals.</p>
@@ -115,7 +115,7 @@ export default function SalesReportPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold">Why deals were lost</h2>
               {data.lostReasons.length === 0 ? (
                 <p className="text-sm text-gray-500">No lost deals in this period.</p>
@@ -132,7 +132,7 @@ export default function SalesReportPage() {
             </section>
           </div>
 
-          <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <section className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <h2 className="px-4 pt-4 text-sm font-semibold">Where deals come from</h2>
             <table className="mt-2 w-full min-w-[560px] text-sm">
               <thead className="border-y border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
@@ -168,7 +168,7 @@ export default function SalesReportPage() {
             </table>
           </section>
 
-          <section className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <section className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <h2 className="px-4 pt-4 text-sm font-semibold">Salespeople</h2>
             <table className="mt-2 w-full min-w-[620px] text-sm">
               <thead className="border-y border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">

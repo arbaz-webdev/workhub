@@ -10,7 +10,7 @@ import {
   type MemberDto,
 } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Card, PageHeader, btn, input, roleLabel, timeAgo } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, roleLabel, timeAgo, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -86,7 +86,7 @@ export default function PeoplePage() {
 
         <Card title={members ? `Members (${members.length})` : 'Members'}>
           {!members ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <Loading />
           ) : (
             <div className="-mx-6 overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
@@ -114,7 +114,7 @@ export default function PeoplePage() {
                             aria-label={`Role for ${m.name}`}
                             value={m.role}
                             onChange={(e) => changeRole(m, e.target.value as AssignableRole)}
-                            className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm"
+                            className="rounded-xl border border-gray-200 bg-white px-2 py-1 text-sm"
                           >
                             {assignable.map((r) => (
                               <option key={r} value={r}>
@@ -237,7 +237,7 @@ function InviteByEmail({ assignable, onDone }: { assignable: readonly Assignable
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as AssignableRole)}
-                className="ml-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                className="ml-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm"
               >
                 {assignable.map((r) => (
                   <option key={r} value={r}>
@@ -297,7 +297,7 @@ function InviteLink({ onDone }: { onDone: () => void }) {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as typeof role)}
-            className="ml-1 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="ml-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm"
           >
             <option value="member">Member</option>
             <option value="manager">Manager</option>

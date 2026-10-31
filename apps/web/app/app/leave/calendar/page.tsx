@@ -54,7 +54,7 @@ export default function LeaveCalendarPage() {
       </div>
       {data && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
             <table className="text-xs">
               <thead>
                 <tr>

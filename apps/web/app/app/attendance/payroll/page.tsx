@@ -4,7 +4,7 @@ import { hasRole, type MemberCodesDto, type PayrollTemplateDto } from '@workhub/
 import { useCallback, useEffect, useState } from 'react';
 import { DeviceImport, MemberCodes, PayrollExport, PayrollTemplates } from '@/components/attendance/payroll';
 import { AttendanceTabs } from '@/components/attendance/tabs';
-import { Alert, PageHeader } from '@/components/ui';
+import { Alert, PageHeader, Loading } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
 /** Payroll exports (managers) and, for admins, layouts, employee codes and the device import. */
@@ -48,7 +48,7 @@ export default function PayrollPage() {
       <AttendanceTabs />
       {error && <Alert>{error}</Alert>}
       {!templates ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : (
         <div className="space-y-6">
           <PayrollExport templates={templates} />

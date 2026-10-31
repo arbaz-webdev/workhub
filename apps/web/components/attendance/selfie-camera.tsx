@@ -80,7 +80,7 @@ export function SelfieCamera({ title, onCapture, onCancel }: { title: string; on
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-gray-900/60 p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
+      <div className="w-full max-w-sm animate-pop rounded-3xl bg-white p-5 shadow-lg">
         <h2 className="mb-3 text-base font-semibold">{title}</h2>
         {!failed ? (
           <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-900">

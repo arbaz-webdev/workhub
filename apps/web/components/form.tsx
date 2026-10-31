@@ -15,10 +15,10 @@ export function AuthCard({
     <main className="flex min-h-full items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">W</span>
+          <span className="grid h-8 w-8 place-items-center rounded-[30%] bg-ink text-sm font-semibold text-lime">W</span>
           WorkHub
         </Link>
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
           {children && <div className="mt-6">{children}</div>}

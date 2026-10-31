@@ -68,7 +68,7 @@ export function BetaForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:grid-cols-2">
+    <form onSubmit={onSubmit} noValidate className="grid gap-4 rounded-3xl bg-white p-6 shadow-sm sm:grid-cols-2">
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 sm:col-span-2">
           {error}

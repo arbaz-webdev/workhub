@@ -2,7 +2,7 @@
 
 import type { TwoFactorSetupDto, TwoFactorStatusDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { useWorkspace } from '@/lib/workspace';
 
@@ -101,7 +101,7 @@ export default function AccountPage() {
 
         <Card title="Two-factor sign-in" description="After your password (or Google), WorkHub asks for a code from an authenticator app such as Google Authenticator or Microsoft Authenticator.">
           {!status ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <Loading />
           ) : status.enabled ? (
             <div className="space-y-4">
               <p className="flex items-center gap-2 text-sm">

@@ -80,7 +80,7 @@ export function CalendarView({ board, tasks, onOpen, onReschedule }: Props) {
       </div>
 
       {/* The month grid on wider screens. */}
-      <div className="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white sm:block" role="grid" aria-label={monthTitle(month)}>
+      <div className="hidden overflow-hidden rounded-3xl bg-white sm:block" role="grid" aria-label={monthTitle(month)}>
         <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-center text-xs font-medium text-gray-500" role="row">
           {weeks[0]!.map((d) => (
             <div key={d} className="py-2" role="columnheader">

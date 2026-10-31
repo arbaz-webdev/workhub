@@ -67,14 +67,14 @@ export function CorrectionDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-gray-900/40 p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 grid animate-fade place-items-center bg-ink/30 p-4 backdrop-blur-sm" onMouseDown={onClose}>
       <form
         onSubmit={submit}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label="Correct attendance"
-        className="w-full max-w-md space-y-4 rounded-2xl bg-white p-5 shadow-xl"
+        className="w-full max-w-md animate-pop space-y-4 rounded-3xl bg-white p-6 shadow-lg"
       >
         <div>
           <h2 className="text-base font-semibold">{personName ? `Correct ${personName}’s day` : direct ? 'Correct your day' : 'Ask for a correction'}</h2>

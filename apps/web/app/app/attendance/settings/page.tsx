@@ -13,7 +13,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { shiftHours } from '@/components/attendance/labels';
 import { AttendanceTabs } from '@/components/attendance/tabs';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -68,7 +68,7 @@ export default function AttendanceSettingsPage() {
         {notice && <Alert kind="success">{notice}</Alert>}
       </div>
       {!s ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : (
         <div className="space-y-6">
           <Card title="Check-in rules">
@@ -106,7 +106,7 @@ export default function AttendanceSettingsPage() {
                             aria-label={`Shift for ${t.name}`}
                             value={t.shiftId ?? ''}
                             onChange={(e) => patch(`/attendance/teams/${t.id}`, { shiftId: e.target.value || null }, `${t.name} updated.`)}
-                            className="rounded-lg border border-gray-300 px-2 py-1"
+                            className="rounded-xl border border-gray-200 px-2 py-1"
                           >
                             <option value="">Default shift</option>
                             {s.shifts.map((x) => (
@@ -145,7 +145,7 @@ export default function AttendanceSettingsPage() {
                                 aria-label={`Team for ${p.name}`}
                                 value={p.teamId ?? ''}
                                 onChange={(e) => patch(`/attendance/people/${p.userId}`, { teamId: e.target.value || null }, `${p.name} updated.`)}
-                                className="rounded-lg border border-gray-300 px-2 py-1"
+                                className="rounded-xl border border-gray-200 px-2 py-1"
                               >
                                 <option value="">No team</option>
                                 {s.teams.map((t) => (
@@ -160,7 +160,7 @@ export default function AttendanceSettingsPage() {
                                 aria-label={`Shift for ${p.name}`}
                                 value={p.shiftId ?? ''}
                                 onChange={(e) => patch(`/attendance/people/${p.userId}`, { shiftId: e.target.value || null }, `${p.name} updated.`)}
-                                className="rounded-lg border border-gray-300 px-2 py-1"
+                                className="rounded-xl border border-gray-200 px-2 py-1"
                               >
                                 <option value="">{p.shiftId ? 'Team or default' : `Team or default (${effective?.name ?? 'none'})`}</option>
                                 {s.shifts.map((x) => (
@@ -377,7 +377,7 @@ function ShiftForm({ shift, onCancel, onSaved, onError }: { shift?: ShiftDto; on
                 aria-label="Which days"
                 value={breakDays(b.days)}
                 onChange={(e) => setBreak(i, { days: e.target.value === 'fri' ? [5] : e.target.value === 'notfri' ? [...NOT_FRIDAY] : [] })}
-                className="rounded-lg border border-gray-300 px-2 py-1.5"
+                className="rounded-xl border border-gray-200 px-2 py-1.5"
               >
                 <option value="all">Every working day</option>
                 <option value="fri">Fridays only</option>

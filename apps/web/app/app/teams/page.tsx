@@ -2,7 +2,7 @@
 
 import { createTeamSchema, hasRole, type TeamDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { Card, PageHeader, btn, input } from '@/components/ui';
+import { Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -48,7 +48,7 @@ export default function TeamsPage() {
       <PageHeader title="Teams" description="Group people by department so reports and permissions follow them." />
       <Card>
         {teams === undefined ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <Loading />
         ) : teams.length === 0 ? (
           <p className="rounded-lg bg-gray-50 px-3 py-4 text-sm text-gray-500">
             No teams yet.{canCreate ? ' Create your first one below, for example “Design” or “Sales”.' : ''}

@@ -3,7 +3,7 @@
 import { ACTIVITY_KINDS, ACTIVITY_LABELS, activitySchema, type ActivityKind, type CrmActivityDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { btn, input, timeAgo } from '@/components/ui';
+import { btn, input, timeAgo, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 import { errorText } from './shared';
 
@@ -179,7 +179,7 @@ export function ActivityPanel({ target, initial }: { target: ActivityTarget; ini
     <div className="space-y-3">
       <ActivityForm target={target} onSaved={load} />
       {!items ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : items.length === 0 ? (
         <p className="text-sm text-gray-500">Nothing logged yet.</p>
       ) : (

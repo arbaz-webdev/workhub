@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { DealDialog, money, moneyList, WinDialog } from '@/components/crm/deals';
 import { CrmTabs } from '@/components/crm/shared';
-import { Alert, PageHeader, btn, input } from '@/components/ui';
+import { Alert, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { localToday } from '@/lib/time';
 import { useWorkspaceApi } from '@/lib/workspace';
@@ -14,7 +14,7 @@ import { sumMoney } from '@/components/crm/money';
 
 export default function DealsPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<Loading />}>
       <Deals />
     </Suspense>
   );
@@ -118,9 +118,9 @@ function Deals() {
             ))}
           </select>
         )}
-        <div className="flex rounded-lg border border-gray-300 p-0.5 text-sm" role="tablist" aria-label="View">
+        <div className="flex rounded-full bg-white p-1 text-sm shadow-sm" role="tablist" aria-label="View">
           {(['board', 'list'] as const).map((v) => (
-            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`rounded-md px-3 py-1 font-medium ${view === v ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
+            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`rounded-full px-4 py-1.5 transition-colors duration-200 ${view === v ? 'bg-ink font-medium text-white' : 'text-gray-600 hover:text-ink'}`}>
               {v === 'board' ? 'Board' : 'List'}
             </button>
           ))}
@@ -141,7 +141,7 @@ function Deals() {
       </div>
 
       {!pipeline || !deals ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : view === 'board' ? (
         <Board stages={pipeline.stages} open={open} deals={deals} onOpen={setEditing} onMove={(d, s) => void move(d, s)} />
       ) : (
@@ -212,7 +212,7 @@ function Board({ stages, open, deals, onOpen, onMove }: { stages: StageDto[]; op
 function Column({ stage, deals, onOpen }: { stage: StageDto; deals: DealDto[]; onOpen: (d: DealDto) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   return (
-    <section ref={setNodeRef} aria-label={stage.name} className={`flex w-64 shrink-0 flex-col rounded-xl p-2 ${isOver ? 'bg-brand-50' : 'bg-gray-100'}`}>
+    <section ref={setNodeRef} aria-label={stage.name} className={`flex w-64 shrink-0 flex-col rounded-3xl p-2.5 transition-colors duration-200 ${isOver ? 'bg-brand-50 ring-2 ring-lime' : 'bg-white/55'}`}>
       <header className="mb-2 px-1">
         <p className="flex items-center justify-between text-sm font-semibold text-gray-800">
           {stage.name}
@@ -249,7 +249,7 @@ function DealCard({ deal, onOpen }: { deal: DealDto; onOpen: () => void }) {
           if (e.key === 'Enter') onOpen();
           else listeners?.onKeyDown?.(e);
         }}
-        className="cursor-grab rounded-lg border border-gray-200 bg-white p-2.5 text-sm shadow-sm hover:border-brand-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:cursor-grabbing"
+        className="cursor-grab rounded-2xl bg-white p-3.5 text-sm shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink active:cursor-grabbing"
       >
         <p className="font-medium text-gray-900">{deal.title}</p>
         {deal.company && <p className="truncate text-xs text-gray-500">{deal.company.name}</p>}
@@ -275,8 +275,8 @@ function CloseZone({ stage }: { stage: StageDto }) {
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border-2 border-dashed px-4 py-3 text-center text-sm font-medium ${
-        won ? (isOver ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-emerald-200 text-emerald-700') : isOver ? 'border-gray-500 bg-gray-100 text-gray-800' : 'border-gray-200 text-gray-500'
+      className={`rounded-3xl border-2 border-dashed px-4 py-3.5 text-center text-sm font-medium transition-colors duration-200 ${
+        won ? (isOver ? 'border-ink bg-lime text-ink' : 'border-brand-200 bg-brand-50/60 text-brand-800') : isOver ? 'border-gray-500 bg-gray-100 text-gray-800' : 'border-gray-200 text-gray-500'
       }`}
     >
       Drop here: {stage.name}
@@ -285,9 +285,9 @@ function CloseZone({ stage }: { stage: StageDto }) {
 }
 
 function List({ deals, onOpen }: { deals: DealDto[]; onOpen: (d: DealDto) => void }) {
-  if (deals.length === 0) return <p className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500">No deals here.</p>;
+  if (deals.length === 0) return <p className="rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-10 text-center text-sm text-gray-500">No deals here.</p>;
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+    <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
       <table className="w-full min-w-[680px] text-sm">
         <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500">
           <tr>

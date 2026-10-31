@@ -125,13 +125,13 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
   let lastGroup = '';
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-gray-900/30 px-4 pt-[12vh]" onMouseDown={close}>
+    <div className="fixed inset-0 z-50 flex animate-fade items-start justify-center bg-ink/30 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={close}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Search"
         onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"
+        className="w-full max-w-lg animate-pop overflow-hidden rounded-3xl bg-white shadow-lg"
       >
         <input
           ref={inputRef}
@@ -144,7 +144,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           aria-activedescendant={results[active] ? `${listId}-${active}` : undefined}
           aria-autocomplete="list"
           placeholder="Search pages, people, teams…"
-          className="w-full border-b border-gray-100 px-4 py-3.5 text-sm outline-none"
+          className="w-full border-b border-gray-100 px-5 py-4 text-base outline-none placeholder:text-gray-400"
         />
         <ul id={listId} role="listbox" aria-label="Results" className="max-h-80 overflow-y-auto py-2">
           {results.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-500">No results</li>}
@@ -164,8 +164,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   aria-selected={i === active}
                   onMouseEnter={() => setActive(i)}
                   onClick={c.run}
-                  className={`mx-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm ${
-                    i === active ? 'bg-brand-50 text-brand-700' : 'text-gray-800'
+                  className={`mx-2 flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                    i === active ? 'bg-ink text-white' : 'text-gray-800'
                   }`}
                 >
                   <span>{c.label}</span>

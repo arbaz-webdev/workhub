@@ -4,7 +4,7 @@ import { createProjectSchema, hasRole, type CompanyDto, type ProjectSummaryDto, 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -48,7 +48,7 @@ export default function ProjectsPage() {
       {creating && <NewProject onClose={() => setCreating(false)} />}
 
       {!projects ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : projects.length === 0 ? (
         <Card>
           <p className="text-sm text-gray-500">
@@ -56,7 +56,7 @@ export default function ProjectsPage() {
           </p>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => {
             const total = p.openTasks + p.doneTasks;
             const pct = total ? Math.round((p.doneTasks / total) * 100) : 0;
@@ -64,7 +64,7 @@ export default function ProjectsPage() {
               <Link
                 key={p.id}
                 href={`/app/projects/${p.id}`}
-                className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-brand-500"
+                className="rounded-3xl bg-white p-5 shadow-sm lift"
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold">{p.name}</p>

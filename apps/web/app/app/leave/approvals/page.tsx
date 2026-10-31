@@ -4,7 +4,7 @@ import { hasRole, type CorrectionDto, type LeaveRequestDto } from '@workhub/shar
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { LEAVE_COLOR, LeaveTabs, rangeLabel } from '@/components/leave/tabs';
-import { Alert, Card, PageHeader, btn, input } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -66,7 +66,7 @@ export default function ApprovalsPage() {
       <div className="space-y-6">
         <Card title="Leave requests">
           {!leave ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <Loading />
           ) : leave.length === 0 ? (
             <p className="text-sm text-gray-500">Nothing waiting.</p>
           ) : (
@@ -93,7 +93,7 @@ export default function ApprovalsPage() {
 
         <Card title="Attendance corrections">
           {!corrections ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <Loading />
           ) : corrections.length === 0 ? (
             <p className="text-sm text-gray-500">Nothing waiting.</p>
           ) : (

@@ -96,7 +96,7 @@ function Holidays({ onDone, onError }: { onDone: (m: string) => void; onError: (
   return (
     <Card title="Holidays" description="Nobody is marked absent on a holiday, and leave doesn’t count it.">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Year" className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Year" className="rounded-xl border border-gray-200 px-2 py-1.5 text-sm">
           {[thisYear - 1, thisYear, thisYear + 1, thisYear + 2].map((y) => (
             <option key={y} value={y}>
               {y}
@@ -114,7 +114,7 @@ function Holidays({ onDone, onError }: { onDone: (m: string) => void; onError: (
             <li key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
               {editing === h.id ? (
                 <>
-                  <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} aria-label={`New date for ${h.name}`} className="rounded-lg border border-gray-300 px-2 py-1" />
+                  <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} aria-label={`New date for ${h.name}`} className="rounded-xl border border-gray-200 px-2 py-1" />
                   <span className="flex-1">{h.name}</span>
                   <button
                     type="button"

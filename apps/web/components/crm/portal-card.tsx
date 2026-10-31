@@ -3,7 +3,7 @@
 import { hasRole, type CompanyPortalDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, btn, input } from '@/components/ui';
+import { Alert, btn, input, Loading } from '@/components/ui';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 import { errorText } from './shared';
 
@@ -34,7 +34,7 @@ export function ClientPortalCard({ companyId, companyName }: { companyId: string
   }
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm" aria-labelledby="portal-title">
+    <section className="rounded-3xl bg-white p-5 shadow-sm" aria-labelledby="portal-title">
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h2 id="portal-title" className="text-sm font-semibold">
           Client portal
@@ -47,7 +47,7 @@ export function ClientPortalCard({ companyId, companyName }: { companyId: string
       <div className="space-y-4" aria-live="polite">
         {result && <Alert kind={result.kind}>{result.text}</Alert>}
         {!data ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <Loading />
         ) : (
           <>
             <div>

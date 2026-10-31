@@ -5,14 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { TIMER_EVENT } from '@/components/shell/timer-chip';
 import { SheetStatus, TimesheetGrid, TimesheetTabs } from '@/components/timesheets/grid';
-import { Alert, PageHeader, btn } from '@/components/ui';
+import { Alert, PageHeader, btn, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { addDays, dayLabel } from '@/lib/time';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 export default function TimesheetPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<Loading />}>
       <MyTimesheet />
     </Suspense>
   );
@@ -67,7 +67,7 @@ function MyTimesheet() {
         </div>
       )}
       {!sheet ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <Loading />
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-2">

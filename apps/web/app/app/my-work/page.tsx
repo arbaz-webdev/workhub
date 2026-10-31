@@ -4,7 +4,7 @@ import type { MyTaskDto, MyWorkDto } from '@workhub/shared';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { hoursText, PRIORITY_LABEL, PRIORITY_STYLE } from '@/components/board/style';
-import { Alert, PageHeader } from '@/components/ui';
+import { Alert, PageHeader, Loading } from '@/components/ui';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 type Group = 'overdue' | 'today' | 'week' | 'later' | 'none';
@@ -47,7 +47,7 @@ export default function MyWorkPage() {
     <>
       <PageHeader title="My work" description="Open tasks assigned to you, across every project." />
       {error && <Alert>{error}</Alert>}
-      {!data && !error && <p className="text-sm text-gray-500">Loading…</p>}
+      {!data && !error && <Loading />}
       {data && data.tasks.length === 0 && (
         <div className="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
           <p className="font-medium">Nothing assigned to you right now.</p>

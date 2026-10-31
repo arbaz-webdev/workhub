@@ -3,7 +3,7 @@ import Link from 'next/link';
 export function Logo() {
   return (
     <span className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">W</span>
+      <span className="grid h-8 w-8 place-items-center rounded-[30%] bg-ink text-sm font-semibold text-lime">W</span>
       WorkHub
     </span>
   );

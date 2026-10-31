@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { SettingsTabs } from '@/components/settings/tabs';
 import { Webhooks } from '@/components/settings/webhooks';
-import { Alert, Card, PageHeader, btn, input, timeAgo } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, timeAgo, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -62,7 +62,7 @@ export default function ApiSettingsPage() {
           description="A key lets other software use this workspace's data. It acts as you, with your access, and stops working if you leave or stop being an admin."
         >
           {!keys ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <Loading />
           ) : keys.length === 0 ? (
             <p className="text-sm text-gray-500">No API keys yet.</p>
           ) : (

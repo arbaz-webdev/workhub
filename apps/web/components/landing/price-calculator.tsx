@@ -17,7 +17,7 @@ export function PriceCalculator() {
   return (
     <div>
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <div className="flex rounded-lg border border-gray-300 bg-white p-0.5 text-sm" role="radiogroup" aria-label="Billing">
+        <div className="flex rounded-xl border border-gray-200 bg-white p-0.5 text-sm" role="radiogroup" aria-label="Billing">
           {(['monthly', 'annual'] as const).map((c) => (
             <button key={c} type="button" role="radio" aria-checked={cycle === c} onClick={() => setCycle(c)} className={`rounded-md px-3 py-1.5 font-medium ${cycle === c ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
               {c === 'monthly' ? 'Monthly' : 'Yearly · 2 months free'}
@@ -32,7 +32,7 @@ export function PriceCalculator() {
             max={1000}
             value={people}
             onChange={(e) => setPeople(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
-            className="w-20 rounded-lg border border-gray-300 px-2 py-1.5 text-center tabular-nums"
+            className="w-20 rounded-xl border border-gray-200 px-2 py-1.5 text-center tabular-nums"
           />
           people
         </label>

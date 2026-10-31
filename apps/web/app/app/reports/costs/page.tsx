@@ -3,7 +3,7 @@
 import { CURRENCIES, hasRole, type CostSettingsDto } from '@workhub/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { amount, ReportTabs } from '@/components/reports/shared';
-import { Alert, Card, PageHeader, btn, input, roleLabel } from '@/components/ui';
+import { Alert, Card, PageHeader, btn, input, roleLabel, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspace, useWorkspaceApi } from '@/lib/workspace';
 
@@ -62,7 +62,7 @@ export default function CostsPage() {
         {error && <Alert>{error}</Alert>}
         {notice && <Alert kind="success">{notice}</Alert>}
         {!data ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <Loading />
         ) : (
           <>
             <Card title="Working hours and exchange rates" description={`Everything is reported in ${data.currency}, your workspace currency.`}>

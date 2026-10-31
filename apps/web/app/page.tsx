@@ -68,7 +68,7 @@ const FAQ = [
 
 function ProfitabilityMock() {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg" aria-label="Example Client Profitability report">
+    <div className="rounded-3xl bg-white p-5 shadow-lg" aria-label="Example Client Profitability report">
       <div className="flex items-baseline justify-between">
         <p className="text-sm font-semibold">Client profitability · September</p>
         <p className="text-xs text-gray-400">example data</p>
@@ -130,7 +130,7 @@ export default function Landing() {
               <a href="#beta" className="rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700">
                 Join the free beta
               </a>
-              <a href="#features" className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+              <a href="#features" className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50">
                 See what&apos;s inside
               </a>
             </div>

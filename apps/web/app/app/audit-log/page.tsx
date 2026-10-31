@@ -96,7 +96,7 @@ export default function AuditLogPage() {
           <select
             value={action}
             onChange={(e) => setAction(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm"
+            className="rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm"
           >
             <option value="">All activity</option>
             {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (

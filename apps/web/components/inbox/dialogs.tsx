@@ -14,13 +14,13 @@ export function Modal({ label, onClose, children, wide = false }: { label: strin
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-gray-900/40 p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 grid animate-fade place-items-center bg-ink/30 p-4 backdrop-blur-sm" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={label}
         onMouseDown={(e) => e.stopPropagation()}
-        className={`flex max-h-[min(40rem,calc(100dvh-2rem))] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl ${wide ? 'max-w-lg' : 'max-w-md'}`}
+        className={`flex max-h-[min(40rem,calc(100dvh-2rem))] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-lg animate-pop ${wide ? 'max-w-lg' : 'max-w-md'}`}
       >
         {children}
       </div>
@@ -97,7 +97,7 @@ export function NewChannelDialog({ people, meId, onClose, onCreated }: { people:
         {error && <Alert>{error}</Alert>}
         <label className="block text-sm">
           <span className="text-gray-700">Name</span>
-          <span className="mt-1 flex items-center rounded-lg border border-gray-300 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+          <span className="mt-1 flex items-center rounded-xl border border-gray-200 bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
             <span className="pl-3 text-gray-400">#</span>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. sales" maxLength={80} required autoFocus className="w-full bg-transparent px-1.5 py-2 text-sm outline-none" />
           </span>

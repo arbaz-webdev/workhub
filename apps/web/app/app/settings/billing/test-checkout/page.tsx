@@ -4,13 +4,13 @@ import type { InvoiceDto } from '@workhub/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { pkr } from '@/components/settings/tabs';
-import { Alert, btn } from '@/components/ui';
+import { Alert, btn, Loading } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useWorkspaceApi } from '@/lib/workspace';
 
 export default function TestCheckoutPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+    <Suspense fallback={<Loading />}>
       <TestCheckout />
     </Suspense>
   );
